@@ -1,0 +1,22 @@
+name: deploy-railway
+
+# Placeholder até a Fase 5. Não roda automaticamente — precisa de RAILWAY_TOKEN
+# como secret e ser destravado via workflow_dispatch.
+
+on:
+  workflow_dispatch:
+    inputs:
+      service:
+        description: "Serviço a deployar (backend|frontend)"
+        required: true
+        default: "backend"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Aviso
+        run: |
+          echo "Deploy automatizado é ativado na Fase 5."
+          echo "Por enquanto este workflow só existe para que a estrutura .github/workflows esteja completa."

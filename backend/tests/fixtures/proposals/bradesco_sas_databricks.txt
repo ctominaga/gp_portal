@@ -1,0 +1,3097 @@
+
+
+----- PÁGINA 1 -----
+Squad Migra ç ã o S A S p ara 
+d a t abrick s na Azure 
+Pr oposta nº 2025187 4
+
+
+----- PÁGINA 2 -----
+A Jump of er ece 
+ criando 
+ que auxiliam client es a e xtr air 
+o máximo pot encial da tr ansf ormação 
+digital,  desde a construção de sist emas 
+à cultur a or ganizacional f ocada em 
+data-driv en e competitividade.
+mais de 10 anos de 
+e xperiência pr odut os e 
+soluções
++800k
+Hor as de pr ojet os em 202 4
++500
+Pr ofissionais
++80%
+Equipe qualificada
+26%
+Cr esciment o anual
++60
+Client es
+87
+NPS
+91
+E-NPS
+2%
+De T urno v er*
+2 7 0 0 1
+
+
+----- PÁGINA 3 -----
+Nossos dif er enciais
+Explor amos t endências e no vidades t ecnológicas 
+par a assegur ar at endiment o e x clusiv o e dif er enciado 
+em t odos os pr ojet os.
+Centr o de Ex celência
+Líder es t écnicos pr epar ados par a 
+entr egar conheciment o e soluções 
+a v ançadas de dados.
+JumpStar t
+Pr ogr ama par a qualificar e pr epar ar 
+no v os pr ofissionais par a o 
+mer cado de t ecnologia de f orma 
+ágil e sob demanda.
+Business P ar tner & 
+Escrit ório de Pr ojet os
+Contamos com business par tners 
+que gar ant em cone x ão entr e as 
+entr egas t écnicas e os objetiv os de 
+negócio,  além de um escrit ório de 
+pr ojet os que atua na go v ernança,  
+planejament o e contr ole de 
+escopo,  pr az os e indicador es.
+Data and AI DNA
+Dominamos o ciclo complet o de 
+dados e tr az emos a ino v ação da IA,  
+tr az endo ino v ação sust entá v el no 
+DNA de cada pr ojet o.
+
+
+----- PÁGINA 4 -----
+Nossos ser viços
+Uma plur alidade de ser viços sob demanda,  pr ojet os 
+cust omizados e pr odut os ino v ador es que utilizam 
+t ecnologia de ponta par a aceler ar a oper ação de empr esas 
+de t odos os set or es de atuação.
+Nossos pr odut os
+
+
+----- PÁGINA 5 -----
+Pla y ers de div ersos 
+segment os
+P ar cerias
+estr at égicas
+que confiam em nossas soluções que assegur am a e x celência em t odos os nossos pr ojet os
+
+
+----- PÁGINA 6 -----
+Proposta  
+técnica
+
+
+----- PÁGINA 7 -----
+R esumo Ex ecutiv o
+Esta pr oposta f oi delineada para apoiar o  na migr ação int egr al das r otinas S A S 
+par a o ambient e Databricks, com f oco em modernizar pr ocessos,  ele v ar o desempenho 
+oper acional e consolidar uma ar quit etur a de dados escalá v el,  go v ernada e int eligent e. 
+
+A Jump adota uma abor dagem IA First, combinando aut omação a v ançada, mot or es de 
+int eligência ar tificial (tradicional e generativ a) e super visão humana especializada para 
+acelerar a con v ersão das r otinas SAS em pipelines PySpark nativ os. Essa abor dagem está 
+dir etament e vinculada ao uso do acelerador Migr at eMind,  que permit e aplicar int eligência 
+de código, análise estática, tradução assistida e geração aut omatizada de documentação 
+t écnica.
+Br adesco
+Pr oposta Comer cial Nº 2025187 4
+Quando aplicado, o Migrat eMind 
+r eduz em at é 7 0% o esf or ço de 
+migração, elimina boa par t e da 
+r ef at oração manual e encur ta 
+significativ ament e os praz os — 
+com f oco na equiv alência 
+funcional, rastr eabilidade ponta a 
+ponta e consist ência lógica entr e 
+SAS e PySpark.
+R esumo
+ 
+Cenário
+ Experiência
+Jump
+Est eir a
+S A S
+Hist órico e
+Empr esas 
+Est eir a
+de Migr ação
+A b or dage m
+I A F irst
+D i f er encia l
+ Crit é rio s
+ Est eir a
+ V a l idação
+ A gi l e T ea m
+ P er f i s
+ Estrutur a
+ Mode l o
+ Pl ano
+ V a l idação
+ P r emissa s
+ F or a do 
+B ac kl og A lv o
+A t enção
+
+
+----- PÁGINA 8 -----
+R esumo Ex ecutiv o
+A atuação seguirá um modelo de est eir a contínua e int eligent e, no qual cada r otina SAS 
+per corr e um flux o complet o — da análise t écnica à v alidação — de f orma incr emental,  
+v alidada e priorizada conf orme a comple xidade e o v alor para o negócio.
+
+As atividades ocorr erão de f orma pr ogr essiv a e colabor ativ a, ao longo de sprint s 
+quinz enais, com priorização conjunta entr e Jump e Br adesco, com f oco em cadência 
+contínua de entr egas e t otal visibilidade da e v olução da migração.
+Pr oposta Comer cial Nº 2025187 4
+Ao t érmino do ciclo, o  
+contará com as r otinas S A S 
+migr adas,  v alidadas e 
+documentadas, sust entadas por 
+pipelines go v ernados e auditá v eis, 
+pr ont os para supor tar o 
+cr esciment o analítico, a eficiência 
+operacional e a e xpansão da 
+estrat égia de dados corporativ a no 
+Databricks. 
+Br adesco
+R esumo
+ 
+Cenário
+ Experiência
+Jump
+Est eir a
+S A S
+Hist órico e
+Empr esas 
+Est eir a
+de Migr ação
+A b or dage m
+I A F irst
+D i f er encia l
+ Crit é rio s
+ Est eir a
+ V a l idação
+ A gi l e T ea m
+ P er f i s
+ Estrutur a
+ Mode l o
+ Pl ano
+ V a l idação
+ P r emissa s
+ F or a do 
+B ac kl og A lv o
+A t enção
+
+
+----- PÁGINA 9 -----
+Cenário A tual
+O  v em a v ançando em sua jornada de modernização analítica, com o objetiv o de 
+f or talecer as práticas de go v ernança, desempenho e escalabilidade dos ambient es que 
+sust entam suas ár eas de negócio. Nesse mo viment o, o GRF (Gestão de Risco Financeir o ) 
+iniciou a transição de seus pr ocessos de Risco de Mer cado para o Databricks, em 
+alinhament o com a estrat égia corporativ a de adoção de nuv em e otimização das 
+plataf ormas de dados. 
+ 
+O le v antament o t écnico r ealizado pelo GRF , consolidado na planilha Inf ormações_Pr ocessos
+_ GRF _ v2, mapeou 1 . 628 r otinas S A S ativ as, distribuídas entr e car gas (866), pr ocessos 
+analíticos (583) e component es de apoio como macr os, D T Qs e r otinas de infraestrutura. 
+Esse ecossist ema é r esponsá v el por alimentar apr o ximadament e 2 40 tabelas de risco, 
+utilizadas por mais de 2. 000 usuários corpor ativ os, dos quais cer ca de 200 per t encem ao 
+núcleo t écnico do GRF e os demais são usuários de consumo distribuído entr e ár eas de 
+negócio. 
+Br adesco
+Pr oposta Comer cial Nº 2025187 4
+R esumo
+ 
+Cenário
+ Experiência
+Jump
+Est eir a
+S A S
+Hist órico e
+Empr esas 
+Est eir a
+de Migr ação
+Abor dagem
+IA First
+Dif er encial
+ Crit érios
+ Est eir a
+ V alidação
+ A gile T eam
+ P er fis
+ Estrutur a
+ Modelo
+ P lano
+ V alidação
+ P r emissas
+ F or a do 
+B ac k log Al v o
+A t enção
+
+
+----- PÁGINA 10 -----
+Cenário A tual
+O ambient e atual opera de f orma on-pr emises, com r otinas SAS or questradas 
+via IBM W orkload Scheduler (IW S). Essas car gas e transf ormações são e x ecutadas com 
+fr equência diária e mensal, t otalizando mais de 310 hor as de pr ocessament o acumulado 
+por ciclo, com destaque para pr ocessos de longa duração como PD & L GD (≈60h),  IRRBB 
+(≈40h),  L CR (≈27h) e RMEL (≈18h). Esses t empos de e x ecução r e v elam alt o consumo 
+computacional e limitações de par alelismo, r ef or çando a necessidade de r eengenharia das 
+r otinas para um ambient e distribuído. 
+
+Embora o in v entário complet o r epr esent e t odo o ecossist ema SAS do GRF , f oi f eit o uma 
+r epriorização e r esult ou na seleção de um subconjunt o prioritário de script s, concentrado 
+e x clusiv ament e nas r otinas críticas,  r egulat órias ou fundamentais para a cadeia de cálculo 
+de risco financeir o.
+Essa priorização r eduz significativ ament e o 
+v olume inicial de migração, permitindo:
+F ocar primeir o nos pr ocessos de 
+maior impact o r egulat ório;
+Eliminar r otinas obsoletas, 
+r edundant es ou de baixa utilização;
+Diminuir esf or ço e t empo de migração;
+Aumentar a pr e visibilidade e a 
+eficiência da entr ega;
+Criar uma “est eira pilot o” sólida para 
+as demais ondas de migração.
+O no v o backlog de migração r epr esenta 
+apenas os grupos essenciais ao 
+funcionament o das car gas e cálculos de 
+risco — como FRTB, IRRBB, L CR, RMEL, 
+Cust os PD /AED /L GD , CERM, DDR, 
+Segmentação, entr e outr os.
+Pr oposta Comer cial Nº 2025187 4
+Resumo
+ 
+Cenário
+ Experiência
+Jump
+Esteira
+SAS
+Histórico e
+Empresas 
+Esteira
+de Migração
+Abordagem
+IA First
+Diferencial
+ Critérios
+ Esteira
+ Validação
+ Agile Team
+ Perfis
+ Estrutura
+ Modelo
+ Plano
+ Validação
+ Premissas
+ Fora do 
+Backlog Alvo
+Atenção
+
+
+----- PÁGINA 11 -----
+Cenário A tual
+A migração para o Databricks visa modernizar e simplificar essa ar quit etur a, pr omo v endo a 
+r eescrita das lógicas SAS em PySpark, com apr o v eitament o do pr ocessament o 
+distribuído e das boas práticas de engenharia de dados. 
+
+Essa iniciativ a r epr esenta um mar co de tr ansf ormação t ecnológica e oper acional para o 
+GRF . Ao migrar para o Databricks, o Bradesco pa vimenta o caminho para uma operação 
+analítica mais eficient e, padr onizada e escalá v el, r eduzindo cust os de pr ocessament o, 
+acelerando o t empo de entr ega de inf ormações e f or talecendo a go v ernança de dados 
+críticos para o cálculo de risco financeir o.
+Pr oposta Comer cial Nº 2025187 4
+R esumo
+ 
+Cenário
+ Experiência
+Jump
+Est eir a
+S A S
+Hist órico e
+Empr esas 
+Est eir a
+de Migr ação
+Abor dagem
+IA First
+Dif er encial
+ Crit érios
+ Est eir a
+ V alidação
+ A gile T eam
+ P er fis
+ Estrutur a
+ Modelo
+ Plano
+ V alidação
+ Pr emissas
+ F or a do 
+Backlog Alv o
+A t enção
+
+
+----- PÁGINA 12 -----
+Pr oposta Comer cial Nº 2025187 4
+Experiência  
+Jump 
+Migrar pr ocessos analíticos de uma instituição financeira é uma 
+decisão estrat égica que influencia dir etament e a eficiência 
+oper acional e o v alor das inf ormações.
+A  ent ende essa comple xidade e se posiciona como 
+par ceira do  para conduzir a migração dos pr ocessos 
+SAS para o Databricks com pr ecisão t écnica, int eligência e 
+fluidez nas entr egas.
+Jump
+Br adesco
+R esumo
+ 
+Cenário
+ Experiência
+Jump
+Est eir a
+S A S
+Hist órico e
+Empr esas 
+Est eir a
+de Migr ação
+Abor dagem
+IA First
+Dif er encial
+ Crit érios
+ Es t eir a
+ V alidação
+ A gile T eam
+ P er fis
+ Estrutur a
+ Modelo
+ Plano
+ V alidação
+ Pr emissas
+ F or a do 
+B ac k log Al v o
+A t enção
+
+
+----- PÁGINA 13 -----
+Pr oposta Comer cial Nº 2025187 4
+Experiência Jump 
+Experiência consolidada em Databricks e pr ojet os de dados comple x os 
+A Jump é par ceir a oficial da Databricks e possui ampla e xperiência em engenharia de 
+dados,  go v ernança e modernização analítica. A tua em pr ojet os de migração e 
+r eestruturação de ambient es legados, com entr egas r ealizadas para instituições financeiras, 
+seguradoras, empr esas de saúde, educação e v ar ejo. 
+Essa viv ência permit e atuação com domínio sobr e ar quit etur as Lak ehouse,  pipelines 
+em PySpark,  Unity Catalog,  v ersionament o e camadas Br onz e,  Silv er e Gold, sempr e 
+alinhada às boas práticas do ecossist ema Databricks. 
+Engenharia orientada ao negócio 
+A atuação da Jump combina conheciment o t écnico e visão funcional. Cada r otina migrada é 
+tratada de f orma int egrada, considerando sua r ele v ância para o negócio e as opor tunidades 
+de otimização que o no v o ambient e of er ece. 
+A  Squad Migração SAS para Databricks  f oi estruturada para traduzir os flux os atuais 
+em  pipelines PySpark otimizados , pr eser v ando a lógica de negócio, aprimorando 
+desempenho e ampliando go v ernança e rastr eabilidade dos dados. 
+M et odologia q ue aceler a v alor 
+A Jump adota um modelo de est eir a cont í nua de migr a çã o, com entr egas incr ementais e 
+visibilidade constant e. Esse f ormat o permit e que o   acompanhe a e v olu çã o do 
+tr a b alho a cada sprint, pr omo v endo apr endizado e pr e visibilidade em t odas as etapas. 
+Bradesco
+Cada car ga migrada é v alidada de f orma t écnica e funcional, com documentação detalhada 
+dos output s e rastr eabilidade dos r esultados obtidos. 
+P ar ceria q ue impulsiona a moderni z a çã o 
+M ais do que uma e x ecução t écnica, a atuação da Jump r epr esenta uma par ceria estrat égica 
+v oltada à modernização analítica do  .  Bradesco
+A  Squad Migração SAS para Databricks  f oi concebida para apoiar o GRF  na transição para 
+uma ar quit etura moderna e escalá v el, com f oco em eficiência, contr ole e continuidade 
+e v olutiv a do ambient e analítico. 
+Resumo
+ 
+Cenário
+ Exp eri ê n c i a
+J um p
+E s t eir a
+SAS
+H is tó ri co  e
+E m p res a s 
+E s t eir a
+d e M i g r ação
+Abo r dag e m
+IA  F irs t
+D i f eren c i al
+ Cri té ri os
+ E s teira
+ Val i daçã o
+ Ag i l e T e am
+ P er f i s
+ E s t ru t ur a
+ Mod e l o
+ Pla no
+ Val i daçã o
+ P remiss as
+ Fo r a  do  
+Backlog  Alvo
+At en çã o
+
+
+----- PÁGINA 14 -----
+Est eir a de Migr ação 
+ 
+ 
+de S A S 
+Ao longo dos últimos meses, estruturamos e e x ecutamos com sucesso uma 
+est eira de migração de pr ocessos S A S, com atuação contínua baseada em 
+sprint s quinz enais. Essa jornada permitiu uma transição contr olada, segura e 
+escalá v el de flux os críticos de dados, inicialment e desen v olvidos em SAS, para 
+um ambient e moderno, em nuv em, com t otal ader ência às práticas de 
+go v ernança, per f ormance e aut omação e xigidas por grandes empr esas. 
+
+A estrat égia adotada en v olv eu uma squad multidisciplinar composta por 
+engenheir os de dados, ar quit et o de soluções e agile mast er, atuando com 
+met odologia ágil, f erramenta pr ópria de aceleração  e pr ocessos 
+it erativ os para a v aliação, con v ersão, t est es e implantação. 
+(Migr at eMind)
+Pr oposta Comer cial Nº 2025187 4
+R esumo
+ 
+Cenário
+ Experiência
+Jump
+Est eir a
+S A S
+Hist órico e
+Empr esas 
+Est eir a
+de Migr ação
+Abor dagem
+IA First
+Dif er encial
+ Crit érios
+ Est eir a
+ V alidação
+ A gile T eam
+ P er fis
+ Estrutur a
+ Modelo
+ Plano
+ V alidação
+ Pr emissas
+ F or a do 
+Backlog Alv o
+A t enção
+
+
+----- PÁGINA 15 -----
+Est eir a de Migr ação   de S A S
+Desafios
+Alt o cust o e rigidez do ecossist ema S A S
+Escalabilidade limitada e r estrições de int egr ação com nuv em
+Comple xidade t écnica de códigos legados e macr os
+Baix a r astr eabilidade e ausência de v ersionament o f ormal
+Necessidade de migr ação sem int errupção de flux os oper acionais críticos. 
+Solução aplicada
+A est eir a permitiu con v er t er os pr ocessos de f orma 
+estrutur ada,  usando int eligência ar tificial par a mapear ,  
+classificar e tr aduzir script s de S A S par a PySpark/SQL,  
+com aut omação e int egr ação com Delta Lak e e Unity 
+Catalog.  A entr ega contínua gar antiu visibilidade,  
+pr e visibilidade e f or t e go v ernança,  minimizando riscos 
+oper acionais e pr omo v endo uma tr ansição pr ogr essiv a,  
+com en v olviment o do time t écnico do client e. 
+Pr oposta Comer cial Nº 2025187 4
+R esumo
+ 
+Cenário
+ Experiência
+Jump
+Est eir a
+S A S
+H ist órico e
+Empr esas 
+Est eir a
+de M igr ação
+Abor dage m
+I A F irst
+D if er encia l
+ Crit ério s
+ Es t eir a
+ V alidação
+ A gile T ea m
+ P er fi s
+ Estrutur a
+ M odelo
+ P lano
+ V alidação
+ P r emissa s
+ F or a do 
+Bac k log Alv o
+A t enção
+
+
+----- PÁGINA 16 -----
+Est eir a de Migr ação  de S A S
+Benefícios | T écnicos e Estrat égicos: 
+1 T r ansição gr adual e sem necessidade de escopo f echado
+3 A celer ação via f err amenta Migr at eMind com IA aplicada
+2 Maior r astr eabilidade com uso de Unity Catalog
+4 T est es de paridade e per f ormance
+5 Or questr ação dos flux os dir etament e na no v a plataf orma
+6 Entr egas quinz enais com visibilidade e contr ole
+8 Time t écnico e xperient e em pr ojet os de gr ande por t e
+7 Escalabilidade nativ a da ar quit etur a lak ehouse
+9 Go v ernança r ef or çada por boas pr áticas e f err amentas nativ as
+10 Consult oria t écnica e ar quit etur al contínua
+Proposta Comercial Nº 20251874
+R esum o
+ 
+Cenári o
+ Experi ê nci a
+J ump
+Est eir a
+S A S
+H ist ó rico e
+Empr esas 
+Est eir a
+de Migr ação
+Abor dage m
+IA F irst
+D if er encia l
+ Crit ério s
+ Est eir a
+ V alidaçã o
+ A gile T ea m
+ P er fi s
+ Estrutur a
+ Model o
+ P lan o
+ V alidaçã o
+ P r emissa s
+ F or a do 
+B acklog Alv o
+A t ençã o
+
+
+----- PÁGINA 17 -----
+Est eir a de Migr ação  de S A S
+Benefícios | Operacionais e de Negócio: 
+1 R edução significativ a dos cust os com licenciament o
+3 Modernização da ar quit etur a analítica da empr esa
+2 Aument o da eficiência dos pr ocessos de dados
+4 R edução de r etr abalhos e riscos na con v ersão
+5 Maior fle xibilidade par a ajust es e ino v ações contínuas
+6 Aut onomia e visibilidade par a ár eas de negócio e TI
+8 T r ansf er ência de conheciment o par a os times int ernos
+7 Planejament o adaptativ o com f oco em v alor de negócio
+9 A doção de pr áticas modernas de v ersionament o e go v ernança
+10 Alinhament o com ecossist emas modernos de BI e analytics
+Pr oposta Comer cial Nº 2025187 4
+R esumo
+ 
+C enário
+ E xperiênci a
+J ump
+E st eir a
+S A S
+H ist órico e
+E mpr esas 
+E st eir a
+de Migr ação
+Abor dage m
+IA F irst
+D if er encia l
+ C rit é rio s
+ E st eir a
+ V alidação
+ A gile T ea m
+ P er fi s
+ E strutur a
+ Modelo
+ Plano
+ V alidação
+ Pr emissa s
+ F or a do 
+Bac k log Alv o
+A t enção
+
+
+----- PÁGINA 18 -----
+Hist órico de Ex ecução  
+e Empr esas A t endidas 
+Essa est eira já f oi aplicada em grandes or ganizações de dif er ent es set or es, 
+sempr e adaptando o modelo às suas necessidades operacionais, ar quit etura 
+t ecnológica e go v ernança int erna. A tuamos com sucesso em empr esas como: 
+Grupo do set or de saúde suplementar , com f or t e v olume de 
+dados operacionais e alta r egulamentação, onde f oi necessário 
+garantir rastr eabilidade e conf ormidade ao migrar flux os 
+analíticos críticos. 
+Infraestrutura do mer cado financeir o nacional, com sist emas 
+altament e críticos e e xigência de per f ormance, r edundância e 
+contr ole rigor oso de acessos e rastr os de audit oria. 
+Uma das maior es empr esas de meios de pagament o da América 
+Latina, com alta v olumetria e r equisit os rígidos de per f ormance, 
+onde a est eira viabiliz ou a modernização de pr ocessos de BI e 
+antifraude com agilidade e segurança. 
+Empr esa de super visão e monit orament o de mer cado com 
+f oco r egulat ório, que demanda v a pr ecisão nos t est es, 
+int egridade dos dados migrados e f or t e compliance. 
+Pr oposta Comer cial Nº 2025187 4
+R esumo
+ 
+Cenário
+ Experiência
+Jump
+Est eir a
+S A S
+Hist órico e
+Empr esas 
+Est eir a
+de Migr ação
+Abor dagem
+IA First
+D i f er encia l
+ Crit é rio s
+ Es teira
+ V a l idação
+ A gi l e T eam
+ P er f i s
+ Estrutur a
+ Mode l o
+ Pl ano
+ V a l idação
+ P r emissa s
+ F or a do 
+B ac kl og A lv o
+A t enção
+
+
+----- PÁGINA 19 -----
+Esteira de Migração
+Metodologia Validada
+Diagnóstico
+Assessment técnico 
+dos códigos e 
+componentes legados
+Levantamento da 
+volumetria, categorização 
+por complexidade
+Criação do 
+Backlog
+Organização das frentes 
+em backlog priorizado 
+por valor de negócio
+Avaliação de 
+interdependências e riscos 
+operacionais
+Conversão 
+Técnica
+Uso dos motores de 
+IA para acelerar a 
+conversão.
+Uso dos motores de IA 
+para acelerar a 
+conversão.
+Validações e 
+Testes
+Testes de paridade 
+(resultado, performance)
+Relatórios de controle de 
+paridade e log de 
+conformidade
+Implantação 
+Contínua
+E ntregas q uinzenais 
+com monitoramento e 
+evolução cont í nua
+Acompan h amento pós -
+implantação, com 
+das hb oards e a j ustes finos
+Encerramento 
+e E x pansão
+D ocumentação, transfer ê ncia 
+de con h ecimento e e x pansão 
+para novas frentes
+D escomissionamento 
+de ferramentas 
+legadas
+1 42 53 6
+P roposta C omercial Nº  20251874
+R esum o
+ 
+C en á ri o
+ Ex peri ê nci a
+J ump
+E steir a
+S A S
+H istórico e
+E mpresas 
+E steir a
+de M igração
+Abordage m
+IA F irst
+D iferencia l
+ C ritério s
+ E steir a
+ V alidaçã o
+ Agile Tea m
+ P erfi s
+ E strutur a
+ M odel o
+ P lan o
+ V alidaçã o
+ P remissa s
+ F ora do 
+B acklog Alvo
+Atençã o
+
+
+----- PÁGINA 20 -----
+Pr oposta Comer cial Nº 2025187 4
+Abor dagem 
+IA First 
+A  adota uma abor dagem IA First para a migração das r otinas SAS 
+para o Databricks, combinando aut omação a v ançada usando 
+Int eligência Ar tificial tr adicional e Gener ativ a.
+Jump
+De migr ação manual para 
+int eligência aut omatizada.
+Essa estrat égia t em como objetiv o r eduzir significativ ament e o esf or ço 
+t écnico, aumentar a pr ecisão da con v ersão e agilizar a v alidação dos 
+r esultados, utilizando múltiplos mot or es de int eligência ar tificial 
+int egrados à met odologia 
+Migr at eMind.
+R esumo
+ 
+Cenário
+ Experiência
+Jump
+Est eir a
+S A S
+Hist órico e
+Empr esas 
+Est eir a
+de Migr ação
+A b or dage m
+I A F irst
+D i f er encia l
+ Crit é rio s
+ E st eir a
+ V a l idação
+ A gi l e T ea m
+ P er f i s
+ Estrutur a
+ Mode l o
+ Pl ano
+ V a l idação
+ P r emissa s
+ F or a do 
+B ac kl og A lv o
+A t enção
+
+
+----- PÁGINA 21 -----
+Pr oposta Comer cial Nº 2025187 4
+Abor dagem 
+IA First 
+Ecossist ema de  A celer ação 
+Além do Migr at eMind, são empr egados mecanismos complementar es de IA e 
+módulos de otimização, f ormando um ecossist ema int egrado de aceleração:
+Lak ebridge (Databricks) 
+Mot or nativ o de tradução SAS → PySpark, utilizado para con v ersão aut omatizada de blocos PROC 
+SQL, com mapeament o dir et o para estruturas Delta Lak e.
+Mecanismo de V alidação Semântica
+Aplica machine learning e análise semântica de metadados para identificar aut omaticament e 
+corr espondências entr e campos e tabelas SAS e suas contrapar t es no Databricks. 
+Esse mot or é especialment e eficaz em cenários onde:
+Os nomes das colunas ou tabelas mudar am durant e a migração;
+Não há documentação atualizada sobr e o mapeament o das estruturas originais; 
+Ou é necessário compar ar dir etament e as tabelas S A S e Databricks para inf erir equiv alências.
+
+A par tir dessa análise, o mecanismo ger a o “de/par a” aut omático dos campos,  documentando 
+peculiaridades, e x ceções e r egras de transf ormação específicas do client e.   
+O r esultado é uma camada adicional de rastr eabilidade e confiabilidade t écnica, r eduzindo o esf or ço 
+manual de análise e f oco na consist ência entr e origem e destino. 
+M ó d u lo de A n á lise de I m p act o e Similaridade
+I dentifica b locos de código r edundant es e padr õ es r eutiliz á v eis entr e r otinas S A S , otimizando 
+a estrutura dos not e b oo k s gerados no D ata b ric k s e e v itando r eescritas desnecess á rias .  
+C om esse con j unt o de mot or es, o pr ocesso de migração e v olui de uma e x ecução tradicional 
+para um modelo orientado por dados e apr endizado cont í nuo, no q ual a I A atua de ponta a 
+ponta: desde a con v ersão at é a v alidação funcional dos output s .  
+R esumo
+ 
+Cenário
+ Experiência
+Jump
+Est eir a
+S A S
+Hist órico e
+Empr esas 
+Est eir a
+de Migr ação
+Abor dagem
+IA First
+Dif er encial
+ Crit érios
+ Est eir a
+ V alidação
+ A gile T eam
+ P er fis
+ Estrutur a
+ Modelo
+ P lano
+ V alidação
+ P r emissas
+ F or a do 
+B ac k log Al v o
+A t enção
+
+
+----- PÁGINA 22 -----
+Pr oposta Comer cial Nº 2025187 4
+Abor dagem 
+IA First 
+Ganhos de Pr odutividade
+A abor dagem IA First pr opor ciona r eduções e xpr essiv as no esf or ço, 
+cust os e praz os de migração, comparadas aos benchmarks tradicionais 
+de mer cado:
+Na pr ática: Uma migração que tradicionalment e e xigiria 12 meses pode 
+ser concluída em at é 5 meses, com v alidação contínua, menor cust o de 
+r etr abalho e paridade lógica assegur ada.
+R esumo
+ 
+Cenário
+ Experiência
+Jump
+Est eir a
+S A S
+Hist órico e
+Empr esas 
+Est eir a
+de Migr ação
+Abor dagem
+IA First
+Dif er encial
+ Crit érios
+ E st eir a
+ V alidação
+ A gile T eam
+ P er fis
+ Estrutur a
+ Modelo
+ Plano
+ V alidação
+ Pr emissas
+ F or a do 
+B ac k log Al v o
+A t enção
+
+
+----- PÁGINA 23 -----
+Pr oposta Comer cial Nº 2025187 4
+Esses ganhos são obtidos pela combinação dos mot or es, que aut omatizam a maior par t e do mapeament o, r eescrita e comparação entr e os ambient es, liberando o 
+time t écnico para f oco em ajust es de per f ormance e otimização de negócio.
+Ganhos de Pr odutividade
+Abor dagem IA First 
+BAIXA 
+COMPLEXID ADE
+- 7 6%
+com IA 
+First(Jump )
+5 Hor as
+> 1 dia
+JumpT r adicional
+21 Hor as
+~ 3 dias
+MÉDIA
+COMPLEXID ADE
+-66%
+com IA 
+First(Jump )
+12 Hor as
+2 a 3 dias
+JumpT r adicional
+35 Hor as
+~ 1 semana
+-55%
+com IA 
+First(Jump )
+JumpT r adicional
+49 Hor as
+~  10 dias
+22 Hor as
+4  a 5  dias
+AL T A
+COMPLEXID ADE
+{
+{
+{
+R esumo
+ 
+C enário
+ E xperiência
+Jump
+E st eir a
+S A S
+Hist órico e
+E mpr esas 
+E st eir a
+de M igr ação
+A bor dagem
+IA  First
+D if er encial
+ C rit érios
+ E st eir a
+ V alidação
+ A gile T eam
+ P er fis
+ E strutur a
+ M odelo
+ P lano
+ V alidação
+ P r emissas
+ F or a do 
+B acklog A lv o
+A t enção
+
+
+----- PÁGINA 24 -----
+Pr oposta Comer cial Nº 2025187 4
+Abor dagem 
+IA First 
+Met odologia de V alidação –                            
+IA A ssist ed V alidation  
+Para sust entar esses nív eis de eficiência e qualidade, a Jump aplica o mét odo IA 
+A ssist ed V alidation, que alia int eligência ar tificial à super visão t écnica humana.  
+A v alidação ocorr e por amostr agem int eligent e e v erificação aut omatizada de 
+consist ência, priorizando equiv alência lógica e v olumétrica dos r esultados, sem a 
+necessidade de inspeção campo a campo. 
+R esumo
+ 
+Cenário
+ Experiência
+Jump
+Est eir a
+S A S
+Hist órico e
+Empr esas 
+Est eir a
+de Migr ação
+Abor dagem
+IA First
+Dif er encial
+ Crit érios
+ E st eir a
+ V alidação
+ A gile T eam
+ P er fis
+ Estrutur a
+ Modelo
+ Plano
+ V alidação
+ Pr emissas
+ F or a do 
+B ac k log Al v o
+A t enção
+
+
+----- PÁGINA 25 -----
+Pr oposta Comer cial Nº 2025187 4
+Abor dagem 
+IA First 
+Met odologia de V alidação –                            
+IA A ssist ed V alidation  
+A spect o Abor dagem IA A ssist ed (Jump )
+Abor dagem Ger al 
+Migração com f oco na equiv alência lógica e funcional entr e SAS 
+e Databricks. 
+Mét odo de 
+V alidação 
+V alidação int eligent e por amostr agem, com det ecção 
+aut omatizada de anomalias e div er gências. 
+Escopo de 
+Conf er ência 
+Compar ação de contagem de r egistr os,  somat órios e 
+int egridade de cha v es, com v arr edura aut omatizada em campos 
+críticos. 
+Crit ério de A ceit e 
+A ceit e b aseado em paridade lógica e v olum é trica, r espeitando 
+mar gens t é cnicas pr e viament e acor dadas. 
+Impact o no P r a z o 
+V alidação á gil e pr editiv a, com es f or ço r eduzido em r elação ao 
+desen v olviment o. 
+R esultado 
+Esper ado 
+A der ência f uncional, consist ência analítica e rastr ea b ilidade 
+completa entr e SAS  e D ata b ric k s. 
+Essa abor dagem IA First r eposiciona o pr ocesso de migração SAS → Databricks 
+como uma jornada int eligent e e auditá v el, r eduzindo o esf or ço t écnico, 
+acelerando entr egas e com f oco na paridade funcional com go v ernança e 
+rastr eabilidade ponta a ponta. 
+R esumo
+ 
+Cenário
+ Experiência
+Jump
+Est eir a
+S A S
+Hist órico e
+Empr esas 
+Est eir a
+de Migr ação
+A b or dage m
+I A F irst
+D i f er encia l
+ Crit é rio s
+ Es t eir a
+ V a l idação
+ A gi l e T ea m
+ P er f i s
+ Estrutur a
+ Mode l o
+ Pl ano
+ V a l idação
+ P r emissa s
+ F or a do 
+B ac kl og A lv o
+A t enção
+
+
+----- PÁGINA 26 -----
+Pr oposta Comer cial Nº 2025187 4
+Dif er encial Competitiv o  
+da Jump 
+A abor dagem IA First coloca a Jump anos à fr ent e das pr áticas 
+tr adicionais de migração, permitindo: 
+A celer ação compr o v ada: R edução de at é 7 0% no t empo t otal de con v ersão; 
+Aut omação int eligent e com geração aut omática de de/para e documentação viv a; 
+R edução de risco oper acional,  mitigando err os humanos e div er gências não 
+rastr eadas; 
+Maior ROI  para o client e, com menor cust o t otal e r esultados ant ecipados. 
+C om e ss a abor dagem, o B rade s co pa ss a a contar com um pipeline de 
+migr ação int eligent e,  audit áv el e escal áv el, capa z  de s u s t entar f utura s  
+onda s  de con v er s ão com pr e v i s ibilidade e e f ici ê ncia t é cnica in é dita s.  
+Resumo
+ 
+Cenário
+ Experiência
+Jump
+Esteira
+SAS
+Histórico e
+Empresas 
+Esteira
+de Migração
+Abordagem
+IA First
+Diferencial
+ Critérios
+ Esteira
+ Valida ção
+ Agile Team
+ Perfis
+ Estrutura
+ Modelo
+ Plano
+ Validação
+ Premissas
+ Fora do 
+Backlog Alvo
+Atenção
+
+
+----- PÁGINA 27 -----
+Pr oposta Comer cial Nº 2025187 4
+Crit érios de Comple xidade 
+Para dimensionar o esf or ço de migração e garantir pr e visibilidade na e x ecução, a  adota 
+uma met odologia de classificação por comple xidade t écnica e lógica de pr ocessament o, 
+baseada em crit érios objetiv os r elacionados à estrutura dos códigos SAS, às dependências 
+entr e etapas e à densidade das transf ormações aplicadas.
+Essa cat egorização permit e or ganizar o backlog de f orma estrat égica, equilibrando a 
+capacidade da squad e priorizando entr egas conf orme o grau de esf or ço, risco e pot encial de 
+aut omação de cada r otina.
+Jump
+Baix a Comple xidade 
+R otinas com estrutura simples e compor tament o pr edominant ement e declarativ o, compostas por 
+transf ormações dir etas e baix o acoplament o entr e etapas. 
+Car act erísticas: 
+Pr edominância de blocos PROC SQL ou D A T A STEP linear es, com operações de filtr o, junção e 
+agr egação simples. 
+Ausência de macr os, ou uso apenas para parametrização básica ( e x.: caminhos, datas, v ariá v eis 
+globais). 
+Dependência mínima de ar quiv os e xt ernos ou tabelas int ermediárias. 
+T ransf ormações f acilment e mapeá v eis e com baix o risco de div er gência funcional. 
+Ele v ado pot encial de aut omação e r eescrita dir eta no Databricks. 
+R esumo
+ 
+Cenário
+ Experiência
+Jump
+Est eir a
+S A S
+Hist órico e
+Empr esas 
+Est eir a
+d e M i g r a çã o
+A b or d a g e m
+I A F irst
+D i f er encia l
+ Crit é rio s
+ Est eir a
+ Valida çã o
+ A g i l e T ea m
+ P er f i s
+ Estrutur a
+ M o d e l o
+ Pl ano
+ V a l i d a çã o
+ P r emissa s
+ F or a d o 
+B ac kl o g  A lv o
+A t en çã o
+
+
+----- PÁGINA 28 -----
+Pr oposta Comer cial Nº 2025187 4
+Crit érios de Comple xidade 
+Média Comple xidade 
+R otinas com múltiplos estágios de transf ormação e aplicação de r egras condicionais pontuais, 
+demandando análise manual e ajust es de per f ormance durant e a migração. 
+Car act erísticas: 
+Combinação de blocos PROC SQL e D A T A STEP com dependência sequencial entr e etapas. 
+Uso moderado de macr os para contr ole de flux o, loops simples ou parametrização int ermediária. 
+Agr egações condicionais e cálculos deriv ados com base em múltiplas origens de dados. 
+Dependência moderada de tabelas t emporárias ou ar quiv os auxiliar es. 
+Necessidade de r efino de sintax e e otimização para e x ecução distribuída. 
+R esumo
+ 
+Cenário
+ Experiência
+Jump
+Est eir a
+S A S
+Hist órico e
+Empr esas 
+Est eir a
+de Migr ação
+Abor dagem
+IA First
+Dif er encial
+ Crit érios
+ Est eir a
+ V alida ção
+ A gi l e T eam
+ P er fis
+ Estrutur a
+ Mode l o
+ Pl ano
+ V a l idação
+ P r emissas
+ F or a do 
+B ac kl og A lv o
+A t enção
+
+
+----- PÁGINA 29 -----
+Pr oposta Comer cial Nº 2025187 4
+Crit érios de Comple xidade 
+Alta Comple xidade 
+R otinas compostas por múltiplas camadas de pr ocessament o, alta densidade de r egras e 
+dependências cruzadas entr e flux os, e xigindo r eengenharia completa para equiv alência funcional e 
+per f ormance otimizada no Databricks. 
+Car act erísticas: 
+Uso int ensiv o de macr os aninhadas, v ariá v eis globais e chamadas dinâmicas ( call e x ecut e, r esolv e, 
+et c.). 
+Int egração com múltiplas f ont es de dados e comandos pass-t hr ough para consultas comple xas. 
+T ransf ormações multietapas, com r euso de tabelas t emporárias e alt o v olume de dados 
+pr ocessados. 
+Dependência de output s de outras r otinas, e xigindo coor denação e v alidação em cadeia. 
+Necessidade de r ef at oração estrutural e criação de pipelines modular es em PySpark. 
+R esumo
+ 
+Cenário
+ Experiência
+Jump
+Est eir a
+S A S
+Hist órico e
+Empr esas 
+Est eir a
+de Migr ação
+Abor dagem
+IA First
+Dif er encial
+ Crit érios
+ Est eir a
+ V alida ção
+ A gi l e T eam
+ P er fis
+ Estrutur a
+ Mode l o
+ Pl ano
+ V a l idação
+ P r emissas
+ F or a do 
+B ac kl og A lv o
+A t enção
+
+
+----- PÁGINA 30 -----
+Com esse modelo,  a  
+pr opor ciona:
+
+Pr e visibilidade operacional, contr ole 
+de qualidade contínuo e e v olução 
+pr ogr essiv a da est eira de migração, 
+em linha com as melhor es práticas de 
+engenharia e go v ernança de dados. 
+Jump
+Pr oposta Comer cial Nº 2025187 4
+Crit érios de 
+Comple xidade 
+Aplicação da Classificação 
+Essa met odologia de classificação orienta: 
+O planejament o das sprint s e o ritmo de e x ecução da squad, equilibrando 
+comple xidades entr e entr egas; 
+A definição do nív el de aut omação e int er v enção manual em cada r otina; 
+A priorização das migr ações com maior impact o t écnico e analítico; 
+A manut enção da r astr ea b ilidade e consist ê ncia funcional entr e SAS  
+e  D atabric k s .  
+Resumo
+ 
+Cenário
+ Experiência
+Jump
+Esteira
+SAS
+Histórico e
+Empresas 
+Esteira
+de Migração
+Abordagem
+IA First
+Diferencial
+ Critérios
+ Esteira
+ Valida ção
+ Agile Team
+ Perfis
+ Estrutura
+ Modelo
+ Plano
+ Validação
+ Premissas
+ Fora do 
+Backlog Alvo
+Atenção
+
+
+----- PÁGINA 31 -----
+Pr oposta Comer cial Nº 2025187 4
+Est eir a de Migr ação 
+A Jump pr opõe a condução da migração das r otinas SAS do GRF em f ormat o de est eir a contínua, or ganizada em sprint s quinz enais e e x ecutada por uma squad dedicada. 
+Esse modelo permit e que a migração ocorra de f orma gr adual,  v alidada e contr olada, com entr egas incr ementais a cada sprint. A abor dagem f oca em go v ernança,  pr e visibilidade e 
+r astr eabilidade do pr ogr esso, r eduzindo riscos e de modo que cada r otina migrada seja v alidada t ecnicament e e funcionalment e ant es de sua publicação no ambient e Databricks. 
+1
+Planejament o e Priorização das R otinas
+Definição colaborativ a entr e Jump e Bradesco das r otinas 
+SAS a ser em migradas em cada sprint, com base em crit érios 
+de: 
+Criticidade para o negócio de risco financeir o, 
+Comple xidade t écnica, 
+Dependências entr e pr ocessos e tabelas int ermediárias. 
+Essa priorização é orientada pelos dados le v antados no 
+in v entário do GRF e pelo modelo de classificação de 
+comple xidade definido pr e viament e. 
+2
+Con v ersão e Desen v olviment o 
+R eescrita das r otinas SAS em  PySpark no 
+Databricks , pr eser v ando a lógica de 
+negócio e e xplorando os r ecursos nativ os de 
+pr ocessament o distribu í do, v ersionament o e 
+go v ernança da plataf orma.   
+A atuação combina aut omação e engenharia 
+manual: 
+Uso da met oologia IA First para leitura, 
+análise e con v ersão estruturada de 
+blocos SAS, 
+Ajust es t écnicos para ader ência às 
+boas práticas do Lak ehouse. 
+3
+T est es e V alidação
+Comparação detal h ada entr e os r esultados SAS e Databricks 
+seguindo a Abor dagem IA A ssist ed,  visando  paridade lógica 
+e v olumétrica  dos output s. 
+São aplicadas r otinas de v erificação que incluem: 
+Equiv alência de v olume e estrutura das tabelas, 
+Consist ência de cálculos e r egras de negócio.
+Cada entr ega é v alidada t ecnicament e pelo time do GRF e 
+documentada no r eposit ório do pr ojet o, com f oco em 
+rastr eabilidade, transpar ência e contr ole de v ersões. 
+R esumo
+ 
+Cenário
+ Experiência
+Jump
+Est eir a
+S A S
+Hist órico e
+Empr esas 
+Est eir a
+d e M i g r a çã o
+A b or d a g e m
+I A F irst
+D i f er encia l
+ Crit é rio s
+ Es teira
+ V a l i d a çã o
+ A g i l e T ea m
+ P er f i s
+ Estrutur a
+ M o d e l o
+ Pl ano
+ V a l i d a çã o
+ P r emissa s
+ F or a d o 
+B ac kl o g  A lv o
+A t en çã o
+
+
+----- PÁGINA 32 -----
+Pr oposta Comer cial Nº 2025187 4
+Est eir a de Migr ação 
+4
+R e visão e Apr endizado Contínuo
+Encerrament o de cada sprint com uma r e visão conjunta entr e Jump e 
+GRF , cont emplando: 
+Análise de per f ormance das r otinas migradas, 
+Lições apr endidas, 
+Ajust es de comple xidade e priorização para os pr ó ximos ciclos. 
+Esse mecanismo busca melhoria contínua e e v olução incr emental da 
+est eira de migração, f or talecendo a pr e visibilidade e a eficiência 
+operacional. 
+5
+Plano de Sust entação e Hando v er dos 
+Pr ocessos
+Ao t érmino da e x ecução da est eira, será conduzida uma f ase estruturada 
+de sust entação super visionada e hando v er t écnico,  com f oco na 
+transição completa das r otinas migradas para o ambient e pr odutiv o.
+ 
+Essa etapa cont empla:
+Ex ecução super visionada das car gas migr adas, monit orando 
+per f ormance, logs e compor tament o dos pipelines;
+T r einament o e tr ansf er ência de conheciment o às equipes do Bradesco, 
+com f oco na aut onomia para manut enção e e v olução das r otinas;
+Checklist t écnico e documentação final, incluindo not ebooks v ersionados, 
+flux os or questrados e logs de e x ecução;
+V alidação de estabilidade e aceit e t écnico conjunt o (Jump + Bradesco ).
+O  plano de h ando v er é  conduzido de f orma gradual, com supor t e ativ o da 
+Jump durant e o per í odo de esta b ilização, visando continuidade 
+oper acional sem descontinuidade t écnica.
+6
+E ntr e g a F inal e Pu b licação e m  Pr odução
+A entr ega final de cada pr ocesso migrado será r ealizada em ambient e 
+pr odutiv o,  de vidament e v alidado,  homologado e oper acional,  em 
+par ceria entr e o Br adesco e a Jump.
+A pu b licação será conduzida de f orma contr olada, r espeitando as janelas 
+pr odutiv as e políticas int ernas do Br adesco,  com f oco na continuidade 
+dos flux os anal í ticos sem impact os à s operações e xist ent es.
+A r otina poderá ser pu b licada em um dos seguint es f ormat os:
+UCS;
+Produtos de Dados.
+D urant e as janelas de implantação e esta b ilização, a Jump pr estará apoio  
+t é cnico  super visionado , atuando em conjunt o com as e q uipes do 
+B radesco para:
+Acompan h ar a e x ecução inicial das car gas migradas ;
+M onit orar o compor tament o dos pipelines em pr odução ;
+Esse modelo de transição assistida f oi delineado de modo q ue todas as rotinas migradas cheguem ao estado final de uso efetivo,  permitindo q ue o B radesco obtenha valor de 
+negócio ao longo da iniciativa  com o no v o am b ient e anal í tico, dentr o dos padr ões de governança, segurança e performance corporativa  esta b elecidos.
+Resumo
+ 
+Cenário
+ Experiência
+Jump
+Esteira
+SAS
+Histórico e
+Empresas 
+Esteira
+de Migração
+Abordagem
+IA First
+Diferencial
+ Critérios
+ Esteira
+ Validação
+ Agile Team
+ P erfis
+ Estrutura
+ Modelo
+ P lano
+ Validação
+ P remissas
+ Fora do 
+B ac k log Al v o
+Atenção
+
+
+----- PÁGINA 33 -----
+Pr oposta Comer cial Nº 2025187 4
+V alidação 
+dos Output s
+Durant e a migração dos pr ocessos SAS para o Databricks, será conduzido um 
+pr ocesso sist emático de v alidação t écnica e funcional dos output s, com o 
+objetiv o de confirmar a consist ência entr e os r esultados gerados no ambient e 
+SAS e aqueles pr oduzidos na no v a estrutura em Databricks. 
+A  r ecomenda a adoção da Abor dagem IA A ssist ed V alidation, 
+met odologia que combina v erificação aut omatizada com super visão t écnica 
+humana, com f oco em pr ecisão e rastr eabilidade com alt o ganho de eficiência.  
+Essa abor dagem utiliza mecanismos de machine learning e det ecção 
+semântica para comparar output s, identificar anomalias, sugerir 
+corr espondências de campos e v alidar padr ões de agr egação e cálculos, 
+r eduzindo o t empo de r e visão manual. 
+Jump
+R esumo
+ 
+Cenário
+ Experiência
+Jump
+Est eir a
+S A S
+Hist órico e
+Empr esas 
+Est eir a
+de Migr ação
+Abor dagem
+IA First
+Dif er enci al
+ Crit érios
+ Est eir a
+ V alidação
+ A gile T eam
+ P er fis
+ Estrutur a
+ Modelo
+ Plano
+ V alidação
+ Pr emissas
+ F or a do 
+Backlog Alv o
+A t enção
+
+
+----- PÁGINA 34 -----
+Pr oposta Comer cial Nº 2025187 4
+V alidação dos Output s 
+A v alidação ocorr erá de f orma contínua ao longo da est eira, à medida que cada r otina SAS f or migrada, e incluirá comparações entr e v olumes, estruturas e v alor es 
+r esultant es, considerando as mesmas bases de entrada e r egras de negócio originalment e aplicadas.
+Os principais aspect os a v aliados incluem:
+Quantidade t otal 
+de r egistr os 
+pr ocessados
+Int egridade e 
+corr espondência dos 
+campos e f ormat os
+Consist ência de 
+cálculos e r egr as de 
+negócio aplicadas
+Conf ormidade com as 
+definições t écnicas e 
+funcionais do GRF
+Det ecção aut omatizada 
+de div er gências f or a 
+das mar gens de 
+t oler ância definidas
+É impor tant e destacar que, por se tratar em de mot or es de pr ocessament o distint os (S A S e Databricks), podem ocorr er pequenas v ariações em output s que en v olv em 
+funções de agr egação, cálculos condicionais ou arr edondament os. Essas v ariações não r epr esentam err o, mas sim dif er enças natur ais entr e engines analíticas.
+Assim, r ecomenda-se a definição conjunta entr e  e  de crit érios objetiv os de aceitação, tais como:
+Jump Bradesco
+M ar gem t écnica aceitá v el par a 
+v ariações numéricas ou de 
+agrupament o
+Casos em q ue a j ust es de lógica ser ão 
+necessários par a gar antir paridade funcional
+S ituações em q ue a e q uiv alência poder á ser h omologada 
+com b ase na  análise de negócio e consistência lógica,  
+mesmo sem identidade a b soluta dos output s
+As decisões sobr e equiv al ê ncia e ajust es serão condu z idas de f orma colaborativ a, com par ticipação dos r esponsá v eis t é cnicos do B radesco e acompan h ament o contínuo 
+da Squad M igração SAS para D atabric k s, priori z ando a  aderência funcional , a previsibilidade das entregas e a confiabilidade analítica  dos r esultados.
+R esum o
+ 
+Cenári o
+ Ex periênci a
+J ump
+E st eir a
+SAS
+H ist órico e
+E mpr esas 
+E st eir a
+de M igr ação
+Ab or dage m
+I A  First
+Dif er enci al
+ Crit ério s
+ E st eir a
+ V alidaçã o
+ A gile T ea m
+ P er fi s
+ E strutur a
+ M odel o
+ P lan o
+ V alidaçã o
+ P r emissa s
+ F or a do 
+B ac k log A lv o
+A t ençã o
+
+
+----- PÁGINA 35 -----
+Pr oposta Comer cial Nº 2025187 4
+T r ansição Estr at égica e Supor t e Super visionado
+Concluída a etapa de migração das r otinas SAS para o Databricks, inicia-se o Phaseout — f ase de transição planejada entr e a Squad de Migração e as equipes de 
+sust entação e operação analítica do Bradesco. Essa transição será conduzida de f orma conjunta entr e Jump e Bradesco, r espeitando as janelas pr odutiv as e assegurando 
+continuidade das operações durant e o pr ocesso de estabilização.
+Essa etapa t em como objetiv o a continuidade das oper ações,  consolidar o conheciment o t écnico tr ansf erido e estabilizar o ambient e Databricks ant es do 
+encerrament o f ormal do pr ojet o.
+A e x ecução do Phaseout seguirá um modelo pr ogr essiv o e super visionado, conf orme descrit o abaix o:
+T r ansição Gr adual das 
+R esponsabilidades
+Durant e as últimas sprint s, par t e da capacidade da squad 
+será dedicada à tr ansf er ência de conheciment o t écnico e 
+oper acional para o time int erno do Bradesco ou para as 
+células de sust entação contratadas. 
+As atividades incluem:
+Sessões de ha nd o v e r  t écnico e w alkt h r oug h  das r otinas 
+migradas ;
+T r einament os sobr e padr ões de c ó digo, v ersionament o e 
+boas práticas no Databricks ;
+Supor t e super visionado na e x ecução dos pipelines em 
+ambient e pr odutiv o ;
+Alin h ament o sobr e monit orament o, logs e estrat égias 
+para per f ormance tuning.
+P er í odo de S h ado w ing 
+(Acompanhamento Supervisionado)
+N as quatr o semanas subsequent es à migração, a equipe 
+Jump permanecerá em modo de sha d o wing , atuando como 
+apoio t écnico consulti v o,  com f oco em:
+Corr eção pontual de inconsist ê ncias ou ajust es de 
+configuração ;
+Apoio à estabilização dos pipelines em pr odução.
+Encerr a m ent o F or m al e 
+A v aliação Pó s -P r o j et o
+Ao t érmino do período de acompan h ament o, será conduzida 
+uma r e v is ã o e x ec u ti v a final ,  consolidando:
+R elat ó rio de migração, cont endo status das r otinas, 
+v olumetria migrada e v alidações concluídas ;
+R egistr o das decisões t écnicas e apr endizados 
+r ele v ant es ;
+R ecomendações de e v olução contínua e r oadmap para 
+aut omação adicional via IA F ir st  F r a m e w o r k.
+Resumo
+ 
+Cenário
+ Experiência
+Jump
+Esteira
+SAS
+Histórico e
+Empresas 
+Esteira
+de Migração
+Abordagem
+IA First
+Diferenci al
+ Critérios
+ Esteira
+ Validação
+ Agile Team
+ Perfis
+ Estrutura
+ Modelo
+ Plano
+ Validação
+ Premissas
+ Fora do 
+Backlog Alvo
+Atenção
+
+
+----- PÁGINA 36 -----
+A gile T eam
+F ormat o de tr abalho
+A  t em viv ência na e x ecução de pr ojet os utilizando met odologias ágeis para t odo 
+o ciclo de vida de dados na companhia. Seja em atividades de engenharia de dados, 
+visualização de dados ou análises a v ançadas, os mét odos ágeis t êm demonstrado 
+ganhos ef etiv os a nossos client es.
+
+A capacidade de adaptação às mudanças int ernas e/ou e xt ernas do negócio, o f oco em 
+entr egas de v alor e a gestão à vista são pilar es essenciais nest e tipo de at endiment o 
+que são eficient ement e supor tadas por pr ofissionais pr eparados e com e xperiência 
+nest e mét odo de e x ecução.
+
+O ser viço de Agile T eam permit e uma e x ecução cíclica de apr endizado contínuo, 
+ganho de eficiência e fle xibilidade que não são ef etiv ament e vist os em outr os 
+f ormat os de at endiment o como alocação de pr ofissionais ou mesmo pr ojet os de escopo 
+f echado.
+
+Nest e f ormat o de at endiment o, o client e t erá a sua disposição um time com as 
+capacidade t écnicas para desen v olviment o dos entr egá v eis solicitados e atuando 
+atra v és de mét odos ágeis de planejament o e desen v olviment o.
+Jump
+Pr oposta Comer cial Nº 2025187 4
+R esumo
+ 
+Cenário
+ Experiência
+Jump
+Est eir a
+S A S
+Hist órico e
+Empr esas 
+Est eir a
+de Migr ação
+Abor dagem
+IA First
+Dif er enci al
+ Crit érios
+ Est eir a
+ V alidação
+ A gile T eam
+ P er fis
+ Estrutur a
+ Modelo
+ Plano
+ V alidação
+ Pr emissas
+ F or a do 
+Backlog Alv o
+A t enção
+
+
+----- PÁGINA 37 -----
+A daptação às mudanças
+A t enção e ação rápida para 
+ajust e de rumos e adaptação 
+às mudanças e xt ernas ou 
+int ernas
+Entr ega de v alor
+Garantir que t odas as entr egas 
+r ealizadas t enham como 
+pr emissa o conceit o de MVP
+Ciclos cur t os de entr ega
+Garantir entr egas e v alor para 
+o pr ojet o em ciclos cur t os, 
+visando a melhoria contínua
+Gestão à vista
+Uso de f erramentas e rituais 
+para garantir a visibilidade do 
+trabalho
+A gile T eam
+F ormat o de tr abalho
+O Agile T eam da  t em como objetiv o garantir a adaptação às mudanças 
+int ernas e e xt ernas, buscando sempr e maximizar a entr ega de v alor e 
+visando at ender às necessidade sde nossos client es na construção e 
+desen v olviment o de pr odut os de análise de dados, apr o v eitando os 
+benefícios de framew orks ágeis de planejament o e desen v olviment o.
+Jump
+Pr oposta Comer cial Nº 2025187 4
+R esumo
+ 
+Cenário
+ Experiência
+Jump
+Est eir a
+S A S
+H ist ó ric o  e
+Empr es a s 
+Est eir a
+d e M i g r ação
+A bo r dag e m
+I A F irst
+D i f er enci al
+ Crit é ri os
+ Est eir a
+ V al i daçã o
+ A g i l e T e am
+ P er f i s
+ Estrutur a
+ Mod e l o
+ Pla no
+ V al i daçã o
+ P r emiss as
+ F o r a  do  
+Ba c klog  A lv o
+A t en çã o
+
+
+----- PÁGINA 38 -----
+A gile T eam
+P apéis e r esponsabilidades
+Para e x ecução das tar ef as t er emos um time mist o, compost o por 
+colaborador es da  e um colaborador do client e, seguindo as 
+principais decisões de papéis e r esponsabilidades
+Jump
+Pr oduct Owner
+Colaborador do client e que será a pont e entr e as ár eas de TI e Negócios, t endo como r esponsabilidade o alinhament o das e xpectativ as e conheciment o das entr egas a ser em r ealizadas.
+O Pr oduct Owner t em o papel de definir os it ens que compõem o Pr oduct backlog, priorizar esses it ens, bem como garantir a e xist ência de um crit ério de aceit e para cada pr odut o.
+Est e colaborador de v erá t er a capacidade de supor tar o time no ent endiment o das demandas, das dependências de infraestrutura e de negócio, e a v aliar cada pr odut o entr egue sob a ótica 
+dos crit érios de aceit e definidos e pont os de melhoria.
+Como Pr oduct Owner , o colaborador de client e será r esponsá v el por v alidar os pr odut os entr egues.
+A gile Mast er
+Colaborador da Jump que será r esponsá v el pelo flux o de trabalho e pelo acompanhament o da e x ecução das atividades, eliminando possív eis impediment os e atuando para garantir a 
+e x ecução do trabalho, utilizando os conceit os e rituais de met odologias ágeis.
+O Agile Mast er será r esponsá v el por e xtrair métricas de eficácia e eficiência, visatndo o pr ocesso de melhoria contínua do time.
+A gile T eam
+Membr os do time que serão r esponsá v eis pela e x ecução das atividades de construção dos pr odut os. 
+Os membr os do time de v erão t er conheciment os t écnicos necessários para garantir a e x ecução das atividades e a entr ega do pr odut o.
+Pr oposta Comer cial Nº 2025187 4
+R esumo
+ 
+Cenário
+ Experiência
+Jump
+Est eir a
+S A S
+H ist ó ric o  e
+Empr es a s 
+Est eir a
+d e M i g r ação
+A bo r dag e m
+I A F irst
+D i f er enci al
+ Crit é ri os
+ Est eir a
+ V al i daçã o
+ A g i l e T e am
+ P er f i s
+ Estrutur a
+ Mod e l o
+ Pla no
+ V al i daçã o
+ P r emiss as
+ F o r a  do  
+Ba c klog  A lv o
+A t en çã o
+
+
+----- PÁGINA 39 -----
+Pr oposta Comer cial Nº 2025187 4
+P er fis  Pr ofissionais
+Engenheir o de Dados 
+Missão na Squad
+A tuar na r eescrita das r otinas SAS para o Databricks, desen v olv endo not ebooks e pipelines com f oco em 
+desempenho, rastr eabilidade e go v ernança.  
+Será r esponsá v el por implementar transf ormações em PySpark, configurar int egrações com Delta Lak e e 
+v ersionar o código conf orme os padr ões definidos pela ar quit etura. 
+Har d Skills
+Experiência com Databricks,  PySpark e SQL. 
+Viv ência em migração de pr ocessos SAS, Oracle ou SQL para ambient es de nuv em. 
+Conheciment o em Delta Lak e e v ersionament o de código (G it). 
+Capacidade de otimização de per f ormance (par ticionament o, caching, joins distribuídos). 
+Ent endiment o de pipelines de dados e CI/CD . 
+Soft Skills
+Colaboração ativ a com analistas SAS e Q A para ent endiment o das r egras. 
+Or ganização e clar eza na documentação t écnica. 
+F oco em qualidade, desempenho e padr onização das entr egas. 
+P ostura pr oativ a na identificação de melhorias t écnicas. 
+Compr ometiment o com praz os e pr e visibilidade das sprint s. 
+R esumo
+ 
+Cenário
+ Experiência
+Jump
+Es t eir a
+SAS
+H is tó ric o  e
+Empr es a s 
+Es t eir a
+d e M i g r ação
+Abo r dag e m
+IA  F irs t
+D i f er enci al
+ Cri té ri os
+ Es t eir a
+ Valida çã o
+ Ag i l e T e am
+ P er f i s
+ Es t ru t ur a
+ Mod e l o
+ Pla no
+ Val i daçã o
+ P r emiss as
+ Fo r a  do  
+Ba c klog  Alvo
+At en çã o
+
+
+----- PÁGINA 40 -----
+Pr oposta Comer cial Nº 2025187 4
+P er fis  Pr ofissionais
+Líder T écnico 
+Missão na Squad
+A tuar como r ef er ência t écnica com f oco na ader ência das entr egas aos padr ões ar quit eturais, met odológicos e de 
+qualidade definidos pela Jump e pelo Bradesco.  
+Será r esponsá v el por v alidar a con v ersão t écnica das r otinas S A S em PySpark, orientar o time de Engenheir os de Dados, 
+e a aplicação consist ent e das práticas de v ersionament o, go v ernança e desempenho.  
+Além disso, desempenha papel central na aplicação da abor dagem IA First, super visionando o uso dos acelerador es e 
+monit orando de modo que os ganhos de pr odutividade e qualidade sejam ef etiv ament e alcançados.
+Har d Skills
+Domínio t écnico em Databricks,  PySpark,  SQL e ar quit etur a Lak ehouse (Delta Lak e,  Unity Catalog). 
+Experiência compr o v ada em migr ação de r otinas S A S para Databricks. 
+Conheciment o em aut omação de pipelines,  CI/CD ,  v ersionament o G it e boas pr áticas de engenharia de dados. 
+Capacidade de r ealizar code r e vie ws estrutur ados, padr onizar not ebooks e rastr eabilidade t écnica. 
+Conheciment o do pr ocesso IA First da Jump, atuando na super visão de output s e análise de anomalias t écnicas. 
+Soft Skills
+L ideran ç a t écnica com postura orientada a r esultados e colabora ç ão. 
+Capacidade de comunicar decis õ es ar quit etur ais com clar eza, traduzindo comple xidade t écnica para a lin g ua g em de 
+ne gó cio. 
+A tua ç ão como ment or do time, pr omo v endo apr endizado contínuo e alinhament o t écnico entr e as s q uads. 
+O r g aniza ç ão, disciplina e visão sist êmica para lidar com m ú ltiplos f lux os em e x ecu ç ão paralela. 
+P ostura consultiv a e pr oatividade na r esolu ç ão de impediment os t écnicos e prioriza ç ão de demandas. 
+Compr ometiment o com qualidade,  pr e visibilidade e padr oni z ação, sust entando a g o v ernan ç a t écnica da est eira de 
+mi g ra ç ão.
+R esumo
+ 
+Cenário
+ Experiência
+Jump
+Est eir a
+S A S
+Hist órico e
+Empr esas 
+Est eir a
+de Migr ação
+Abor dagem
+IA First
+Dif er enci al
+ Crit érios
+ Est eir a
+ V alida ção
+ A gile T eam
+ P er fis
+ Estrutur a
+ Modelo
+ Plano
+ V alidação
+ Pr emissas
+ F or a do 
+Backlog Alv o
+A t enção
+
+
+----- PÁGINA 41 -----
+Pr oposta Comer cial Nº 2025187 4
+R esumo
+ 
+Cenário
+ Experiência
+Jump
+Est eir a
+S A S
+Hist órico e
+Empr esas 
+Est eir a
+de Migr ação
+Abor dagem
+IA First
+Dif er enci al
+ Crit érios
+ Est eir a
+ V alidação
+ A gile T eam
+ P er fis
+ Estrutur a
+ Modelo
+ Plano
+ V alidação
+ Pr emissas
+ F or a do 
+Backlog Alv o
+A t enção
+Estrutur a  de Migr ação 
+A migração das r otinas SAS para o Databricks poderá seguir dois modelos operacionais distint os, dependendo da disponibilidade e aut orização para uso da 
+f erramenta pr oprietária Migr at eMind, desen v olvida pela Jump.
+Ambos os cenários seguem o mesmo rigor met odológico, mas apr esentam capacidades, praz os e dinâmica de entr ega dif er ent es.
+Cená r io 1 | Com Migrat eMind
+Modelo r ecomend a do pel a  J u mp
+N est e cenário, a migração apr o v eita os acelerador es de I A da Jump, permitindo r ed ução s igni f i c ati v a  d o e sf o r ço , maior padr onização e gan h o de v elocidade.
+Compo s ição d a  Sq ua d
+Se r á ut iliz a d a  1 Sq ua d de Mig r a ção,  compo sta  po r :
+1  Lí der T é cnico ( full - time )
+3  E ngen h eir os de Dados ( full - time )
+C a p a cid a de Ope r a cion a l ( com Mig r at eMind)
+C apacidade m é dia por sprint q uinz enal :  ≈  320  h or a s
+T otal pr e vist o para 3  sprint s :  ≈  960  h or a s  e nt r eg u e s
+Aceleração gerada pelo M igrat e M ind :  60%  a 7 0%  de r ed u ção n o e sf or ço m a nu a l
+E sse modelo é  poss í v el de vido aos mot or es aut omáticos de análise, r eescrita e v alidação estrutural do código SAS, r eduzindo drasticament e r etrabal h o, 
+esf or ço de engen h aria e t empo de modelagem das pipelines.
+
+
+----- PÁGINA 42 -----
+Pr oposta Comer cial Nº 2025187 4
+R esumo
+ 
+Cenário
+ Experiência
+Jump
+Est eir a
+S A S
+Hist órico e
+Empr esas 
+Est eir a
+de Migr ação
+Abor dagem
+IA First
+Dif er enci al
+ Crit érios
+ Est eir a
+ V alidação
+ A gile T eam
+ P er fis
+ Estrutur a
+ Modelo
+ Plano
+ V alidação
+ Pr emissas
+ F or a do 
+Backlog Alv o
+A t enção
+Estrutur a  de Migr ação 
+A migração das r otinas SAS para o Databricks poderá seguir dois modelos operacionais distint os, dependendo da disponibilidade e aut orização para uso da 
+f erramenta pr oprietária Migrat eMind, desen v olvida pela Jump.
+Ambos os cenários seguem o mesmo rigor met odológico, mas apr esentam capacidades, praz os e dinâmica de entr ega dif er ent es.
+Cená r io 2 | Sem MigrateMind (Conversão manual supervisionada)
+Sem o Migrat eMind, a migração passa a e x igir análise e r eescrita t otalment e manuais, com aument o substancial no esf or ço t é cnico.
+Compo s ição Nece ss á r i a
+Se r ão nece ss á r i as  2 Sq ua d s  ope r a ndo em p ar a lelo:
+P ara cada S q uad :
+1  Lí der Té cnico ( full - time )
+3  E ngen h eir os de Dados ( full - time )
+C a p a cid a de Ope r a cion a l ( s em Mig r at eMind)
+C apacidade m é dia por s q uad :  320 horas / sprint
+Duas s q uads :  640 horas / sprint
+T otal pr e vist o para cumprir o mesmo escopo :  ≈ 7 sprints
+A aus ê ncia da aut omação e x ige maior t empo de engen h aria, v alidação manual, r ef at oração de r egras e r eescrita int egral de macr os comple x as.
+
+
+----- PÁGINA 43 -----
+P ont os Comuns 
+aos Dois Cenários
+Independent ement e da utilização do Migrat eMind, a migração seguirá um modelo de 
+est eira contínua, estruturado em ondas de e x ecução priorizadas conf orme criticidade, 
+comple xidade t écnica e int er dependência entr e pr ocessos. Cada r otina SAS per corr e 
+um flux o complet o — da análise à publicação — com f oco na consist ência lógica, 
+go v ernança e ader ência aos padr ões t écnicos do Bradesco.
+Essa abor dagem permit e fluidez e pr e visibilidade nas entr egas,  de modo que a est eira 
+se mant enha continuament e abast ecida. À medida que cada r otina a v ança para as f ases 
+de v alidação e pr omoção, no v as r otinas entram no pipeline, mant endo o flux o de 
+migração está v el ao longo de t odo o ciclo.
+A pontuação t écnica de cada r otina S A S, calculada com base na análise dos 
+indicador es f ornecidos pelo GRF , ser virá como r ef er ência inicial para priorização. Essa 
+classificação poderá ser ajustada durant e a e x ecução, conf orme maior detalhament o 
+das dependências, comple xidade r eal e granularidade das lógicas identificadas em cada 
+etapa.
+Pr oposta Comer cial Nº 2025187 4
+R esumo
+ 
+Cenário
+ Experiência
+Jump
+Est eir a
+S A S
+Hist órico e
+Empr esas 
+Est eir a
+de Migr ação
+A b or dage m
+I A F irst
+D i f er enci al
+ Crit é rio s
+ Est eir a
+ Valida ção
+ A gi l e T ea m
+ P er f i s
+ Estrutur a
+ Mode l o
+ Pl ano
+ V a l idação
+ P r emissa s
+ F or a do 
+B ac kl og A lv o
+A t enção
+
+
+----- PÁGINA 44 -----
+P ont os Comuns 
+aos Dois Cenários
+Para fins de priorização e r eplanejament o dinâmico, serão considerados os seguint es 
+f at or es:
+V olume de dados pr ocessado
+Densidade das r egr as de negócio
+Pr esença de condicionais e múltiplos caminhos lógico-computacionais
+Exist ência de macr os ou módulos r eutilizá v eis
+Int egr ações e xt ernas
+V ariabilidade t empor al das e x ecuções
+Necessidade de r ef at or ação,  agrupament o ou r euso de código
+Esse conjunt o de crit érios buscam que o plano de migração seja continuament e 
+ajustá v el e orientado por e vidências t écnicas, mant endo pr e visibilidade, eficiência e 
+ader ência aos objetiv os de modernização do Bradesco.
+Pr oposta Comer cial Nº 2025187 4
+R esumo
+ 
+Cenário
+ Experiência
+Jump
+Est eir a
+S A S
+Hist órico e
+Empr esas 
+Est eir a
+de Migr ação
+Abor dagem
+IA First
+Dif er enci al
+ Crit érios
+ Est eir a
+ V alida ção
+ A gile T eam
+ P er fis
+ Estrutur a
+ Modelo
+ Plano
+ V alidação
+ Pr emissas
+ F or a do 
+B ac k log Al v o
+A t enção
+
+
+----- PÁGINA 45 -----
+Modelo de   Capacidade
+O in v entário t écnico do GRF cont empla atualment e 1 . 62 4 script s S A S cadastr ados, 
+r epr esentando t odo o ecossist ema atual de pr ocessament o analítico. Entr etant o, após a 
+priorização do Bradesco, apenas os pr ocessos considerados críticos, essenciais ou 
+dir etament e impactados pela modernização f oram mantidos no escopo desta pr oposta. 
+
+Essa r edução de escopo e xige uma r eint erpr etação do modelo de capacidade — agora 
+orientado e x clusiv ament e aos grupos priorizados — com f oco em pr e visibilidade e ader ência 
+ao esf or ço r eal de migração.
+
+Para o planejament o de capacidade, a Jump considera apenas ar quiv os .sas ef etiv os, pois 
+cada ar quiv o r epr esenta uma unidade completa de trabalho (análise, r eescrita, v alidação e 
+publicação ).
+Pr oposta Comer cial Nº 2025187 4
+R esumo
+ 
+Cenário
+ Experiência
+Jump
+Est eir a
+S A S
+Hist órico e
+Empr esas 
+Est eir a
+de Migr ação
+Abor dagem
+IA First
+Dif er enci al
+ Crit érios
+ Est eir a
+ V alida ção
+ A gile T eam
+ P er fis
+ Estrutur a
+ Modelo
+ Plano
+ V alidação
+ Pr emissas
+ F or a do 
+Backlog Alv o
+A t enção
+
+
+----- PÁGINA 46 -----
+Modelo de   Capacidade
+Durant e a e x ecução das sprint s, será r ealizada uma r e visão contínua do in v entário priorizado 
+para confirmar:
+Quais r otinas ef etiv ament e ser ão migr adas para o Databricks;
+Nív el de r eapr o v eitament o entr e blocos de código, macr os e estruturas padr onizadas;
+P ot encial de aut omação aplicá v el usando os mot or es IA First e o Migrat eMind.
+Esse r efinament o permitirá identificar agrupament os de r egras r epetitiv as e padr ões de 
+pr ocessament o que possam ser migrados de f orma otimizada, mant endo consist ência 
+t écnica, r eduzindo r etrabalho e maximizando o uso das f erramentas de aceleração.
+Pr oposta Comer cial Nº 2025187 4
+R esumo
+ 
+Cenário
+ Experiência
+Jump
+Est eir a
+S A S
+Hist órico e
+Empr esas 
+Est eir a
+de Migr ação
+Abor dagem
+IA First
+Dif er enci al
+ Crit érios
+ Est eir a
+ V alida ção
+ A gi l e T eam
+ P er fis
+ Estrutur a
+ Mode l o
+ Pl ano
+ V a l idação
+ P r emissas
+ F or a do 
+B ac kl og A lv o
+A t enção
+
+
+----- PÁGINA 47 -----
+Modelo de   Capacidade
+Com a priorização dos grupos macr o e a intr odução da aut omação via Migrat eMind, dois 
+modelos são possív eis:
+Cenário 1 — Com Migr at eMind (1 squad,  3 sprint s)
+O uso da f erramenta r eduz significativ ament e o esf or ço de r eescrita, permitindo que uma 
+única squad e x ecut e t odo o escopo priorizado dentr o de 3 sprint s quinz enais.
+Capacidade típica por sprint (1 squad):
+1 Líder T écnico
+3 Engenheir os de Dados
+≈ 320 hor as por sprint
+O Migrat eMind r eduz esf or ço operacional e aumenta a cadência ao aut omatizar par t es da 
+análise, con v ersão do código e v alidações estruturais.
+Pr oposta Comer cial Nº 2025187 4
+R esumo
+ 
+Cenário
+ Experiência
+Jump
+Est eir a
+S A S
+H ist ó ric o  e
+Empr es a s 
+Est eir a
+d e M i g r ação
+A bo r dag e m
+I A F irst
+D i f er enci al
+ Crit é ri os
+ Est eir a
+ V alida çã o
+ A g i l e T e am
+ P er f i s
+ Estrutur a
+ Mod e l o
+ Pla no
+ V al i daçã o
+ P r emiss as
+ F o r a  do  
+Ba c klog  A lv o
+A t en çã o
+
+
+----- PÁGINA 48 -----
+Modelo de   Capacidade
+Com a priorização dos grupos macr o e a intr odução da aut omação via Migrat eMind, dois 
+modelos são possív eis:
+Cenário 2 — Sem Migr at eMind (2 squads,  7 sprint s)
+Sem aut omação, o esf or ço manual cr esce substancialment e, e xigindo 2 squads completas e 
+7 sprint s para cobrir o mesmo escopo.
+Capacidade típica por sprint (2 squads):
+2 Líder es T écnicos
+6 Engenheir os de Dados
+≈ 640 hor as por sprint
+Nest e cenário, a cadência depende int eirament e do trabalho manual, aumentando o t empo de 
+e x ecução e a necessidade de r edistribuição entr e sprint s.
+Pr oposta Comer cial Nº 2025187 4
+R esumo
+ 
+Cenário
+ Experiência
+Jump
+Est eir a
+S A S
+H ist ó ric o  e
+Empr es a s 
+Est eir a
+d e M i g r ação
+A bo r dag e m
+I A F irst
+D i f er enci al
+ Crit é ri os
+ Est eir a
+ V alida çã o
+ A g i l e T e am
+ P er f i s
+ Estrutur a
+ Mod e l o
+ Pla no
+ V al i daçã o
+ P r emiss as
+ F o r a  do  
+Ba c klog  A lv o
+A t en çã o
+
+
+----- PÁGINA 49 -----
+Pr oposta Comer cial Nº 2025187 4
+Plano de  
+implementação
+Para estabelecer um plano de implementação sólido, pr e visív el e alinhado à 
+priorização conduzida pelo Bradesco, f oi r ealizada uma análise t écnica 
+apr ofundada do conjunt o de script s SAS selecionados para migração.
+Essa análise combinou crit érios quantitativ os e qualitativ os, permitindo estruturar 
+uma trilha r ealista de e x ecução, ajustada ao nív el de comple xidade dos flux os 
+críticos.
+O pr ocesso incluiu:
+A v aliação estrutural dos script s (linhas de código, dependências, númer o de 
+tabelas geradas).
+Mapeament o de densidade lógica e pr esença de macr os.
+Identificação de int er dependências funcionais entr e grupos.
+Consolidação estatística das distribuições de esf or ço.
+Classificação aut omática de comple xidade com base em corr elação empírica e 
+benchmarks Jump.
+A priorização orientada pelo Bradesco r eduziu o univ erso inicial, permitindo que o 
+planejament o f osse dir ecionado e x clusiv ament e às r otinas críticas e essenciais, 
+garantindo f oco, pr ecisão e ader ência ao v alor de negócio.
+R esumo
+ 
+Cenário
+ Experiência
+Jump
+Est eir a
+S A S
+Hist órico e
+Empr esas 
+Est eir a
+de Migr ação
+A b or dage m
+I A F irst
+D i f er enci al
+ Crit é rio s
+ Est eir a
+ V a l idação
+ A gi l e T ea m
+ P er f i s
+ Estrutur a
+ Mode l o
+ Pl ano
+ V a l idação
+ P r emissa s
+ F or a do 
+B ac kl og A lv o
+A t enção
+F at o r e s  Av alia d o s  e P e s o s  A t r i buíd o s 
+F at o r  Téc ni c o P e s o (%) D e scr ição
+Nú me r o d e L in h a s  d e Có d i g o 
+( NUMERO _LINH A S_ CO D IGO )
+40 %
+Indicador da densidade lógica e 
+e xt ensão do código SAS. Script s mais 
+e xt ensos demandam maior esf or ço de 
+r eescrita e v alidação.
+D epen d ê n c ia s  d e I n c l ud e 
+(D E P EN D ENCI A S_INCLU D E )
+20 %
+Indica acoplament o a macr os 
+e xt ernas ou bibliot ecas SAS, e xigindo 
+maior análise manual e contr ole de 
+v ersionament o.
+D epen d ê n c ia s  d e D i s pa r o 
+(D E P EN D ENCI A S_ D IS PA RO )
+15 %
+Mede o nív el de or questração entr e 
+pr ocessos SAS. Q uant o mais 
+dependências, maior o r etrabalho e a 
+comple xidade de r eengenharia.
+Q u anti d a d e d e T a b ela s  G e r a d a s  
+( Q TD _ TA BEL A S_ UNIQUE_ GER AD
+A S )
+10 %
+R epr esenta o númer o de output s a 
+ser em r ecriados em D elta L ak e e 
+v alidados quant o à int egridade e 
+v olumetria.
+V ol u me d e D a d o s  Pr o c e ss a d o 
+( ME D I A _ Q TD _REG )
+10 %
+Estima o v olume médio de r egistr os 
+pr ocessados por e x ecução, 
+impactando o t empo de t est e.
+By t e s  Tr an s miti d o s  
+( ME D I A _BY T ES_ T R A NSMISS A O )
+5 %
+Pr o x y  do consumo de I / O e cust o 
+computacional, considerando v olume 
+médio de leitura e escrita.
+Os pesos f oram definidos com base em benchmarks int ernos da Jump e 
+calibrados a par tir de corr elação estatística entr e esses f at or es e o esf or ço 
+médio de con v ersão obser v ado em pr ojet os de migração SAS →  D atabricks.
+
+
+----- PÁGINA 50 -----
+Pr oposta Comer cial Nº 2025187 4
+Cálculo de  
+comple xidade
+Com o r ecor t e final, a distribuição estatística de comple xidade apr esenta:
+Métrica V alor
+Mínimo 0 ,40
+Mediana 0 , 7 0
+Média Ger al 0 , 91
+P er centil 90 (P90) 1 , 80
+Máximo 2, 55
+R esumo
+ 
+Cenário
+ Experiência
+Jump
+Est eir a
+S A S
+Hist órico e
+Empr esas 
+Est eir a
+de Migr ação
+Abor dagem
+IA First
+Dif er encial
+ Crit érios
+ Est eir a
+ V alidação
+ A gile T eam
+ P er fis
+ Estrutur a
+ Modelo
+ Plano
+ V alidação
+ Pr emissas
+ F or a do 
+B ac k log Al v o
+A t enção
+
+
+----- PÁGINA 51 -----
+Pr oposta Comer cial Nº 2025187 4
+Cálculo de  
+comple xidade
+Com base nessas métricas, as f aixas de classificação f oram definidas para r efletir 
+o compor tament o do conjunt o:
+Comple xidade Int er v alo Descrição
+Baix a ≤ 0 , 7 0
+R otinas linear es, pouco acopladas 
+e de menor comple xidade para 
+con v ersão
+Média 0 , 71 – 1 , 80
+R otinas com dependências 
+moderadas, múltiplas tabelas e 
+transf ormações int ermediárias
+Alta > 1 , 80
+R otinas densas, com macr os, 
+múltiplas camadas e grande 
+v olume de dados
+R esumo
+ 
+Cenário
+ Experiência
+Jump
+Est eir a
+S A S
+Hist órico e
+Empr esas 
+Est eir a
+de Migr ação
+A b or dage m
+I A F irst
+D i f er enci al
+ Crit é rio s
+ Est eir a
+ V a l idação
+ A gi l e T ea m
+ P er f i s
+ Estrutur a
+ Mode l o
+ Pl ano
+ V a l idação
+ P r emissa s
+ F or a do 
+B ac kl og A lv o
+A t enção
+
+
+----- PÁGINA 52 -----
+Pr oposta Comer cial Nº 2025187 4
+Cálculo de  comple xidade
+Classificação dos Grupos por Comple xidade
+Grupo Scor e Classificação
+Aler tCli _Sale 0 , 696
+ BAIXA
+Cust os PD /AED /L GD 0 , 542
+ BAIXA
+RS A 0 , 55
+ BAIXA
+Ar dia 0 , 7 0 MÉDIA
+CERM 1 ,257 MÉDIA
+Dash Or çament o 0 , 84 MÉDIA
+DDR 0 , 995 MÉDIA
+Depósit os Judiciais 0 , 7 37 MÉDIA
+FRTB 1 , 19 MÉDIA
+Indicador Ofício 0 , 85 MÉDIA
+Instifina 0 , 7 3 MÉDIA
+Grupo Scor e Classificação
+IRRBB 1 , 364 MÉDIA
+Outr os Riscos 0 , 7 6 MÉDIA
+RA TI 0 , 98 MÉDIA
+R estritiv o 
+Socioambiental
+0 , 80 7 MÉDIA
+R esumoc 1 , 014 MÉDIA
+RML 0 , 823 MÉDIA
+S ARS 1 , 017 MÉDIA
+Segmentação 0 , 922 MÉDIA
+V eículo 0 , 7 0 MÉDIA
+Capital Econômico 2, 10
+ AL T A
+R esumo
+ 
+Cenário
+ Experiência
+Jump
+Es t eir a
+S A S
+H is tó ric o  e
+Empr es a s 
+Es t eir a
+d e Mi g r ação
+A bo r dag e m
+IA F irs t
+Di f er enci al
+ Cri té ri os
+ Es t eir a
+ Val i daçã o
+ A g i l e T e am
+ P er f i s
+ Es t ru t ur a
+ M od e l o
+ Pla no
+ Val i daçã o
+ P r emiss as
+ Fo r a  do  
+B a c klog  A lvo
+A t en çã o
+
+
+----- PÁGINA 53 -----
+Pr oposta Comer cial Nº 2025187 4
+Cálculo de  comple xidade
+Cenário 1 — Com Migr at eMind
+Distribuição Pr oposta:
+Sprint Grupos Racional
+1
+Cust os PD /AED /L GD ,  RS A,  Dash Or çament o,  Instifina,  
+Depósit os Judiciais,  V eículo,  RA TI,  R esumoc,  CERM,  
+Outr os Riscos
+Sprint de con v er gência inicial, f ocado em grupos de menor comple xidade e 
+baix o acoplament o. Ideal para v alidar o pipeline aut omatizado, estabilizar 
+padr ões de con v ersão (not ebooks, t est es, padr ões PySpark) e gerar quick wins 
+com alt o v olume pr ocessado rapidament e. Inclui CERM e Outr os Riscos, que 
+possuem baixa densidade e se encaixam per f eitament e na f ase de estabilização.
+2 Aler tCli _Sale,  DDR,  Segmentação,  S ARS
+Equilíbrio entr e baixa e média comple xidade, com int er dependência r eduzida. 
+Ex celent e sprint para ganhar escala, v alidar transf ormações estruturadas e 
+consolidar a ef etividade do Migrat eMind em cenários mais v ariados. Mant ém alta 
+pr odutividade sem e xigir análise manual int ensiv a.
+3 IRR BB ,  F RT B ,  RML,  R estriti v o Socioambiental
+Sprint com grupo s  de maior den s idade l ó gica, m ú ltiplas depend ê ncias, cálculos 
+r egulat ó rios e r egras comple xas. O Migrat eMind opera aqui em seu m áx imo 
+pot encial, garantindo paralelização, consist ê ncia e r edução significativ a do 
+esf or ço manual. Sprint ideal para f ec h ament o t é cnico e consolidação da 
+migração.
+Resumo
+ 
+Cenário
+ Experiência
+Jump
+Esteira
+SAS
+Histórico e
+Empresas 
+Esteira
+de Migração
+Abordagem
+IA First
+Diferencial
+ Critérios
+ Esteira
+ Validação
+ Agile Team
+ Perfis
+ Estrutura
+ Modelo
+ Plano
+ Validação
+ Premissas
+ Fora do 
+Backlog Alvo
+Atenção
+
+
+----- PÁGINA 54 -----
+Pr oposta Comer cial Nº 2025187 4
+Cálculo de  comple xidade
+Cenário 2 — Sem Migr at eMind
+Distribuição Pr oposta:
+Sprint Grupos Racional
+1–2
+Cust os PD /AED /L GD (par t e 1 e par t e 2),  RS A,  Dash 
+Or çament o
+Maior v olume (55 script s) + baixa comple xidade → melhor 
+apr o v eitament o das 2 squads no início. RSA e Dash entram para 
+equilibrar car ga.
+3 DDR,  Instifina,  Depósit os Judiciais,  V eículo
+Conjunt o de média comple xidade, pouca int er dependência → ideal para 
+o sprint int ermediário após alt o v olume inicial.
+4 FRTB,  R esumoc,  CERM
+FRTB = grupo t écnico r egulat ório; R esumoc e CERM equilibram o 
+esf or ço sem aumentar risco.
+5 IRRBB (par t e 1),  Outr os Riscos,  RA TI
+I nício de I RRBB ( grupo denso ) + dois grupos le v es → balanceament o da 
+car ga do sprint.
+6 IRRBB (par t e 2),  R estriti v o Socioambiental,  S ARS
+F echament o de I RRBB +  pr ocessos r egulat órios / ambientais de média 
+densidade.
+7 Segmentação,  RML,  Aler tCli _ Sale
+Sprint de baixa / média comple xidade → ideal para f echament o com 
+ajust es finais e consolidaç ã o.
+Resumo
+ 
+Cenário
+ Experiência
+Jump
+Esteira
+SAS
+Histórico e
+Empresas 
+Esteira
+de Migração
+Abordagem
+IA First
+Diferencial
+ Critérios
+ Esteira
+ Validação
+ Agile Team
+ Perfis
+ Estrutura
+ Modelo
+ Plano
+ Validação
+ Premissas
+ Fora do 
+B ac k log Al v o
+Atenção
+
+
+----- PÁGINA 55 -----
+V alidação das A tividades 
+Com f oco em tr anspar ência e pr e visibilidade, cada etapa concluída da est eira de 
+migração será submetida à v alidação t écnica e funcional pelo , conf orme 
+os crit érios de aceit e definidos par a o pr ojet o.
+Br adesco
+O pr ocesso de v alidação t em como pr opósit o confirmar a consist ência dos output s 
+ger ados no Databricks, a corr espondência das lógicas S A S r eescritas e a ader ência 
+das entr egas aos par âmetr os t écnicos e funcionais estabelecidos no backlog.
+As seguint es dir etriz es serão adotadas para a condução da v alidação:
+O praz o para análise e r et orno por par t e do   será de at é 5 ( cinco ) dias út eis, 
+contados a par tir da disponibilização da entr ega par cial ou final. 
+Caso não haja manif estação dentr o desse praz o, a entr ega será considerada tacitament e 
+v alidada, permitindo o a v anço da squad para as pr ó ximas r otinas da est eira. 
+Solicitações de ajust es ou r e visões apr esentadas após o período de v alidação serão 
+tratadas como tr ansbor do da sprint vigent e, sendo r eplanejadas dentr o da capacidade 
+pr odutiv a das sprint s seguint es.
+Br adesco
+E sse modelo pr omo v e  cadência ,  rastreabilidade e consistência técnica  na condução das 
+atividades, r ef or çando  previsibilidade e qualidade nas entregas  r ealizadas pela  ao 
+longo da e x ecução da migração SAS para  D atabricks. 
+Jump
+Proposta  Comercial  Nº  20251874
+Resumo
+ 
+Cenário
+ Experiência
+Jump
+Esteira
+SAS
+Histórico e
+Empresas 
+Esteira
+de Migração
+Abordagem
+IA First
+Diferenci al
+ Critérios
+ Esteira
+ Valida ção
+ Agile Team
+ Perfis
+ Estrutura
+ Modelo
+ Plano
+ Validação
+ Premissas
+ Fora do 
+Backlog Alvo
+Atenção
+
+
+----- PÁGINA 56 -----
+Pr oposta Comer cial Nº 2025187 4
+2 A cessos e P ermissões
+Concessão de acessos t écnicos à equipe Jump para os ambient es SAS e Databricks. 
+Disponibilização das cr edenciais necessárias para leitura de tabelas, e x ecução de not ebooks 
+e consulta de logs. 
+P ermissão para acesso aos r eposit órios de código,  script s e bases de dados associados às 
+r otinas a ser em migradas. 
+Definição clara dos per fis de acesso por papel da squad, conf orme políticas int ernas do 
+Bradesco. 
+3 Disponibilidade de Ar t ef at os T écnicos
+Entr ega dos script s S A S originais (.sas) que serão migrados, incluindo e v entuais macr os e 
+dependências entr e r otinas. 
+Disponibilização de dicionários de dados,  la y out s,  mapeament os e documentação t écnica 
+e xist ent e. 
+Acesso às tabelas de origem e destino utilizadas nos pr ocessos SAS, com as r espectiv as 
+descrições e r egras de negócio. 
+Compar tilhament o de logs de e x ecução ou e vidências que auxiliem na int erpr etação das 
+lógicas SAS. 
+1 Ambient es e Infr aestrutur a 
+Disponibilização dos ambient es de desen v olviment o,  homologação e pr odução 
+de vidament e configurados no Databricks, com conectividade entr e camadas e 
+permissões adequadas para leitura e escrita. 
+Acesso às f err amentas de v ersionament o e or questr ação utilizadas pelo Bradesco 
+(G it, IWS ou equiv alent es). 
+Disponibilidade de r ecursos de computação e st or age compatív eis com o v olume e 
+fr equência de e x ecução das r otinas a ser em migradas. 
+ T odas as tabelas consumidas pelas r otinas SAS de v erão estar pr e viament e 
+disponibilizadas e acessív eis no ambient e Databricks, garantindo leitura int egral e 
+int egridade dos dados durant e a migração. 
+Caso e xistam alt erações nos nomes das tabelas ou campos em r elação ao ambient e 
+SAS original, o Bradesco de v erá disponibilizar o r espectiv o mapeament o de/para, 
+assegurando que a corr espondência entr e estruturas est eja documentada e v alidada 
+ant es do início da con v ersão.
+1 . 1 E scopo T écnico e Depend ê ncias
+A pr oposta não cont empla as atividades de ingestão pr odutiv a, que serão 
+conduzidas int ernament e pelo Bradesco. As r otinas migradas considerarão as bases 
+já disponív eis no ambient e e xplorat ório. 
+Para a e x ecução da migração, é necessário que o Bradesco disponibiliz e no 
+ambient e e xplor at ório as dependências de dados (bases de origem) e e v entuais 
+ar quiv os int ermediários, que poderão ser carr egados em carát er de e x ceção para 
+viabilizar o a v anço da con v ersão e v alidação dos pr ocessos.
+R esumo
+ 
+Cenário
+ Experiência
+Jump
+Est eir a
+S A S
+Hist órico e
+Empr esas 
+Est eir a
+de Migr ação
+Abor dagem
+IA First
+Dif er enci al
+ Crit érios
+ Est eir a
+ V alidação
+ A gile T eam
+ P er fis
+ Estrutur a
+ Modelo
+ P lano
+ V alidação
+ P r emissas
+ F or a do 
+B ac k log Al v o
+A t enção
+Pr emissas
+Para o bom andamento das atividades e a execução dentro do prazo estabelecido, consideram-se as seguintes premissas fundamentais para a atuação 
+da Squad Migração SAS para Databricks, responsável pela reescrita, validação e publicação das rotinas SAS no ambiente Databricks do . 
+Bradesco
+
+
+----- PÁGINA 57 -----
+Pr oposta Comer cial Nº 2025187 4
+Pr emissas
+Para o bom andament o das atividades e a e x ecução dentr o do praz o estabelecido, consideram-se as seguint es pr emissas fundamentais para a atuação 
+da Squad Migr ação S A S par a Databricks,  r esponsá v el pela r eescrita, v alidação e publicação das r otinas SAS no ambient e Databricks do . 
+Br adesco
+4 En v olviment o das Ár eas T écnicas e de Negócio
+Designação de pont os f ocais t écnicos e funcionais do Bradesco para supor t e e 
+v alidação durant e as f ases de migração. 
+Par ticipação ativ a dos r epr esentant es de negócio na v alidação funcional dos 
+output s e na homologação dos r esultados. 
+Apoio das ár eas r esponsá v eis em esclar eciment os sobr e r egr as,  cálculos e 
+dependências identificadas nas r otinas SAS. 
+Alinhament o contínuo entr e as equipes de dados,  risco e TI, assegurando 
+fluidez na priorização das r otinas. 
+5 Priorizações e Decisões
+Definição conjunta das prioridades de migr ação, conf orme o v alor de negócio e 
+criticidade das r otinas SAS. 
+V alidação e ajust e contínuo do backlog de migr ação ao longo das sprint s. 
+Disponibilidade do Bradesco para t omada de decisão r ápida em casos de 
+dúvidas t écnicas, ajust es ou div er gências de output. 
+6 Pr az os e V alidaç ã o
+Cumpriment o dos pr az os de v alidação definidos (at é 5 dias út eis por entr ega 
+disponibilizada). 
+F ormalização de apr o v ações e f eedbacks por meio dos canais acor dados 
+(f erramenta de gestão ou e-mail). 
+Solicitações de alt eração após o praz o de v alidação serão r eplanejadas dentr o da 
+capacidade das pr ó ximas sprint s. 
+7 R es p onsa b ilidades C om p ar til h adas  
+A Jump atuará na migr ação t écnica,  otimização e v alidação compar ativ a das r otinas 
+SAS, enquant o o Bradesco será r esponsá v el por: 
+Disponibilizar inf ormações, acessos e ar t ef at os necessários. 
+Acompanhar as v alidações t écnicas e funcionais. 
+Definir prioridades e apr o v ar entr egas conf orme o cr onograma. 
+As equipes atuarão em modelo colabor ativ o e incr emental, mant endo comunicação 
+constant e para mitigar riscos e ajust es de escopo. 
+R esumo
+ 
+Cenário
+ Experiência
+Jump
+Est eir a
+S A S
+Hist órico e
+Empr esas 
+Est eir a
+de Migr ação
+Abor dagem
+IA First
+Dif er enci al
+ Crit érios
+ Est eir a
+ V alidação
+ A gile T eam
+ P er fis
+ Estrutur a
+ Modelo
+ P lano
+ V alidação
+ P r emissas
+ F or a do 
+B ac k log Al v o
+A t enção
+
+
+----- PÁGINA 58 -----
+Pr oposta Comer cial Nº 2025187 4
+Pr emissas
+8 A cesso e Uso da F err amenta de A celer ação – Migr at eMind  
+O Bradesco de v erá conceder à Jump o acesso e aut orização par a uso do Migr at eMind, mot or 
+pr oprietário de aceleração de migração baseado em IA, utilizado para: 
+Análise aut omatizada de script s SAS, 
+Identificação e mapeament o de dependências, 
+Con v ersão assistida para PySpark, 
+Aceleração da documentação e r econciliação t écnica de r esultados. 
+A f erramenta será utilizada e x clusiv ament e par a o pr ojet o de migr ação S A S → Databricks, em 
+ambient e designado e apr o v ado pelo Bradesco, r espeitando dir etriz es de segurança, 
+confidencialidade e go v ernança aplicá v eis. 
+Caso o uso do Migr at eMind não seja viabilizado, o pr ocesso de con v ersão será conduzido de 
+f orma 100% manual, o que impactar á dir etament e a capacidade pr odutiv a das squads,  a 
+cadência de migr ação e o planejament o de sprint s, podendo demandar: 
+R e visão da capacidade estimada por sprint, 
+Ajust es no cr onogr ama de entr ega, 
+R ecalibr ação do sizing da squad ou do númer o de ondas de e x ecução. 
+Nesse cenário, a Jump irá r eplanejar a capacidade e apr esentar um no v o baseline de 
+pr odutividade ant es do início do pr ojet o. 
+R esumo
+ 
+Cenário
+ Experiência
+Jump
+Est eir a
+S A S
+Hist órico e
+Empr esas 
+Est eir a
+de Migr ação
+Abor dagem
+IA First
+Dif er enci al
+ Crit érios
+ Est eir a
+ V alida ção
+ A gile T eam
+ P er fis
+ Estrutur a
+ Modelo
+ P lano
+ V alidação
+ P r emissas
+ F or a do 
+B ac k log Al v o
+A t enção
+
+
+----- PÁGINA 59 -----
+Pr oposta Comer cial Nº 2025187 4
+F or a do  Backlog Alv o 
+Para mant er clar eza na delimitação da atuação, listam-se abaix o os it ens que não estão cont emplados no backlog alv o desta pr oposta, considerando o 
+escopo t écnico e as atribuições da Squad Migr ação S A S par a Databricks.
+ 
+Qualquer solicitação r elacionada a esses pont os de v erá ser f ormalizada e a v aliada quant o à necessidade de r eestruturação da composição da squad, 
+podendo implicar em r e visão de escopo,  cr onogr ama e in v estiment o. 
+1
+Sust entação e Supor t e Oper acional
+A tividades de monit orament o contínuo, supor t e t écnico de pr odução ou 
+corr eção de incident es f ora do período de phaseout e shado wing 
+super visionado
+Apoio operacional após a entr ega final das r otinas migradas, incluindo ajust es 
+e v olutiv os ou manut enção corr etiv a contínua.
+R esponsabilidade sobr e o agendament o e a e x ecução r ecorr ent e dos pipelines 
+em ambient e pr odutiv o. 
+2
+Ev olução F uncional ou de Negócio
+Alt erações ou melhorias nas r egras de negócio das r otinas SAS originais, que 
+não est ejam dir etament e r elacionadas ao pr ocesso de migração.
+Criação de no v os cálculos, indicador es ou estruturas analíticas não pr e vist os 
+no le v antament o t écnico.
+Solicitações de ajust es de lógica motiv adas por mudanças de r equisit o após o 
+início da migração.
+3
+Desen v olviment o de No v os Pr ocessos ou Int egr ações
+Construção de no v as r otinas S A S ou Databricks  f ora do escopo mapeado.
+I nt egração com sist emas e xt ernos ou bases adicionais  não mencionadas no 
+le v antament o t écnico.
+Criação de A PI s, dashboar ds ou camadas de visuali z ação analítica.
+4
+G o v ernança ,  Segur ança e A cesso
+I mplementação de no v as políticas de segur ança , mascar ament o  ou 
+anonimização de dados .
+Alt erações estruturais nas políticas de go v ernança  e acessos  do D atabric k s 
+f ora das dir etri z es já estabelecidas.
+R esumo
+ 
+Cenário
+ Experiência
+Jump
+Est eir a
+S A S
+Hist órico e
+Empr esas 
+Est eir a
+de Migr ação
+Abor dagem
+IA First
+Dif er enci al
+ Crit érios
+ Est eir a
+ V alidação
+ A gile T eam
+ P er fis
+ Estrutur a
+ Modelo
+ Plano
+ V alidação
+ Pr emissas
+ F or a do 
+Backlog Alv o
+A t enção
+
+
+----- PÁGINA 60 -----
+5
+Infr aestrutur a e Licenciament o
+Configuração, atualização ou supor t e à infraestrutura de cloud e instâncias Databricks.
+Cust os ou gestão de licenças associadas ao Databricks, SAS, SQL Ser v er , Mainframe ou demais 
+f erramentas do ambient e.
+Pr o visionament o de no v os ambient es além dos já disponibilizados para o pr ojet o.
+6
+Manut enção de Ambient es Legados
+Supor t e t écnico, corr eção de err os ou manut enção e v olutiv a do ambient e SAS após a migração.
+Int er v enções em r otinas SAS que não est ejam incluídas no escopo do backlog priorizado.
+Documentação ou v ersionament o de flux os SAS f ora das entr egas planejadas.
+7
+Otimizações e R eengenharia de Pr ocessos
+A tividades de r ef at or ação, per f ormance tuning ou r eestrutur ação lógica das r otinas além do 
+necessário para a equiv alência funcional SAS  Databricks.
+R eescritas com f oco em eficiência,  par alelismo ou r edução de cust o computacional que não 
+est ejam pr e vistas como par t e do esf or ço de migração dir eta.
+Implementação de no v as estr at égias de par ticionament o, caching ou inde x ação além daquelas 
+necessárias à e x ecução básica das r otinas migradas.
+Otimizações de queries e pipelines visando fine tuning de per f ormance ou modernização estrutural 
+de dados que não est ejam dir etament e ligadas ao objetiv o de equiv alência t écnica.
+→
+Pr oposta Comer cial Nº 2025187 4
+F or a do  Backlog Alv o 
+R esumo
+ 
+Cenário
+ Experiência
+Jump
+Est eir a
+S A S
+Hist órico e
+Empr esas 
+Est eir a
+de Migr ação
+Abor dagem
+IA First
+Dif er enci al
+ Crit érios
+ Est eir a
+ V alida ção
+ A gile T eam
+ P er fis
+ Estrutur a
+ Modelo
+ Plano
+ V alidação
+ Pr emissas
+ F or a do 
+Backlog Alv o
+A t enção
+
+
+----- PÁGINA 61 -----
+Pr oposta Comer cial Nº 2025187 4
+1 Disponibilidade de A cessos e Ambient es
+Liberação de cr edenciais e permissões de acesso aos ambient es SAS e Databricks.
+Configuração dos w orkspaces, clust ers e r eposit órios G it necessários para o início 
+das e x ecuções.
+Garantia de estabilidade de r ede e conectividade entr e as origens de dados 
+(Mainframe, SQL Ser v er , et c.).
+A trasos na liberação de acessos ou apr o v ações int ernas podem impactar a cadência 
+e o v olume de entr egas por sprint.
+2 Disponibilidade dos Ar t ef at os T écnicos
+Entr ega completa dos script s S A S, logs de e x ecução e dicionários de dados.
+Disponibilidade das tabelas de origem e destino com estruturas atualizadas.
+Div er gências entr e documentação e código SAS podem demandar r etr abalho ou 
+r edefinição de comple xidade durant e a migração.
+3 Dependências Entr e Pr ocessos
+Muitas r otinas SAS compar tilham tabelas int ermediárias e cálculos comuns, 
+e xigindo at enção para pr eser v ar a int egridade dos r esultados.
+Alt erações em flux os int er dependent es podem gerar impact os encadeados em 
+outras migrações em andament o.
+É r ecomendá v el priorizar pr ocessos com menor dependência inicial, consolidando a 
+base t écnica ant es das r otinas mais críticas.
+P ont os de A t en çã o
+Durant e  a  e x ecução  das  atividades  conduzidas  pela Squad Migr ação S A S 
+par a Databricks,  alguns  aspect os  demandam at enção especial das equipes 
+en v olvidas,  a  fim  de  pr eser v ar  a  consist ência  t écnica,  o  cumpriment o  do  
+cr onograma  e  a  qualidade  das  entr egas.
+Os  pont os  a  seguir  não  configuram  riscos  dir et os,  mas  r epr esentam  f at or es 
+críticos de acompanhament o  que  de v em  ser  tratados  de  f orma  colaborativ a  
+entr e   e  ,  com  alinhament o contínuo,  pr e visibilidade  e  
+mitigação de impact os  ao  longo  da  atuação  da  Squad.
+Jump Br adesco
+R esumo
+ 
+Cenário
+ Experiência
+Jump
+Est eir a
+S A S
+Hist órico e
+Empr esas 
+Est eir a
+de Migr ação
+Abor dagem
+IA First
+Dif er enci al
+ Crit érios
+ Est eir a
+ V alidação
+ A gile T eam
+ P er fis
+ Estrutur a
+ Modelo
+ Plano
+ V alidação
+ Pr emissas
+ F or a do 
+B ac k log Al v o
+A t enção
+
+
+----- PÁGINA 62 -----
+Pr oposta Comer cial Nº 2025187 4
+5 Gestão de Prioridades e Capacidade
+A e v olução da est eira depende da definição contínua de prioridades por par t e do 
+Bradesco.
+Mudanças fr equent es no backlog ou inclusão de no v as r otinas durant e a sprint 
+podem af etar pr e visibilidade e v elocidade de entr ega.
+As r e visões de escopo e ajust es de comple xidade de v em ser alinhadas 
+pr e viament e, r espeitando a capacidade pr odutiv a da squad.
+6 V olume e P er f ormance das Ex ecuções
+Pr ocessos de alta v olumetria ou com grande númer o de joins podem demandar 
+ajust es de per f ormance e otimização de configuração de clust er .
+Dif er enças significativ as entr e os ambient es SAS e Databricks podem af etar o t empo 
+de e x ecução das car gas.
+R ecomenda-se acompanhament o t écnico pr ó ximo nas primeir as e x ecuções em 
+pr odução, at é a estabilização completa.
+7 Alinhament o Contínuo Entr e as Equipes
+A atuação ef etiv a da squad depende de comunicação dir eta e periódica entr e  
+e .
+O acompanhament o conjunt o de impediment os, priorizações e v alidações é essencial 
+para mant er a fluidez da est eir a e o ritmo das entr egas.
+R euniões semanais de acompanhament o t écnico são r ecomendadas para ajust e de 
+dir ecionament os e mitigação de riscos oper acionais.
+Jump
+Bradesco
+P ont os de A t enção
+4 V alidação Compar ati v a dos O utput s
+As dif er enças naturais entr e os mot or es SAS e Databricks podem r esultar 
+em v ariações num é ricas sutis em funções agr egadas ou c á lculos 
+condicionais.
+É  fundamental mant er crit é rios clar os de aceitação e v alidação 
+colaborativ a entr e as equipes t écnicas.
+Div er g ê ncias não documentadas entr e as lógicas SAS e as r egras de 
+negócio atuais podem e xigir ajust es adicionais.
+Resumo
+ 
+Cenário
+ Experiência
+Jump
+Esteira
+SAS
+Histórico e
+Empresas 
+Esteira
+de Migração
+Abordagem
+IA First
+Diferenci al
+ Critérios
+ Esteira
+ Validação
+ Agile Team
+ Perfis
+ Estrutura
+ Modelo
+ Plano
+ Validação
+ Premissas
+ Fora do 
+Backlog Alvo
+Atenção
+
+
+----- PÁGINA 63 -----
+obrigado!
+Cont e com a Jump par a impulsionar a 
+tr ansf ormação digital da sua empr esa!
+l i nk e d i n.com/comp a n y/j u mp - l ab e l - so lu t i o n s
+i n s tag r a m.com/j u mp l ab e l
+y ou t u b e.com/Ju mpL ab e l
+
+
+----- PÁGINA 64 -----
+

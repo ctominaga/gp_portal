@@ -1,0 +1,37 @@
+{
+  "_meta": {
+    "annotated_by": "Christopher Tominaga",
+    "annotated_on": "2026-05-06",
+    "source_pdf": "PTC 20251973 - Torra - Squad Evolução da Governança de Dados v3.pdf",
+    "extraction_quality": "image_pdf_partial_ocr_needed",
+    "notes": "PDF predominantemente em imagens (slides exportados). Apenas tabelas comerciais e cláusulas das últimas páginas têm text-layer. A pipeline real de extração precisará OCR para capturar entregáveis técnicos. Este expected.json documenta o que conseguimos confirmar do texto extraído.",
+    "test_strategy": "agente leitor deve ser tolerante a propostas image-only — quando OCR não estiver presente, retornar Baseline em status 'needs_ocr' em vez de erro. Em F2+ a pipeline OCR será adicionada; este expected.json será atualizado então."
+  },
+  "project": {
+    "client_name": "Torra",
+    "project_name": "Squad Evolução da Governança de Dados",
+    "proposal_number": "20251973",
+    "proposal_version": "v3",
+    "domain": "Governança de Dados",
+    "duration_months_recommended": 12,
+    "duration_months_alternative": 8,
+    "sprint_length_weeks": 2,
+    "billing_cadence": "Faturamento mensal a cada 2 sprints",
+    "investment_recommended_brl": 456000,
+    "investment_per_sprint_brl_recommended": 19000,
+    "investment_alternative_brl": 250000,
+    "investment_per_sprint_brl_alternative": 15625,
+    "sprints_recommended": 24,
+    "sprints_alternative": 16
+  },
+  "phases": [],
+  "deliverables": [],
+  "_needs_ocr": true,
+  "key_premises": [
+    "Início do projeto em até 15 dias após aceite da proposta",
+    "Local de realização: sede Jump Label em São Paulo",
+    "Cliente fornece informações em tempo hábil",
+    "Validade da proposta: 60 dias",
+    "Pagamento via boleto, 20 dias corridos após NF"
+  ]
+}

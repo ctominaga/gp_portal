@@ -1,0 +1,226 @@
+{
+  "_meta": {
+    "annotated_by": "Christopher Tominaga",
+    "annotated_on": "2026-05-06",
+    "source_pdf": "PT 20251874 - Bradesco - Squad Migração SAS para Databricks.pdf",
+    "extraction_quality": "good_text_layer",
+    "notes": "Proposta gold-standard do piloto. Todos os entregáveis confirmados via leitura manual do texto extraído (3097 linhas)."
+  },
+  "project": {
+    "client_name": "Bradesco",
+    "project_name": "Squad Migração SAS para Databricks na Azure",
+    "proposal_number": "20251874",
+    "domain": "Financeiro — Gestão de Risco Financeiro (GRF) / Risco de Mercado",
+    "scenario_recommended_by_jump": "Cenário 1 — Com MigrateMind",
+    "team_composition": "1 Squad: 1 Líder Técnico full-time + 3 Engenheiros de Dados full-time",
+    "estimated_capacity_per_sprint_hours": 320,
+    "estimated_total_capacity_hours": 960,
+    "duration_sprints": 3,
+    "sprint_length_weeks": 2,
+    "expected_acceleration_pct": "60-70% de redução no esforço manual via MigrateMind"
+  },
+  "phases": [
+    {
+      "phase_id": "sprint-1",
+      "name": "Sprint 1 — Convergência inicial",
+      "rationale": "Grupos de menor complexidade e baixo acoplamento; valida pipeline automatizado, estabiliza padrões de conversão (notebooks, testes, padrões PySpark) e gera quick wins.",
+      "deliverable_count": 10
+    },
+    {
+      "phase_id": "sprint-2",
+      "name": "Sprint 2 — Escala e padronização",
+      "rationale": "Equilíbrio entre baixa e média complexidade, com interdependência reduzida. Ganha escala validando transformações estruturadas.",
+      "deliverable_count": 4
+    },
+    {
+      "phase_id": "sprint-3",
+      "name": "Sprint 3 — Fechamento técnico",
+      "rationale": "Grupos de maior densidade lógica, múltiplas dependências, cálculos regulatórios e regras complexas. MigrateMind opera no máximo potencial.",
+      "deliverable_count": 4
+    },
+    {
+      "phase_id": "phaseout",
+      "name": "Phaseout — Transição assistida",
+      "rationale": "Continuidade operacional, consolidação do conhecimento técnico transferido e estabilização do ambiente Databricks antes do encerramento.",
+      "deliverable_count": 3
+    }
+  ],
+  "deliverables": [
+    {
+      "id": "d-001",
+      "phase_id": "sprint-1",
+      "title": "Migração de Custos PD/AED/LGD para PySpark/Databricks",
+      "type": "code_migration",
+      "category": "tecnico",
+      "complexity": "baixa"
+    },
+    {
+      "id": "d-002",
+      "phase_id": "sprint-1",
+      "title": "Migração de RSA (Risco de Spread Atuarial) para PySpark/Databricks",
+      "type": "code_migration",
+      "category": "tecnico",
+      "complexity": "baixa"
+    },
+    {
+      "id": "d-003",
+      "phase_id": "sprint-1",
+      "title": "Migração de Dash Orçamento para PySpark/Databricks",
+      "type": "code_migration",
+      "category": "tecnico",
+      "complexity": "baixa"
+    },
+    {
+      "id": "d-004",
+      "phase_id": "sprint-1",
+      "title": "Migração de Instifina para PySpark/Databricks",
+      "type": "code_migration",
+      "category": "tecnico",
+      "complexity": "baixa"
+    },
+    {
+      "id": "d-005",
+      "phase_id": "sprint-1",
+      "title": "Migração de Depósitos Judiciais para PySpark/Databricks",
+      "type": "code_migration",
+      "category": "tecnico",
+      "complexity": "baixa"
+    },
+    {
+      "id": "d-006",
+      "phase_id": "sprint-1",
+      "title": "Migração de Veículo para PySpark/Databricks",
+      "type": "code_migration",
+      "category": "tecnico",
+      "complexity": "baixa"
+    },
+    {
+      "id": "d-007",
+      "phase_id": "sprint-1",
+      "title": "Migração de RATI para PySpark/Databricks",
+      "type": "code_migration",
+      "category": "tecnico",
+      "complexity": "baixa"
+    },
+    {
+      "id": "d-008",
+      "phase_id": "sprint-1",
+      "title": "Migração de Resumoc para PySpark/Databricks",
+      "type": "code_migration",
+      "category": "tecnico",
+      "complexity": "baixa"
+    },
+    {
+      "id": "d-009",
+      "phase_id": "sprint-1",
+      "title": "Migração de CERM para PySpark/Databricks",
+      "type": "code_migration",
+      "category": "tecnico",
+      "complexity": "baixa"
+    },
+    {
+      "id": "d-010",
+      "phase_id": "sprint-1",
+      "title": "Migração de Outros Riscos para PySpark/Databricks",
+      "type": "code_migration",
+      "category": "tecnico",
+      "complexity": "baixa"
+    },
+    {
+      "id": "d-011",
+      "phase_id": "sprint-2",
+      "title": "Migração de AlertCli_Sale para PySpark/Databricks",
+      "type": "code_migration",
+      "category": "tecnico",
+      "complexity": "baixa-media"
+    },
+    {
+      "id": "d-012",
+      "phase_id": "sprint-2",
+      "title": "Migração de DDR para PySpark/Databricks",
+      "type": "code_migration",
+      "category": "tecnico",
+      "complexity": "baixa-media"
+    },
+    {
+      "id": "d-013",
+      "phase_id": "sprint-2",
+      "title": "Migração de Segmentação para PySpark/Databricks",
+      "type": "code_migration",
+      "category": "tecnico",
+      "complexity": "baixa-media"
+    },
+    {
+      "id": "d-014",
+      "phase_id": "sprint-2",
+      "title": "Migração de SARS para PySpark/Databricks",
+      "type": "code_migration",
+      "category": "tecnico",
+      "complexity": "baixa-media"
+    },
+    {
+      "id": "d-015",
+      "phase_id": "sprint-3",
+      "title": "Migração de IRRBB (Interest Rate Risk in the Banking Book) para PySpark/Databricks",
+      "type": "code_migration",
+      "category": "tecnico-regulatorio",
+      "complexity": "alta"
+    },
+    {
+      "id": "d-016",
+      "phase_id": "sprint-3",
+      "title": "Migração de FRTB (Fundamental Review of the Trading Book) para PySpark/Databricks",
+      "type": "code_migration",
+      "category": "tecnico-regulatorio",
+      "complexity": "alta"
+    },
+    {
+      "id": "d-017",
+      "phase_id": "sprint-3",
+      "title": "Migração de RML para PySpark/Databricks",
+      "type": "code_migration",
+      "category": "tecnico",
+      "complexity": "media-alta"
+    },
+    {
+      "id": "d-018",
+      "phase_id": "sprint-3",
+      "title": "Migração de Restritivo Socioambiental para PySpark/Databricks",
+      "type": "code_migration",
+      "category": "tecnico-regulatorio",
+      "complexity": "media-alta"
+    },
+    {
+      "id": "d-019",
+      "phase_id": "phaseout",
+      "title": "Documentação técnica final das rotinas migradas (rastreabilidade SAS↔PySpark)",
+      "type": "documentation",
+      "category": "transversal"
+    },
+    {
+      "id": "d-020",
+      "phase_id": "phaseout",
+      "title": "Shadowing e transferência de conhecimento para o time interno do Bradesco",
+      "type": "knowledge_transfer",
+      "category": "transversal"
+    },
+    {
+      "id": "d-021",
+      "phase_id": "phaseout",
+      "title": "Estabilização do ambiente Databricks pós-migração (suporte à operação)",
+      "type": "stabilization",
+      "category": "transversal"
+    }
+  ],
+  "out_of_scope": [
+    "Correção de incidentes fora do período de phaseout e shadowing",
+    "Rotinas SAS que envolvam macros customizadas não documentadas previamente",
+    "Mudanças no modelo de dados de origem"
+  ],
+  "key_premises": [
+    "Disponibilidade do código SAS legado para análise prévia",
+    "Acesso ao ambiente Databricks na Azure já provisionado pelo Bradesco",
+    "Validação técnica e funcional pelo Bradesco em até 5 dias úteis após cada entrega",
+    "Reuniões de planejamento e revisão quinzenais (cadência de sprint)"
+  ]
+}

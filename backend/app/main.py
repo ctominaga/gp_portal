@@ -1,0 +1,92 @@
+from contextlib import asynccontextmanager
+from typing import Literal
+
+import redis.asyncio as redis_async
+import sentry_sdk
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from sqlalchemy import text
+
+from app.core.config import get_settings
+from app.core.logging import configure_logging, get_logger, new_request_id, request_id_ctx
+from app.db.session import engine
+
+settings = get_settings()
+configure_logging()
+log = get_logger("app")
+
+if settings.sentry_dsn:
+    sentry_sdk.init(dsn=settings.sentry_dsn, environment=settings.environment, traces_sample_rate=0.1)
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    log.info("app.startup", environment=settings.environment, version=settings.app_version)
+    app.state.redis = redis_async.from_url(settings.redis_url, decode_responses=True)
+    try:
+        yield
+    finally:
+        await app.state.redis.aclose()
+        await engine.dispose()
+        log.info("app.shutdown")
+
+
+app = FastAPI(
+    title=settings.app_name,
+    version=settings.app_version,
+    lifespan=lifespan,
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_origins_list,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+@app.middleware("http")
+async def request_id_middleware(request: Request, call_next):
+    rid = request.headers.get("x-request-id") or new_request_id()
+    request_id_ctx.set(rid)
+    log.info("http.request", method=request.method, path=request.url.path)
+    response = await call_next(request)
+    response.headers["x-request-id"] = rid
+    log.info("http.response", method=request.method, path=request.url.path, status=response.status_code)
+    return response
+
+
+class HealthResponse(BaseModel):
+    status: Literal["ok", "degraded"]
+    db: Literal["ok", "down"]
+    redis: Literal["ok", "down"]
+    version: str
+
+
+@app.get("/health", response_model=HealthResponse, tags=["meta"])
+async def health() -> HealthResponse:
+    db_status: Literal["ok", "down"] = "ok"
+    redis_status: Literal["ok", "down"] = "ok"
+
+    try:
+        async with engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
+    except Exception as exc:
+        log.warning("health.db_down", error=str(exc))
+        db_status = "down"
+
+    try:
+        await app.state.redis.ping()
+    except Exception as exc:
+        log.warning("health.redis_down", error=str(exc))
+        redis_status = "down"
+
+    overall: Literal["ok", "degraded"] = "ok" if db_status == "ok" and redis_status == "ok" else "degraded"
+    return HealthResponse(status=overall, db=db_status, redis=redis_status, version=settings.app_version)
+
+
+@app.get("/", tags=["meta"])
+async def root() -> dict[str, str]:
+    return {"name": settings.app_name, "version": settings.app_version, "docs": "/docs"}

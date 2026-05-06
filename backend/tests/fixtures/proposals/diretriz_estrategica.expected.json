@@ -1,0 +1,23 @@
+{
+  "_meta": {
+    "annotated_by": "Christopher Tominaga",
+    "annotated_on": "2026-05-06",
+    "source_pdf": "PTC 20262113 - Governança - Diretriz Estratégica Uso e Evolução Dados v1 (versão resolução baixa).pdf",
+    "extraction_quality": "image_pdf_no_text_layer",
+    "notes": "PDF totalmente em imagens (versão de baixa resolução). Nenhum texto extraível via pypdf. Pipeline real precisa OCR (e mesmo assim a baixa resolução pode degradar acurácia). Este expected.json documenta o esperado de uma extração text-only — vazia.",
+    "test_strategy": "validar que o agente leitor detecta 'no_text_layer' e retorna Baseline em status 'needs_ocr' com erro claro, em vez de tentar inferir entregáveis."
+  },
+  "project": {
+    "client_name": "Cliente Governança (anonimizado / a confirmar com base no PDF original)",
+    "project_name": "Diretriz Estratégica de Uso e Evolução de Dados",
+    "proposal_number": "20262113",
+    "proposal_version": "v1",
+    "proposal_resolution_quality": "baixa"
+  },
+  "phases": [],
+  "deliverables": [],
+  "_needs_ocr": true,
+  "_no_text_layer": true,
+  "expected_failure_reason": "PDF_NO_TEXT_LAYER",
+  "key_premises": []
+}

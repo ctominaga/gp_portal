@@ -1,0 +1,49 @@
+[project]
+name = "jump-agent-runner"
+version = "0.1.0"
+description = "Camada de execução de agentes — invoca Claude Code e Codex CLI com fallback automático"
+requires-python = ">=3.12"
+readme = "README.md"
+
+dependencies = [
+    "pydantic>=2.9,<3",
+    "structlog==24.4.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==8.3.3",
+    "pytest-asyncio==0.24.0",
+    "pytest-cov==6.0.0",
+    "ruff==0.8.0",
+    "mypy==1.13.0",
+]
+
+[project.scripts]
+jump-runner = "jump_agent_runner.cli.main:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["jump_agent_runner*"]
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "N", "ASYNC"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+markers = [
+    "requires_claude_cli: needs claude -p available",
+    "requires_codex_cli: needs codex CLI available",
+    "requires_wsl: needs WSL2 with tmux",
+]
