@@ -398,8 +398,14 @@ export default function ReportEditPage() {
                 const d = deliverableById.get(p.deliverable_id);
                 const showRevisedDate = p.status !== "done" && p.percent_complete < 100;
                 const plannedDate = d?.due_date ?? null;
+                // F4-débito.B: "desvio" só faz sentido depois que a entrega
+                // começou — em "Planejado" o re-planejamento é normal, não desvio.
                 const hasDeviation =
-                  showRevisedDate && p.revised_date && plannedDate && p.revised_date !== plannedDate;
+                  showRevisedDate &&
+                  p.status !== "planned" &&
+                  !!p.revised_date &&
+                  !!plannedDate &&
+                  p.revised_date !== plannedDate;
                 return (
                   <div
                     key={p.deliverable_id}

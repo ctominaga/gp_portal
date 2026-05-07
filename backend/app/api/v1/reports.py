@@ -284,6 +284,34 @@ async def submit_report(
     report.submitted_at = datetime.now(UTC)
     await db.commit()
     await db.refresh(report)
+
+    # Cacheia Health Score derivado para listagens rápidas
+    try:
+        from app.services import health_score as _hs
+
+        breakdown = await _hs.compute_for_project(db, report.project_id)
+        await _hs.cache_to_report(db, report, breakdown.score)
+    except Exception:  # noqa: BLE001
+        pass
+
+    # Dispara agente de análise (worker stub; worker real em F2.6)
+    try:
+        from app.services.report_analyzer_stub import schedule_analysis
+
+        schedule_analysis(report.id)
+    except Exception:  # noqa: BLE001
+        pass
+
+    # Notifica PMOs
+    try:
+        from app.services.notifications import notify_report_submitted
+
+        project = await db.get(Project, report.project_id)
+        if project:
+            await notify_report_submitted(db, report=report, project=project)
+    except Exception:  # noqa: BLE001
+        pass
+
     return await _serialize_report(report, db)
 
 

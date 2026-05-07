@@ -159,6 +159,31 @@ async def _process(proposal_id: uuid.UUID, run_id: str | None) -> None:
 
         await db.commit()
 
+        # F4.3: se proposta v2+, dispara diff vs baseline ativo e cria ScopeChanges
+        try:
+            if proposal.version > 1:
+                from sqlalchemy import select as _select
+
+                from app.api.v1.client_portal import diff_baselines
+
+                active = (
+                    await db.execute(
+                        _select(Baseline).where(
+                            Baseline.project_id == project.id,
+                            Baseline.status == BaselineStatus.ACTIVE,
+                        )
+                    )
+                ).scalar_one_or_none()
+                if active:
+                    await diff_baselines(
+                        db,
+                        project_id=project.id,
+                        base_baseline=active,
+                        new_baseline=baseline,
+                    )
+        except Exception as exc:  # noqa: BLE001
+            log.warning("worker_stub.diff_failed", error=str(exc))
+
         emit_to_user(
             project.gp_user_id,
             "proposal_extracted",

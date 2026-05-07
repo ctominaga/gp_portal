@@ -558,6 +558,45 @@ class ProjectRetrospective(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, nullable=False)
 
 
+class PortfolioConfig(Base):
+    """Configuração singleton do portfólio — pesos do Health Score.
+
+    Apenas uma linha (id=1). Valores em [0..1]; o serviço normaliza se
+    não somarem 1.0. Editado pelo PMO em /pmo/portfolio/config.
+    """
+
+    __tablename__ = "portfolio_config"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, default=1)
+    weight_progress: Mapped[float] = mapped_column(Float, nullable=False, default=0.40)
+    weight_risks: Mapped[float] = mapped_column(Float, nullable=False, default=0.20)
+    weight_pendings: Mapped[float] = mapped_column(Float, nullable=False, default=0.20)
+    weight_schedule: Mapped[float] = mapped_column(Float, nullable=False, default=0.20)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=_utcnow, nullable=False
+    )
+    updated_by_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("users.id"), nullable=True
+    )
+
+
+class InAppNotification(Base):
+    """Notificação in-app vinculada a um usuário."""
+
+    __tablename__ = "in_app_notifications"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=_new_uuid)
+    user_id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), ForeignKey("users.id"))
+    kind: Mapped[str] = mapped_column(String(50), nullable=False)
+    title: Mapped[str] = mapped_column(String(200), nullable=False)
+    body: Mapped[str | None] = mapped_column(Text, nullable=True)
+    link: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=_utcnow, nullable=False
+    )
+
+
 class DataProcessingRecord(Base):
     """LGPD — registro de tratamento (RAT). SLA 15 dias."""
 

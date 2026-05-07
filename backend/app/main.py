@@ -10,11 +10,15 @@ from sqlalchemy import text
 
 from app.api.internal.agent_results import router as internal_results_router
 from app.api.internal.heartbeats import router as internal_heartbeats_router
+from app.api.v1.approvals import router as approvals_router
 from app.api.v1.auth import router as auth_router
 from app.api.v1.baselines import router as baselines_router
+from app.api.v1.client_portal import router as client_router
 from app.api.v1.events import router as events_router
 from app.api.v1.files import router as files_router
+from app.api.v1.notifications import router as notifications_router
 from app.api.v1.operator import router as operator_router
+from app.api.v1.portfolio import router as portfolio_router
 from app.api.v1.projects import router as projects_router
 from app.api.v1.reports import router as reports_router
 from app.core.config import get_settings
@@ -105,6 +109,10 @@ app.include_router(auth_router)
 app.include_router(projects_router)
 app.include_router(baselines_router)
 app.include_router(reports_router)
+app.include_router(approvals_router)
+app.include_router(client_router)
+app.include_router(portfolio_router)
+app.include_router(notifications_router)
 app.include_router(files_router)
 app.include_router(operator_router)
 app.include_router(events_router)

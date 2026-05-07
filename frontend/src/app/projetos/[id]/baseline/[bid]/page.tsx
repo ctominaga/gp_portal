@@ -166,11 +166,20 @@ export default function BaselineReviewPage() {
             </span>
           )}
           {typeof audit.confidence_score === "number" && (
-            <span>
+            <span className="flex items-center gap-1.5">
               · confiança{" "}
               <strong className="text-foreground">
                 {Math.round(audit.confidence_score * 100)}%
               </strong>
+              {audit.confidence_score < 0.7 && (
+                <Badge
+                  variant="amber"
+                  className="text-[10px]"
+                  title="Confiança abaixo de 70% — revise os entregáveis cuidadosamente antes de ativar."
+                >
+                  ⚠ baixa
+                </Badge>
+              )}
             </span>
           )}
         </div>

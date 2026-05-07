@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jump.tec.br/schemas/report_insights.json",
+  "title": "ReportInsights",
+  "description": "Saída do agente de análise de report — usada pelo report_analyzer_stub e pelo agente real (F2.6).",
+  "type": "object",
+  "required": ["report_id", "insights"],
+  "properties": {
+    "report_id": { "type": "string", "format": "uuid" },
+    "insights": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/Insight" }
+    },
+    "model_metadata": {
+      "type": "object",
+      "properties": {
+        "engine": { "type": "string", "enum": ["claude", "codex", "stub"] },
+        "route": { "type": "string", "enum": ["headless", "broker", "stub"] },
+        "duration_s": { "type": "number" },
+        "confidence_score": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    }
+  },
+  "$defs": {
+    "Insight": {
+      "type": "object",
+      "required": ["kind", "severity", "headline"],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "schedule_drift",
+            "critical_risk_alert",
+            "client_blocking_items",
+            "scope_creep",
+            "team_overload",
+            "all_clear"
+          ]
+        },
+        "severity": {
+          "type": "string",
+          "enum": ["info", "low", "medium", "high", "critical"]
+        },
+        "headline": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "detail": { "type": "string" },
+        "evidence": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    }
+  }
+}
