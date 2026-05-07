@@ -28,6 +28,14 @@ def event_loop():
     loop.close()
 
 
+@pytest.fixture(autouse=True)
+def _disable_stub_worker_in_tests(monkeypatch):
+    """O stub agenda tasks asyncio que podem ficar pendentes ao fim do teste,
+    gerando 'Task was destroyed but it is pending'. Desabilita por padrão;
+    testes que precisam do stub habilitam explicitamente via monkeypatch.setenv()."""
+    monkeypatch.setenv("STUB_WORKER_ENABLED", "false")
+
+
 @pytest_asyncio.fixture
 async def engine_test():
     """SQLite in-memory com StaticPool — todas as conexões compartilham a MESMA

@@ -14,6 +14,7 @@ from app.models import Proposal, ProposalStatus, Role, TaskType, User
 from app.models.domain import Project
 from app.queue.publisher import enqueue_agent_job
 from app.schemas.project import ProjectCreate, ProjectPublic, ProposalPublic
+from app.services.worker_stub import schedule_extraction
 
 router = APIRouter(tags=["projects"])
 
@@ -147,8 +148,9 @@ async def upload_proposal(
     # Publica job de extração no Redis. Se app.state.redis estiver indisponível
     # (CI sem Redis), só registra log e segue — vai ser retomado pelo agendador.
     redis = getattr(request.app.state, "redis", None)
+    run_id: str | None = None
     if redis is not None:
-        await enqueue_agent_job(
+        log = await enqueue_agent_job(
             db=db,
             redis=redis,
             task_type=TaskType.PROPOSAL_EXTRACTION,
@@ -159,7 +161,13 @@ async def upload_proposal(
             timeout_hard_s=900,
             heartbeat_s=30,
         )
+        run_id = log.run_id
     await db.commit()
+
+    # Worker stub agenda a transição pending_extraction → extracted após N segundos.
+    # Em F2.6 quando o worker real assumir, basta STUB_WORKER_ENABLED=false.
+    schedule_extraction(proposal.id, run_id=run_id)
+
     return proposal
 
 

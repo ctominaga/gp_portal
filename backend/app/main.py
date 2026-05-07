@@ -11,9 +11,12 @@ from sqlalchemy import text
 from app.api.internal.agent_results import router as internal_results_router
 from app.api.internal.heartbeats import router as internal_heartbeats_router
 from app.api.v1.auth import router as auth_router
+from app.api.v1.baselines import router as baselines_router
+from app.api.v1.events import router as events_router
 from app.api.v1.files import router as files_router
 from app.api.v1.operator import router as operator_router
 from app.api.v1.projects import router as projects_router
+from app.api.v1.reports import router as reports_router
 from app.core.config import get_settings
 from app.core.logging import configure_logging, get_logger, new_request_id, request_id_ctx
 from app.db.session import engine
@@ -100,7 +103,10 @@ async def root() -> dict[str, str]:
 
 app.include_router(auth_router)
 app.include_router(projects_router)
+app.include_router(baselines_router)
+app.include_router(reports_router)
 app.include_router(files_router)
 app.include_router(operator_router)
+app.include_router(events_router)
 app.include_router(internal_results_router)
 app.include_router(internal_heartbeats_router)
