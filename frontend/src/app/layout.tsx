@@ -1,4 +1,8 @@
 import type { Metadata } from "next";
+import { Toaster } from "sonner";
+
+import { AuthProvider } from "@/lib/auth-context";
+
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -9,7 +13,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
-      <body className="min-h-screen bg-background font-sans antialiased">{children}</body>
+      <body className="min-h-screen bg-background font-sans antialiased">
+        <AuthProvider>{children}</AuthProvider>
+        <Toaster position="top-right" />
+      </body>
     </html>
   );
 }
