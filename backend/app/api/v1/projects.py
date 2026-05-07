@@ -4,14 +4,15 @@ from __future__ import annotations
 import hashlib
 import uuid
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
 from jump_storage.factory import get_storage
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db, require_any_role
-from app.models import Proposal, ProposalStatus, Role, User
+from app.models import Proposal, ProposalStatus, Role, TaskType, User
 from app.models.domain import Project
+from app.queue.publisher import enqueue_agent_job
 from app.schemas.project import ProjectCreate, ProjectPublic, ProposalPublic
 
 router = APIRouter(tags=["projects"])
@@ -91,6 +92,7 @@ async def get_project(
 )
 async def upload_proposal(
     project_id: uuid.UUID,
+    request: Request,
     file: UploadFile = File(...),
     user: User = Depends(require_any_role(*_GP_ONLY)),
     db: AsyncSession = Depends(get_db),
@@ -139,8 +141,25 @@ async def upload_proposal(
         uploaded_by_id=user.id,
     )
     db.add(proposal)
-    await db.commit()
+    await db.flush()
     await db.refresh(proposal)
+
+    # Publica job de extração no Redis. Se app.state.redis estiver indisponível
+    # (CI sem Redis), só registra log e segue — vai ser retomado pelo agendador.
+    redis = getattr(request.app.state, "redis", None)
+    if redis is not None:
+        await enqueue_agent_job(
+            db=db,
+            redis=redis,
+            task_type=TaskType.PROPOSAL_EXTRACTION,
+            project_id=project_id,
+            proposal_id=proposal.id,
+            input_files=[{"key": key, "kind": "proposal"}],
+            output_path_hint=f"baseline-{proposal.id}.json",
+            timeout_hard_s=900,
+            heartbeat_s=30,
+        )
+    await db.commit()
     return proposal
 
 
