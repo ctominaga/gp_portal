@@ -55,7 +55,7 @@ class Observer:
         self._log_dir = log_dir or DEFAULT_LOG_DIR
         self._stream = stream if stream is not None else sys.stdout
         # `clock` é um callable opcional retornando datetime.datetime — facilita testes
-        self._clock = clock or (lambda: _dt.datetime.now(_dt.timezone.utc))
+        self._clock = clock or (lambda: _dt.datetime.now(_dt.UTC))
         self._lock = threading.Lock()
 
     @property

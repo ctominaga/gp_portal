@@ -15,7 +15,7 @@ from jump_agent_runner.types import Engine, FailureReason, Route
 @pytest.fixture
 def fixed_clock():
     """2026-05-07 14:30:00 UTC fixo, idempotente entre chamadas."""
-    return lambda: dt.datetime(2026, 5, 7, 14, 30, 0, tzinfo=dt.timezone.utc)
+    return lambda: dt.datetime(2026, 5, 7, 14, 30, 0, tzinfo=dt.UTC)
 
 
 @pytest.fixture
