@@ -9,13 +9,10 @@ from pathlib import Path
 import pytest
 
 from jump_agent_runner.observer import Observer
-from jump_agent_runner.routes.codex_headless import CodexHeadlessRoute
+from jump_agent_runner.routes.codex_headless import DEFAULT_DISTRO, CodexHeadlessRoute
 from jump_agent_runner.types import AgentTask
 
 pytestmark = pytest.mark.requires_codex_cli
-
-
-from jump_agent_runner.routes.codex_headless import DEFAULT_DISTRO
 
 
 def _wsl_has_codex() -> bool:
