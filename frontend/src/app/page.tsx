@@ -24,7 +24,7 @@ export default function HomePage() {
             <Link href="/health-check">Verificar saúde do backend</Link>
           </Button>
           <Button variant="outline" asChild>
-            <Link href="https://github.com/ctominaga-jump/gp_portal" target="_blank">
+            <Link href="https://github.com/ctominaga/gp_portal" target="_blank">
               Repositório
             </Link>
           </Button>
