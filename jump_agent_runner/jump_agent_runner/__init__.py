@@ -2,6 +2,7 @@
 
 from .artifact import ArtifactValidator
 from .observer import Observer
+from .runner import AgentRunner
 from .types import (
     AgentResult,
     AgentTask,
@@ -16,6 +17,7 @@ __version__ = "0.1.0"
 
 __all__ = [
     "AgentResult",
+    "AgentRunner",
     "AgentTask",
     "ArtifactValidator",
     "AttemptLog",
