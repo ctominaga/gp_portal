@@ -86,8 +86,8 @@ Criada a árvore conforme spec do prompt: `backend/`, `frontend/`, `jump_agent_r
 | Frontend `npm test` (vitest) | ✅ | 1 passed em 9ms (Node 24, Next.js 14.2.35) |
 | `docker compose build` em Docker local | ⚠️ | Comandos Docker timeoutavam após o prune (daemon flaky pós-restart). Mantido como pendência — CI Linux do GitHub Actions valida o mesmo Dockerfile em ambiente limpo |
 | `docker compose up` + `/health` end-to-end | ⏳ | Bloqueado pelo item acima. Não é crítico para começar F1 (S0 a S2 do agent-runner não dependem de Postgres/Redis) |
-| `git push -u origin main` | ❌ | **Bloqueado:** `Repository not found` no remote `https://github.com/ctominaga-jump/gp_portal.git` — repo não existe ou é privado e meu git client não tem credenciais |
-| CI verde no GitHub Actions | ⏳ | depende do push acima |
+| `git push -u origin main` | ✅ | URL corrigida para `https://github.com/ctominaga/gp_portal.git` (não `ctominaga-jump`); 6 commits no remote |
+| CI verde no GitHub Actions | ✅ | ci-backend ✓, ci-frontend ✓, ci-runner ✓ — todos completed/success no commit `bc669c6` |
 
 ## Pendências e bloqueios (atenção)
 
@@ -111,21 +111,8 @@ curl http://localhost:8000/health
 ```
 Não bloqueia início de F1: S0–S2 do `jump-agent-runner` não tocam Postgres/Redis.
 
-### 🔴 git push bloqueado — repo não acessível
-```
-remote: Repository not found.
-fatal: repository 'https://github.com/ctominaga-jump/gp_portal.git/' not found
-```
-
-Causas possíveis:
-1. Repo ainda não foi criado em `github.com/ctominaga-jump/gp_portal`.
-2. Repo existe mas é privado e meu git client não tem credenciais (`git config --global credential.helper` está vazio; gh CLI não instalado; Git Credential Manager moderno também ausente).
-3. URL do remote está errada.
-
-**O que precisa de você:**
-- Confirmar que o repo existe (visite o link no browser logado).
-- Se existe e é privado: instalar `gh` (`winget install GitHub.cli`) e `gh auth login`, OU configurar um Personal Access Token, OU rodar o `git push` você mesmo.
-- Se não existe: criar repo vazio (sem README/gitignore inicial) em `github.com/ctominaga-jump/gp_portal` e me avisar.
+### ✅ git push e CI resolvidos
+URL correta era `https://github.com/ctominaga/gp_portal.git` (conta pessoal, não org `ctominaga-jump`). Push fez `branch 'main' set up to track 'origin/main'`. Os 3 workflows (`ci-backend`, `ci-frontend`, `ci-runner`) foram disparados via `workflow_dispatch` adicionado a cada um, e todos terminaram em `completed/success` no commit `bc669c6`.
 
 ### 🟡 PDFs do gold standard não estão no git
 Tamanhos individuais: Bradesco 73MB, Torra 10MB, Diretriz 7.7MB. Excluídos do repo (gitignore). Os `.txt` extraídos e os `.expected.json` estão commitados. Para rodar testes que abrem o PDF original, basta ter `Jump-GP-portal/propostas/` populado localmente.
@@ -148,16 +135,23 @@ A F1 entrega a biblioteca de execução de agentes em 8 sub-sprints (S0-S7), con
 
 Você confirmou que `claude -p` e `codex exec` estão disponíveis no terminal — vou executar smokes reais com ambos durante S1, S2 e S7.
 
-## Pergunta para você antes de começar a F1
+## F0 fechada — pronto para iniciar F1
 
-Após o ciclo F0-cleanup (2026-05-07), restam apenas 2 itens externos:
+Tudo verde:
+- 6 commits no remote `ctominaga/gp_portal`.
+- `ci-backend`, `ci-frontend`, `ci-runner` ✅ na sua primeira execução real.
+- Stack local validada (Python 3.12, Node 24, Next 14.2.35, FastAPI 0.115).
+- Gold standard de propostas anotado.
 
-1. **Repo GitHub.** Acesse `https://github.com/ctominaga-jump/gp_portal` no browser logado e confirme:
-   - Se **não existe**: crie um repo vazio (sem README, sem .gitignore, sem licença inicial) e me avise. Eu rodo `git push -u origin main` em seguida.
-   - Se **existe e é privado**: rode você mesmo `git push -u origin main` no diretório `jump-report/`, OU instale `gh` (`winget install GitHub.cli`) + `gh auth login` para que eu consiga autenticar. Tenho 3 commits prontos esperando push.
+Único item que fica como "validar quando a máquina worker estiver pronta": `docker compose up` em Docker host estável (o Docker local entrou em estado degradado pós-prune neste ciclo). Isso não bloqueia F1/S0–S2 (independem de Postgres/Redis).
 
-2. **Smoke do `docker compose up`.** Não consegui validar localmente devido ao Docker flaky pós-prune. CI do GitHub Actions valida em Linux limpo (após push). Para a máquina worker, precisaremos validar quando ela for definida (mesma máquina ou outra via SSH).
+## Próximo: Fase 1 / Sub-sprint S0
 
-Se você confirmar a criação do repo (e push acontecer com sucesso) e o CI ficar verde, considero F0 fechada e parto imediatamente para **F1 / S0** (`jump-agent-runner`: tipos públicos, `ArtifactValidator` com 3 regras, `Observer` com saída JSONL).
+Pelo plano da F1 da spec, S0 entrega em ~1 dia:
+- `jump_agent_runner/types.py`: `Engine`, `Route`, `FailureReason`, `AgentTask`, `AttemptLog`, `AgentResult`, `ValidationResult`
+- `jump_agent_runner/artifact.py`: `ArtifactValidator` com as 3 regras (arquivo válido / recuperar do relay / rejeitar)
+- `jump_agent_runner/observer.py`: emite eventos para stdout (humano) + JSONL em `~/.jump-runner/logs/{date}.jsonl`
+- Estrutura de pacote, instalável via `pip install -e .`
+- Testes unitários do validator: JSON em arquivo aceito / JSON balanceado em relay aceito / prosa rejeitada com `ARTIFACT_INVALID` / sentinel sem nada rejeitado com `SENTINEL_NOT_OBSERVED` / arquivo existe mas é texto livre rejeitado.
 
-Pode confirmar?
+Confirma que posso começar S0?
