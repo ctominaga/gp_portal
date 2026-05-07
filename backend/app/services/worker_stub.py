@@ -66,6 +66,15 @@ def _build_simulated_baseline_payload(proposal: Proposal, project: Project) -> d
         "key_premises": [
             "Stub: confirmar premissas com a proposta real antes de ativar",
         ],
+        # Auditoria — sub-cabeçalho da revisão (F3.5.7)
+        "audit": {
+            "source_proposal_filename": proposal.original_filename,
+            "source_proposal_version": proposal.version,
+            "extracted_at": datetime.now(UTC).isoformat(),
+            "engine": "stub",
+            "route": "stub",
+            "confidence_score": 0.62,  # placeholder — agente real reportará
+        },
     }
 
 

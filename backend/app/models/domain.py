@@ -303,9 +303,25 @@ class Report(Base):
     period_start: Mapped[date] = mapped_column(Date, nullable=False)
     period_end: Mapped[date] = mapped_column(Date, nullable=False)
 
+    # rag_status agregado (worst-of-3) — derivado das 3 dimensões abaixo
     rag_status: Mapped[RAGStatus | None] = mapped_column(
         SAEnum(RAGStatus, name="rag_status", native_enum=False), nullable=True
     )
+    # Dimensões independentes do RAG (spec v3 §3.2.1)
+    rag_prazo: Mapped[RAGStatus | None] = mapped_column(
+        SAEnum(RAGStatus, name="rag_prazo", native_enum=False), nullable=True
+    )
+    rag_escopo: Mapped[RAGStatus | None] = mapped_column(
+        SAEnum(RAGStatus, name="rag_escopo", native_enum=False), nullable=True
+    )
+    rag_qualidade: Mapped[RAGStatus | None] = mapped_column(
+        SAEnum(RAGStatus, name="rag_qualidade", native_enum=False), nullable=True
+    )
+    # Justificativas — obrigatórias quando a dimensão for A ou R (validado em submit)
+    rag_prazo_justificativa: Mapped[str | None] = mapped_column(Text, nullable=True)
+    rag_escopo_justificativa: Mapped[str | None] = mapped_column(Text, nullable=True)
+    rag_qualidade_justificativa: Mapped[str | None] = mapped_column(Text, nullable=True)
+
     status: Mapped[ReportStatus] = mapped_column(
         SAEnum(ReportStatus, name="report_status", native_enum=False),
         default=ReportStatus.DRAFT,
@@ -348,6 +364,12 @@ class DeliveryProgress(Base):
     )
     percent_complete: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     comment: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # Re-planejamento: GP marca nova data quando entrega não vai chegar no planned_date.
+    # `deviation_flag` é derivado pelo backend ao comparar revised_date com
+    # Deliverable.due_date. Spec runner §5.2.7.
+    revised_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    deviation_flag: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
 
 class Risk(Base):

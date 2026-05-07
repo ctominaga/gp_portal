@@ -250,7 +250,9 @@ async def test_create_e_patch_report_idempotente(
 
 
 @pytest.mark.asyncio
-async def test_submit_report_exige_rag(client: AsyncClient, db_session) -> None:
+async def test_submit_report_exige_rag_3d_e_justificativa_em_a_r(
+    client: AsyncClient, db_session
+) -> None:
     project, _ = await _seed_project_with_baseline(db_session, gp_email="gp-sub@x.com")
     tok = await _login_as(client, role="GP", email="gp-sub@x.com")
     r = await client.post(
@@ -264,24 +266,142 @@ async def test_submit_report_exige_rag(client: AsyncClient, db_session) -> None:
     )
     rid = r.json()["id"]
 
-    # Submeter sem RAG → 400
+    # 1) Submeter sem RAG por dimensão → 400 listando todas
     r2 = await client.post(
         f"/reports/{rid}/submit", headers={"Authorization": f"Bearer {tok}"}
     )
     assert r2.status_code == 400
+    assert "prazo" in r2.text and "escopo" in r2.text and "qualidade" in r2.text
 
-    # Setar RAG e submeter
+    # 2) Apenas 1 dimensão → ainda 400
     await client.patch(
         f"/reports/{rid}",
         headers={"Authorization": f"Bearer {tok}"},
-        json={"rag_status": "A"},
+        json={"rag_prazo": "G"},
     )
-    r3 = await client.post(
+    assert (await client.post(
+        f"/reports/{rid}/submit", headers={"Authorization": f"Bearer {tok}"}
+    )).status_code == 400
+
+    # 3) 3 dimensões com A/R mas sem justificativa → 400
+    await client.patch(
+        f"/reports/{rid}",
+        headers={"Authorization": f"Bearer {tok}"},
+        json={"rag_prazo": "G", "rag_escopo": "A", "rag_qualidade": "R"},
+    )
+    r4 = await client.post(
         f"/reports/{rid}/submit", headers={"Authorization": f"Bearer {tok}"}
     )
+    assert r4.status_code == 400
+    assert "justificativa" in r4.text.lower()
+
+    # 4) Com justificativas válidas → 200; rag_status agregado = R (worst-of-3)
+    await client.patch(
+        f"/reports/{rid}",
+        headers={"Authorization": f"Bearer {tok}"},
+        json={
+            "rag_escopo_justificativa": "novo módulo solicitado",
+            "rag_qualidade_justificativa": "bug crítico em produção",
+        },
+    )
+    r5 = await client.post(
+        f"/reports/{rid}/submit", headers={"Authorization": f"Bearer {tok}"}
+    )
+    assert r5.status_code == 200, r5.text
+    assert r5.json()["status"] == "submitted"
+    assert r5.json()["rag_status"] == "R"
+    assert r5.json()["rag_prazo"] == "G"
+    assert r5.json()["rag_escopo"] == "A"
+    assert r5.json()["rag_qualidade"] == "R"
+
+
+@pytest.mark.asyncio
+async def test_submit_so_verde_dispensa_justificativa(
+    client: AsyncClient, db_session
+) -> None:
+    project, _ = await _seed_project_with_baseline(db_session, gp_email="gp-allgreen@x.com")
+    tok = await _login_as(client, role="GP", email="gp-allgreen@x.com")
+    r = await client.post(
+        "/reports",
+        headers={"Authorization": f"Bearer {tok}"},
+        json={
+            "project_id": str(project.id),
+            "period_start": "2026-05-01",
+            "period_end": "2026-05-15",
+        },
+    )
+    rid = r.json()["id"]
+    await client.patch(
+        f"/reports/{rid}",
+        headers={"Authorization": f"Bearer {tok}"},
+        json={"rag_prazo": "G", "rag_escopo": "G", "rag_qualidade": "G"},
+    )
+    r2 = await client.post(
+        f"/reports/{rid}/submit", headers={"Authorization": f"Bearer {tok}"}
+    )
+    assert r2.status_code == 200
+    assert r2.json()["rag_status"] == "G"
+
+
+@pytest.mark.asyncio
+async def test_revised_date_marca_deviation_flag_quando_diferente_de_due_date(
+    client: AsyncClient, db_session
+) -> None:
+    """Verifica F3.5.5: deviation_flag fica True quando revised_date != due_date."""
+    from datetime import date as _date
+
+    project, baseline = await _seed_project_with_baseline(db_session, gp_email="gp-rev@x.com")
+    # Define due_date no deliverable existente
+    deliv = (await db_session.execute(
+        __import__("sqlalchemy").select(Deliverable).where(Deliverable.baseline_id == baseline.id)
+    )).scalar_one()
+    deliv.due_date = _date(2026, 6, 15)
+    await db_session.commit()
+
+    tok = await _login_as(client, role="GP", email="gp-rev@x.com")
+    r = await client.post(
+        "/reports",
+        headers={"Authorization": f"Bearer {tok}"},
+        json={
+            "project_id": str(project.id),
+            "period_start": "2026-05-01",
+            "period_end": "2026-05-15",
+        },
+    )
+    rid = r.json()["id"]
+
+    # Caso 1: revised_date == due_date → deviation_flag False
+    r2 = await client.patch(
+        f"/reports/{rid}",
+        headers={"Authorization": f"Bearer {tok}"},
+        json={
+            "progresses": [{
+                "deliverable_id": str(deliv.id),
+                "status": "in_progress",
+                "percent_complete": 40,
+                "revised_date": "2026-06-15",
+            }],
+        },
+    )
+    assert r2.status_code == 200
+    assert r2.json()["progresses"][0]["deviation_flag"] is False
+
+    # Caso 2: revised_date != due_date → deviation_flag True
+    r3 = await client.patch(
+        f"/reports/{rid}",
+        headers={"Authorization": f"Bearer {tok}"},
+        json={
+            "progresses": [{
+                "deliverable_id": str(deliv.id),
+                "status": "in_progress",
+                "percent_complete": 40,
+                "revised_date": "2026-07-01",
+            }],
+        },
+    )
     assert r3.status_code == 200
-    assert r3.json()["status"] == "submitted"
-    assert r3.json()["submitted_at"] is not None
+    assert r3.json()["progresses"][0]["deviation_flag"] is True
+    assert r3.json()["progresses"][0]["revised_date"] == "2026-07-01"
 
 
 @pytest.mark.asyncio

@@ -25,10 +25,12 @@ class DeliveryProgressIn(BaseModel):
     status: ProgressStatus = ProgressStatus.PLANNED
     percent_complete: int = Field(ge=0, le=100, default=0)
     comment: str | None = None
+    revised_date: date | None = None
 
 
 class DeliveryProgressPublic(DeliveryProgressIn):
     id: uuid.UUID
+    deviation_flag: bool = False
     model_config = {"from_attributes": True}
 
 
@@ -83,7 +85,15 @@ class ReportPatch(BaseModel):
 
     period_start: date | None = None
     period_end: date | None = None
+    # rag_status agregado é derivado pelo backend no submit, mas pode ser
+    # enviado pelo cliente para draft.
     rag_status: RAGStatus | None = None
+    rag_prazo: RAGStatus | None = None
+    rag_escopo: RAGStatus | None = None
+    rag_qualidade: RAGStatus | None = None
+    rag_prazo_justificativa: str | None = None
+    rag_escopo_justificativa: str | None = None
+    rag_qualidade_justificativa: str | None = None
     highlights: str | None = None
     next_steps: str | None = None
     notes: str | None = None
@@ -99,6 +109,12 @@ class ReportPublic(BaseModel):
     period_start: date
     period_end: date
     rag_status: RAGStatus | None
+    rag_prazo: RAGStatus | None = None
+    rag_escopo: RAGStatus | None = None
+    rag_qualidade: RAGStatus | None = None
+    rag_prazo_justificativa: str | None = None
+    rag_escopo_justificativa: str | None = None
+    rag_qualidade_justificativa: str | None = None
     status: ReportStatus
     highlights: str | None
     next_steps: str | None

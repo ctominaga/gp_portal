@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import delete, select
@@ -11,9 +11,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_db, require_any_role
 from app.models import (
     ActionPlan,
+    Deliverable,
     DeliveryProgress,
     PendingItem,
     Project,
+    RAGStatus,
     Report,
     ReportStatus,
     Risk,
@@ -30,6 +32,17 @@ from app.schemas.report import (
     ReportSummary,
     RiskPublic,
 )
+
+# Worst-of-3 dos status RAG. Se alguma dimensão é None, o agregado também é None.
+_RAG_RANK = {RAGStatus.GREEN: 0, RAGStatus.AMBER: 1, RAGStatus.RED: 2}
+
+
+def _aggregate_rag(*dims: RAGStatus | None) -> RAGStatus | None:
+    """Worst-of-3. Retorna None se qualquer dimensão for None (não preencheu)."""
+    values = [d for d in dims if d is not None]
+    if not values or len(values) != len(dims):
+        return None
+    return max(values, key=lambda v: _RAG_RANK[v])
 
 router = APIRouter(tags=["reports"])
 
@@ -76,6 +89,12 @@ async def _serialize_report(report: Report, db: AsyncSession) -> ReportPublic:
         period_start=report.period_start,
         period_end=report.period_end,
         rag_status=report.rag_status,
+        rag_prazo=report.rag_prazo,
+        rag_escopo=report.rag_escopo,
+        rag_qualidade=report.rag_qualidade,
+        rag_prazo_justificativa=report.rag_prazo_justificativa,
+        rag_escopo_justificativa=report.rag_escopo_justificativa,
+        rag_qualidade_justificativa=report.rag_qualidade_justificativa,
         status=report.status,
         highlights=report.highlights,
         next_steps=report.next_steps,
@@ -150,14 +169,47 @@ async def patch_report(
         )
 
     data = payload.model_dump(exclude_unset=True)
-    for key in ("period_start", "period_end", "rag_status", "highlights", "next_steps", "notes"):
+    scalar_keys = (
+        "period_start", "period_end",
+        "rag_status",
+        "rag_prazo", "rag_escopo", "rag_qualidade",
+        "rag_prazo_justificativa", "rag_escopo_justificativa", "rag_qualidade_justificativa",
+        "highlights", "next_steps", "notes",
+    )
+    for key in scalar_keys:
         if key in data:
             setattr(report, key, data[key])
 
+    # Mantém rag_status agregado em sincronia se as 3 dimensões estiverem preenchidas.
+    if any(k in data for k in ("rag_prazo", "rag_escopo", "rag_qualidade")):
+        agg = _aggregate_rag(report.rag_prazo, report.rag_escopo, report.rag_qualidade)
+        if agg is not None:
+            report.rag_status = agg
+
     if "progresses" in data:
+        # Pré-carrega due_date dos deliverables envolvidos para calcular deviation_flag
+        deliv_ids = [p["deliverable_id"] for p in (data["progresses"] or [])]
+        due_by_deliv: dict[uuid.UUID, date | None] = {}
+        if deliv_ids:
+            rows = (
+                await db.execute(
+                    select(Deliverable.id, Deliverable.due_date).where(Deliverable.id.in_(deliv_ids))
+                )
+            ).all()
+            due_by_deliv = {r[0]: r[1] for r in rows}
+
         await db.execute(delete(DeliveryProgress).where(DeliveryProgress.report_id == report.id))
         for p in data["progresses"] or []:
-            db.add(DeliveryProgress(report_id=report.id, **p))
+            revised = p.get("revised_date")
+            planned = due_by_deliv.get(p["deliverable_id"])
+            deviation = bool(revised and planned and revised != planned)
+            db.add(
+                DeliveryProgress(
+                    report_id=report.id,
+                    deviation_flag=deviation,
+                    **p,
+                )
+            )
     if "risks" in data:
         await db.execute(delete(Risk).where(Risk.report_id == report.id))
         for r in data["risks"] or []:
@@ -191,11 +243,43 @@ async def submit_report(
             status.HTTP_400_BAD_REQUEST,
             f"report em {report.status.value} não pode ser submetido",
         )
-    if report.rag_status is None:
+
+    # As 3 dimensões são obrigatórias
+    missing_dims = [
+        name
+        for name, value in (
+            ("prazo", report.rag_prazo),
+            ("escopo", report.rag_escopo),
+            ("qualidade", report.rag_qualidade),
+        )
+        if value is None
+    ]
+    if missing_dims:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
-            "RAG status é obrigatório para submeter",
+            f"RAG por dimensão obrigatório (faltando: {', '.join(missing_dims)})",
         )
+
+    # Justificativa obrigatória para A/R em qualquer dimensão
+    rag_with_just = (
+        ("prazo", report.rag_prazo, report.rag_prazo_justificativa),
+        ("escopo", report.rag_escopo, report.rag_escopo_justificativa),
+        ("qualidade", report.rag_qualidade, report.rag_qualidade_justificativa),
+    )
+    missing_just = [
+        name
+        for name, dim, just in rag_with_just
+        if dim in (RAGStatus.AMBER, RAGStatus.RED) and not (just and just.strip())
+    ]
+    if missing_just:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            f"justificativa obrigatória para Amarelo/Vermelho em: {', '.join(missing_just)}",
+        )
+
+    # rag_status agregado é derivado pelo backend (worst-of-3)
+    report.rag_status = _aggregate_rag(report.rag_prazo, report.rag_escopo, report.rag_qualidade)
+
     report.status = ReportStatus.SUBMITTED
     report.submitted_at = datetime.now(UTC)
     await db.commit()
