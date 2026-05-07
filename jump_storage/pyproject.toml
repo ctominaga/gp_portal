@@ -1,0 +1,45 @@
+[project]
+name = "jump-storage"
+version = "0.1.0"
+description = "Object storage abstraction (LocalFilesystem | R2) usada por backend e worker da Jump"
+requires-python = ">=3.12"
+readme = "README.md"
+
+dependencies = [
+    "pydantic>=2.9,<3",
+    "boto3==1.35.63",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==8.3.3",
+    "pytest-asyncio==0.24.0",
+    "pytest-cov==6.0.0",
+    "ruff==0.8.0",
+    "mypy==1.13.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["jump_storage*"]
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "N", "ASYNC"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+markers = [
+    "requires_r2: needs Cloudflare R2 credentials in env",
+]

@@ -13,6 +13,7 @@ import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.pool import StaticPool
 
 from app.api.deps import get_db
 from app.db.base import Base
@@ -29,7 +30,14 @@ def event_loop():
 
 @pytest_asyncio.fixture
 async def engine_test():
-    eng = create_async_engine("sqlite+aiosqlite:///:memory:", future=True)
+    """SQLite in-memory com StaticPool — todas as conexões compartilham a MESMA
+    instância do DB (necessário para in-memory SQLite, que é per-connection)."""
+    eng = create_async_engine(
+        "sqlite+aiosqlite:///:memory:",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+        future=True,
+    )
     async with eng.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     yield eng
