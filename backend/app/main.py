@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy import text
 
+from app.api.v1.auth import router as auth_router
 from app.core.config import get_settings
 from app.core.logging import configure_logging, get_logger, new_request_id, request_id_ctx
 from app.db.session import engine
@@ -90,3 +91,6 @@ async def health() -> HealthResponse:
 @app.get("/", tags=["meta"])
 async def root() -> dict[str, str]:
     return {"name": settings.app_name, "version": settings.app_version, "docs": "/docs"}
+
+
+app.include_router(auth_router)

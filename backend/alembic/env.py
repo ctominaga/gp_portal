@@ -11,8 +11,8 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from app.core.config import get_settings
 from app.db.base import Base
 
-# Importa modelos aqui para que `target_metadata` os enxergue. Por enquanto vazio até F2.
-# from app.models import *  # noqa: F401,F403
+# Importa modelos para que `target_metadata` os enxergue.
+from app.models import *  # noqa: F401,F403
 
 config = context.config
 if config.config_file_name is not None:
