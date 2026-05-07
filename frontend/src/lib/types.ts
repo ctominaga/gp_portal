@@ -68,6 +68,15 @@ export interface Deliverable {
 
 export type BaselineStatus = "draft" | "active" | "superseded";
 
+export interface BaselineAudit {
+  source_proposal_filename?: string;
+  source_proposal_version?: number;
+  extracted_at?: string;
+  engine?: string;
+  route?: string;
+  confidence_score?: number;
+}
+
 export interface Baseline {
   id: string;
   project_id: string;
@@ -75,7 +84,7 @@ export interface Baseline {
   status: BaselineStatus;
   activated_at: string | null;
   activated_by_id: string | null;
-  payload: Record<string, unknown>;
+  payload: Record<string, unknown> & { audit?: BaselineAudit };
   created_at: string;
   deliverables: Deliverable[];
 }
@@ -102,6 +111,8 @@ export interface DeliveryProgress {
   status: ProgressStatus;
   percent_complete: number;
   comment: string | null;
+  revised_date?: string | null;
+  deviation_flag?: boolean;
 }
 
 export interface Risk {
@@ -135,6 +146,12 @@ export interface Report {
   period_start: string;
   period_end: string;
   rag_status: RAGStatus | null;
+  rag_prazo?: RAGStatus | null;
+  rag_escopo?: RAGStatus | null;
+  rag_qualidade?: RAGStatus | null;
+  rag_prazo_justificativa?: string | null;
+  rag_escopo_justificativa?: string | null;
+  rag_qualidade_justificativa?: string | null;
   status: ReportStatus;
   highlights: string | null;
   next_steps: string | null;

@@ -1,5 +1,6 @@
 "use client";
 
+import { CheckCircle2 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -8,6 +9,14 @@ import { AppShell } from "@/components/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -21,6 +30,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { api, asApiError } from "@/lib/api";
 import { useAutosave, type AutosaveStatus } from "@/lib/hooks/use-autosave";
+import {
+  DIMENSION_LABELS,
+  RAG_OPTIONS,
+  type Dimension,
+  type RagDraft,
+  validateRag,
+} from "@/lib/rag";
 import type {
   ActionPlan,
   Baseline,
@@ -35,7 +51,13 @@ import type {
 interface DraftState {
   period_start: string;
   period_end: string;
-  rag_status: RAGStatus | null;
+  // Dimensões independentes (F3.5.3+4)
+  rag_prazo: RAGStatus | null;
+  rag_escopo: RAGStatus | null;
+  rag_qualidade: RAGStatus | null;
+  rag_prazo_justificativa: string;
+  rag_escopo_justificativa: string;
+  rag_qualidade_justificativa: string;
   highlights: string;
   next_steps: string;
   notes: string;
@@ -49,7 +71,12 @@ function reportToDraft(r: Report): DraftState {
   return {
     period_start: r.period_start,
     period_end: r.period_end,
-    rag_status: r.rag_status,
+    rag_prazo: r.rag_prazo ?? null,
+    rag_escopo: r.rag_escopo ?? null,
+    rag_qualidade: r.rag_qualidade ?? null,
+    rag_prazo_justificativa: r.rag_prazo_justificativa ?? "",
+    rag_escopo_justificativa: r.rag_escopo_justificativa ?? "",
+    rag_qualidade_justificativa: r.rag_qualidade_justificativa ?? "",
     highlights: r.highlights ?? "",
     next_steps: r.next_steps ?? "",
     notes: r.notes ?? "",
@@ -67,6 +94,7 @@ export default function ReportEditPage() {
   const [draft, setDraft] = useState<DraftState | null>(null);
   const [activeBaseline, setActiveBaseline] = useState<Baseline | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [acceptanceConfirm, setAcceptanceConfirm] = useState<{ index: number } | null>(null);
 
   // Carrega report + baseline ativo
   useEffect(() => {
@@ -86,7 +114,7 @@ export default function ReportEditPage() {
     })();
   }, [rid, projectId]);
 
-  // Pré-popula progresses com deliverables do baseline ativo (uma vez)
+  // Pré-popula progresses com deliverables do baseline ativo
   useEffect(() => {
     if (!draft || !activeBaseline) return;
     if (draft.progresses.length > 0) return;
@@ -95,6 +123,7 @@ export default function ReportEditPage() {
       status: "planned",
       percent_complete: 0,
       comment: null,
+      revised_date: null,
     }));
     setDraft({ ...draft, progresses: seeded });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -105,7 +134,12 @@ export default function ReportEditPage() {
       const payload: Record<string, unknown> = {
         period_start: d.period_start,
         period_end: d.period_end,
-        rag_status: d.rag_status,
+        rag_prazo: d.rag_prazo,
+        rag_escopo: d.rag_escopo,
+        rag_qualidade: d.rag_qualidade,
+        rag_prazo_justificativa: d.rag_prazo_justificativa || null,
+        rag_escopo_justificativa: d.rag_escopo_justificativa || null,
+        rag_qualidade_justificativa: d.rag_qualidade_justificativa || null,
         highlights: d.highlights || null,
         next_steps: d.next_steps || null,
         notes: d.notes || null,
@@ -114,6 +148,7 @@ export default function ReportEditPage() {
           status: p.status,
           percent_complete: p.percent_complete,
           comment: p.comment,
+          revised_date: p.revised_date || null,
         })),
         risks: d.risks.map((r) => ({
           description: r.description,
@@ -152,10 +187,37 @@ export default function ReportEditPage() {
     return m;
   }, [activeBaseline]);
 
+  const ragDraft: RagDraft | null = draft && {
+    rag_prazo: draft.rag_prazo,
+    rag_escopo: draft.rag_escopo,
+    rag_qualidade: draft.rag_qualidade,
+    rag_prazo_justificativa: draft.rag_prazo_justificativa,
+    rag_escopo_justificativa: draft.rag_escopo_justificativa,
+    rag_qualidade_justificativa: draft.rag_qualidade_justificativa,
+  };
+  const ragValidation = ragDraft ? validateRag(ragDraft) : null;
+  const ragBlocking =
+    !ragValidation ||
+    !ragValidation.ok ||
+    ragValidation.missingDimensions.length > 0 ||
+    ragValidation.missingJustifications.length > 0;
+
   async function handleSubmitFinal() {
-    if (!draft || !rid) return;
-    if (!draft.rag_status) {
-      toast.error("Selecione o status RAG antes de submeter.");
+    if (!draft || !rid || !ragValidation) return;
+    if (!ragValidation.ok) {
+      if (ragValidation.missingDimensions.length > 0) {
+        toast.error(
+          `Preencha todas as dimensões: ${ragValidation.missingDimensions
+            .map((d) => DIMENSION_LABELS[d])
+            .join(", ")}`,
+        );
+      } else if (ragValidation.missingJustifications.length > 0) {
+        toast.error(
+          `Justificativa obrigatória para Amarelo/Vermelho em: ${ragValidation.missingJustifications
+            .map((d) => DIMENSION_LABELS[d])
+            .join(", ")}`,
+        );
+      }
       return;
     }
     setSubmitting(true);
@@ -196,7 +258,9 @@ export default function ReportEditPage() {
       <Tabs defaultValue="ident">
         <TabsList className="flex flex-wrap">
           <TabsTrigger value="ident">1. Identificação</TabsTrigger>
-          <TabsTrigger value="rag">2. RAG</TabsTrigger>
+          <TabsTrigger value="rag">
+            2. RAG{ragValidation && !ragValidation.ok ? " ⚠" : ""}
+          </TabsTrigger>
           <TabsTrigger value="prog">3. Progresso ({draft.progresses.length})</TabsTrigger>
           <TabsTrigger value="risks">4. Riscos ({draft.risks.length})</TabsTrigger>
           <TabsTrigger value="actions">5. Planos ({draft.action_plans.length})</TabsTrigger>
@@ -233,26 +297,86 @@ export default function ReportEditPage() {
           </Card>
         </TabsContent>
 
+        {/* F3.5.3+4: 3 dimensões independentes + justificativa obrigatória A/R */}
         <TabsContent value="rag">
           <Card>
             <CardHeader>
-              <CardTitle>Status RAG</CardTitle>
-              <CardDescription>Como está o projeto neste período.</CardDescription>
+              <CardTitle>Status RAG por dimensão</CardTitle>
+              <CardDescription>
+                Avalie Prazo, Escopo e Qualidade separadamente. O agregado do report é
+                derivado pelo backend (worst-of-3). Justificativa é obrigatória para Amarelo
+                ou Vermelho em qualquer dimensão.
+              </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="flex gap-3">
-                {(["G", "A", "R"] as RAGStatus[]).map((s) => (
-                  <Button
-                    key={s}
-                    type="button"
-                    variant={draft.rag_status === s ? "default" : "outline"}
-                    onClick={() => setDraft({ ...draft, rag_status: s })}
-                    disabled={isReadonly}
+            <CardContent className="space-y-6">
+              {(["prazo", "escopo", "qualidade"] as const).map((dim) => (
+                <RagDimensionRow
+                  key={dim}
+                  dim={dim}
+                  value={
+                    dim === "prazo"
+                      ? draft.rag_prazo
+                      : dim === "escopo"
+                        ? draft.rag_escopo
+                        : draft.rag_qualidade
+                  }
+                  justificativa={
+                    dim === "prazo"
+                      ? draft.rag_prazo_justificativa
+                      : dim === "escopo"
+                        ? draft.rag_escopo_justificativa
+                        : draft.rag_qualidade_justificativa
+                  }
+                  onChange={(val, just) => {
+                    setDraft({
+                      ...draft,
+                      [`rag_${dim}`]: val,
+                      [`rag_${dim}_justificativa`]: just,
+                    } as DraftState);
+                  }}
+                  disabled={isReadonly}
+                />
+              ))}
+
+              {ragValidation && !ragValidation.ok && (
+                <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
+                  {ragValidation.missingDimensions.length > 0 && (
+                    <p>
+                      Faltam dimensões: <strong>
+                        {ragValidation.missingDimensions
+                          .map((d) => DIMENSION_LABELS[d])
+                          .join(", ")}
+                      </strong>
+                    </p>
+                  )}
+                  {ragValidation.missingJustifications.length > 0 && (
+                    <p>
+                      Justificativa obrigatória para status Amarelo/Vermelho em:{" "}
+                      <strong>
+                        {ragValidation.missingJustifications
+                          .map((d) => DIMENSION_LABELS[d])
+                          .join(", ")}
+                      </strong>
+                    </p>
+                  )}
+                </div>
+              )}
+              {ragValidation?.ok && ragValidation.aggregate && (
+                <p className="text-xs text-muted-foreground">
+                  Agregado (worst-of-3):{" "}
+                  <Badge
+                    variant={
+                      ragValidation.aggregate === "G"
+                        ? "green"
+                        : ragValidation.aggregate === "A"
+                          ? "amber"
+                          : "red"
+                    }
                   >
-                    {s === "G" ? "Verde" : s === "A" ? "Amarelo" : "Vermelho"}
-                  </Button>
-                ))}
-              </div>
+                    {ragValidation.aggregate}
+                  </Badge>
+                </p>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -272,10 +396,14 @@ export default function ReportEditPage() {
               )}
               {draft.progresses.map((p, i) => {
                 const d = deliverableById.get(p.deliverable_id);
+                const showRevisedDate = p.status !== "done" && p.percent_complete < 100;
+                const plannedDate = d?.due_date ?? null;
+                const hasDeviation =
+                  showRevisedDate && p.revised_date && plannedDate && p.revised_date !== plannedDate;
                 return (
                   <div
                     key={p.deliverable_id}
-                    className="grid gap-3 rounded-md border p-3 sm:grid-cols-[1fr_120px_140px_140px]"
+                    className="grid gap-3 rounded-md border p-3 sm:grid-cols-[1fr_140px_120px_140px]"
                   >
                     <div>
                       <p className="text-sm font-medium">
@@ -285,10 +413,20 @@ export default function ReportEditPage() {
                       {d?.phase && (
                         <p className="text-xs text-muted-foreground">{d.phase}</p>
                       )}
+                      {plannedDate && (
+                        <p className="text-xs text-muted-foreground">
+                          Prazo planejado: {plannedDate}
+                        </p>
+                      )}
                     </div>
                     <Select
                       value={p.status}
                       onValueChange={(v) => {
+                        // F3.5.6: confirmação inline ao marcar Concluído + 100%
+                        if (v === "done" && p.percent_complete >= 100) {
+                          setAcceptanceConfirm({ index: i });
+                          return;
+                        }
                         const next = [...draft.progresses];
                         next[i] = { ...p, status: v as DeliveryProgress["status"] };
                         setDraft({ ...draft, progresses: next });
@@ -311,8 +449,14 @@ export default function ReportEditPage() {
                       max={100}
                       value={p.percent_complete}
                       onChange={(e) => {
+                        const pct = Number(e.target.value || 0);
                         const next = [...draft.progresses];
-                        next[i] = { ...p, percent_complete: Number(e.target.value || 0) };
+                        // F3.5.6: se chegar a 100 com status já "done", confirma
+                        if (pct === 100 && p.status === "done") {
+                          setAcceptanceConfirm({ index: i });
+                          return;
+                        }
+                        next[i] = { ...p, percent_complete: pct };
                         setDraft({ ...draft, progresses: next });
                       }}
                       disabled={isReadonly}
@@ -327,11 +471,81 @@ export default function ReportEditPage() {
                       }}
                       disabled={isReadonly}
                     />
+
+                    {/* F3.5.5: revised_date quando ainda não concluído */}
+                    {showRevisedDate && (
+                      <div className="sm:col-span-4">
+                        <div className="flex items-end gap-3">
+                          <div className="flex-1 space-y-1">
+                            <Label className="text-xs">
+                              Data revisada de entrega{" "}
+                              {hasDeviation && (
+                                <Badge variant="amber" className="ml-1 align-middle">
+                                  desvio
+                                </Badge>
+                              )}
+                            </Label>
+                            <Input
+                              type="date"
+                              value={p.revised_date ?? ""}
+                              onChange={(e) => {
+                                const next = [...draft.progresses];
+                                next[i] = { ...p, revised_date: e.target.value || null };
+                                setDraft({ ...draft, progresses: next });
+                              }}
+                              disabled={isReadonly}
+                            />
+                          </div>
+                          {plannedDate && (
+                            <p className="pb-2 text-xs text-muted-foreground">
+                              vs. planejado {plannedDate}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })}
             </CardContent>
           </Card>
+
+          {/* F3.5.6: dialog de confirmação de critério de aceite */}
+          <Dialog
+            open={acceptanceConfirm !== null}
+            onOpenChange={(o) => !o && setAcceptanceConfirm(null)}
+          >
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-green-600" />
+                  Critério de aceite foi atingido?
+                </DialogTitle>
+                <DialogDescription>
+                  Marcar este entregável como Concluído com 100% indica que o critério de
+                  aceite foi cumprido. Isso entra no Health Score do projeto. Deseja
+                  continuar?
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button variant="ghost" onClick={() => setAcceptanceConfirm(null)}>
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={() => {
+                    if (acceptanceConfirm === null) return;
+                    const next = [...draft.progresses];
+                    const i = acceptanceConfirm.index;
+                    next[i] = { ...next[i], status: "done", percent_complete: 100 };
+                    setDraft({ ...draft, progresses: next });
+                    setAcceptanceConfirm(null);
+                  }}
+                >
+                  Sim, concluído
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </TabsContent>
 
         <TabsContent value="risks">
@@ -478,7 +692,13 @@ export default function ReportEditPage() {
           Voltar ao histórico
         </Button>
         {!isReadonly && (
-          <Button onClick={handleSubmitFinal} disabled={submitting}>
+          <Button
+            onClick={handleSubmitFinal}
+            disabled={submitting || ragBlocking}
+            title={
+              ragBlocking ? "Preencha as 3 dimensões e justificativas obrigatórias" : undefined
+            }
+          >
             {submitting ? "Submetendo…" : "Submeter report"}
           </Button>
         )}
@@ -487,16 +707,104 @@ export default function ReportEditPage() {
   );
 }
 
-function SaveStatusBadge({ status, lastSavedAt }: { status: AutosaveStatus; lastSavedAt: Date | null }) {
-  if (status === "saving") return <Badge variant="amber">salvando…</Badge>;
-  if (status === "saved")
+function RagDimensionRow({
+  dim,
+  value,
+  justificativa,
+  onChange,
+  disabled,
+}: {
+  dim: Dimension;
+  value: RAGStatus | null;
+  justificativa: string;
+  onChange: (val: RAGStatus | null, just: string) => void;
+  disabled?: boolean;
+}) {
+  const needsJustification = (value === "A" || value === "R") && justificativa.trim().length === 0;
+  return (
+    <div className="space-y-2 rounded-md border p-4">
+      <div className="flex items-center justify-between">
+        <Label className="text-base font-medium">{DIMENSION_LABELS[dim]}</Label>
+        <div className="flex gap-2">
+          {RAG_OPTIONS.map((opt) => (
+            <Button
+              key={opt}
+              type="button"
+              size="sm"
+              variant={value === opt ? "default" : "outline"}
+              className={
+                value === opt
+                  ? opt === "G"
+                    ? "bg-green-600 hover:bg-green-600/90"
+                    : opt === "A"
+                      ? "bg-amber-500 hover:bg-amber-500/90"
+                      : "bg-red-600 hover:bg-red-600/90"
+                  : ""
+              }
+              onClick={() => onChange(opt, justificativa)}
+              disabled={disabled}
+            >
+              {opt === "G" ? "Verde" : opt === "A" ? "Amarelo" : "Vermelho"}
+            </Button>
+          ))}
+        </div>
+      </div>
+      {(value === "A" || value === "R") && (
+        <div className="space-y-1">
+          <Label className="text-xs">
+            Justificativa <span className="text-destructive">*</span> (obrigatória para A/R)
+          </Label>
+          <Textarea
+            rows={2}
+            placeholder={`Por que ${DIMENSION_LABELS[dim]} está em ${
+              value === "A" ? "Amarelo" : "Vermelho"
+            }?`}
+            value={justificativa}
+            onChange={(e) => onChange(value, e.target.value)}
+            disabled={disabled}
+          />
+          {needsJustification && (
+            <p className="text-xs text-destructive">
+              Justificativa obrigatória para status Amarelo/Vermelho.
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SaveStatusBadge({
+  status,
+  lastSavedAt,
+}: {
+  status: AutosaveStatus;
+  lastSavedAt: Date | null;
+}) {
+  const time = lastSavedAt
+    ? lastSavedAt.toLocaleTimeString("pt-BR").slice(0, 5)
+    : null;
+  if (status === "saving") {
+    return <Badge variant="amber">salvando…</Badge>;
+  }
+  if (status === "saved") {
     return (
-      <Badge variant="green">
-        salvo {lastSavedAt ? `às ${lastSavedAt.toLocaleTimeString("pt-BR").slice(0, 5)}` : ""}
+      <Badge variant="green" className="gap-1">
+        <CheckCircle2 className="h-3.5 w-3.5" />
+        Salvo {time ? `às ${time}` : ""}
       </Badge>
     );
-  if (status === "error") return <Badge variant="red">falha ao salvar</Badge>;
-  return <Badge variant="outline">não há alterações</Badge>;
+  }
+  if (status === "error") {
+    return <Badge variant="red">falha ao salvar</Badge>;
+  }
+  // idle
+  return (
+    <Badge variant="outline" className="gap-1">
+      <CheckCircle2 className="h-3.5 w-3.5" />
+      Tudo salvo
+    </Badge>
+  );
 }
 
 function ListEditor<T extends object>({

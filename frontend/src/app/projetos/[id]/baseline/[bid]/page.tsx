@@ -31,17 +31,27 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { api, asApiError } from "@/lib/api";
+import { formatDate } from "@/lib/format";
 import { deliverableSchema, type DeliverableInput } from "@/lib/schemas";
-import type { Baseline, Deliverable } from "@/lib/types";
+import type { Baseline, BaselineAudit, Deliverable } from "@/lib/types";
 
 type DialogMode = { kind: "edit"; deliverable: Deliverable } | { kind: "create" } | null;
+
+const COMPLEXITY_TOOLTIPS: Record<string, string> = {
+  low: "Baixa: rotinas pequenas, dependências mínimas, baixo risco regulatório.",
+  medium: "Média: rotinas com lógica intermediária, algumas dependências entre etapas.",
+  high: "Alta: alta densidade lógica, múltiplas dependências, regras regulatórias complexas.",
+};
 
 export default function BaselineReviewPage() {
   const { id: projectId, bid } = useParams<{ id: string; bid: string }>();
   const router = useRouter();
   const [baseline, setBaseline] = useState<Baseline | null>(null);
   const [dialog, setDialog] = useState<DialogMode>(null);
+  const [activateOpen, setActivateOpen] = useState(false);
   const [activating, setActivating] = useState(false);
+  // Source excerpt EXPANDED por padrão (F3.5.1); chave = deliverable.id; valor=true => colapsado
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
   const refetch = useCallback(async () => {
     try {
@@ -80,7 +90,6 @@ export default function BaselineReviewPage() {
 
   async function handleActivate() {
     if (!baseline) return;
-    if (!confirm(`Ativar baseline com ${baseline.deliverables.length} entregáveis?`)) return;
     setActivating(true);
     try {
       await api.post(`/baselines/${baseline.id}/activate`);
@@ -90,6 +99,7 @@ export default function BaselineReviewPage() {
       toast.error(asApiError(e).message);
     } finally {
       setActivating(false);
+      setActivateOpen(false);
     }
   }
 
@@ -103,15 +113,20 @@ export default function BaselineReviewPage() {
 
   const isDraft = baseline.status === "draft";
   const summary = (baseline.payload?.summary as string | undefined) ?? null;
-  const phasesPayload = (baseline.payload?.phases as Array<{ name?: string; phase_id?: string }> | undefined) ?? [];
+  const phasesPayload =
+    (baseline.payload?.phases as Array<{ name?: string; phase_id?: string; deliverable_count?: number }> | undefined) ??
+    [];
+  const audit: BaselineAudit | undefined = baseline.payload?.audit;
+  const deliverableCount = baseline.deliverables.length;
+  const phaseCount = groupedByPhase.length;
 
   return (
     <AppShell>
-      <div className="mb-6 flex items-end justify-between gap-4">
+      <div className="mb-2 flex items-end justify-between gap-4">
         <div>
           <p className="text-sm text-muted-foreground">Revisão de baseline</p>
           <h1 className="text-2xl font-semibold tracking-tight">
-            {baseline.deliverables.length} entregáveis ·{" "}
+            {deliverableCount} entregáveis em {phaseCount} fase{phaseCount === 1 ? "" : "s"} ·{" "}
             <Badge variant={isDraft ? "amber" : "green"}>{baseline.status}</Badge>
           </h1>
         </div>
@@ -120,15 +135,48 @@ export default function BaselineReviewPage() {
             <Button variant="outline" onClick={() => setDialog({ kind: "create" })}>
               Adicionar entregável
             </Button>
-            <Button onClick={handleActivate} disabled={activating}>
-              {activating ? "Ativando…" : "Ativar baseline"}
+            <Button onClick={() => setActivateOpen(true)} disabled={activating}>
+              Ativar baseline
             </Button>
           </div>
         )}
       </div>
 
+      {/* Sub-cabeçalho de auditoria (F3.5.7) */}
+      {audit && (
+        <div
+          data-testid="baseline-audit-header"
+          className="mb-6 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border bg-muted/40 px-4 py-2 text-xs text-muted-foreground"
+        >
+          <span>
+            Extraído de{" "}
+            <Link
+              href={`/projetos/${projectId}/proposta/${baseline.proposal_id}`}
+              className="font-medium text-foreground underline-offset-2 hover:underline"
+            >
+              {audit.source_proposal_filename ?? "proposta"}
+              {audit.source_proposal_version ? ` v${audit.source_proposal_version}` : null}
+            </Link>
+          </span>
+          {audit.extracted_at && <span>· em {formatDate(audit.extracted_at)}</span>}
+          {audit.engine && audit.route && (
+            <span>
+              · via <strong className="text-foreground">{audit.engine}</strong>/
+              <strong className="text-foreground">{audit.route}</strong>
+            </span>
+          )}
+          {typeof audit.confidence_score === "number" && (
+            <span>
+              · confiança{" "}
+              <strong className="text-foreground">
+                {Math.round(audit.confidence_score * 100)}%
+              </strong>
+            </span>
+          )}
+        </div>
+      )}
+
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-        {/* Lado esquerdo — entregáveis com source_excerpt */}
         <div className="space-y-6">
           {groupedByPhase.length === 0 && (
             <Card>
@@ -143,74 +191,90 @@ export default function BaselineReviewPage() {
                 {g.phase}
               </h2>
               <div className="space-y-3">
-                {g.items.map((d) => (
-                  <Card key={d.id} className="transition hover:shadow-sm">
-                    <CardHeader className="pb-3">
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <CardTitle className="text-base">
-                            {d.code && <span className="text-muted-foreground">{d.code} · </span>}
-                            {d.title}
-                          </CardTitle>
-                          {d.description && (
-                            <CardDescription className="mt-1">{d.description}</CardDescription>
-                          )}
+                {g.items.map((d) => {
+                  const isCollapsed = collapsed[d.id] === true;
+                  return (
+                    <Card key={d.id} className="transition hover:shadow-sm">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <CardTitle className="text-base">
+                              {d.code && <span className="text-muted-foreground">{d.code} · </span>}
+                              {d.title}
+                            </CardTitle>
+                            {d.description && (
+                              <CardDescription className="mt-1">{d.description}</CardDescription>
+                            )}
+                          </div>
+                          <div className="flex shrink-0 gap-2">
+                            {d.complexity && (
+                              <Badge
+                                title={COMPLEXITY_TOOLTIPS[d.complexity]}
+                                variant={
+                                  d.complexity === "high"
+                                    ? "red"
+                                    : d.complexity === "medium"
+                                      ? "amber"
+                                      : "green"
+                                }
+                              >
+                                {d.complexity}
+                              </Badge>
+                            )}
+                            {isDraft && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => setDialog({ kind: "edit", deliverable: d })}
+                                >
+                                  editar
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => void handleDelete(d.id)}
+                                >
+                                  remover
+                                </Button>
+                              </>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex shrink-0 gap-2">
-                          {d.complexity && (
-                            <Badge
-                              variant={
-                                d.complexity === "high"
-                                  ? "red"
-                                  : d.complexity === "medium"
-                                    ? "amber"
-                                    : "green"
+                      </CardHeader>
+                      {d.source_excerpt && (
+                        <CardContent className="pt-0">
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs font-medium uppercase tracking-wide text-amber-700">
+                              Trecho da proposta original
+                            </p>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 text-xs"
+                              onClick={() =>
+                                setCollapsed((c) => ({ ...c, [d.id]: !isCollapsed }))
                               }
+                              aria-label={isCollapsed ? "expandir" : "colapsar"}
                             >
-                              {d.complexity}
-                            </Badge>
-                          )}
-                          {isDraft && (
-                            <>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => setDialog({ kind: "edit", deliverable: d })}
-                              >
-                                editar
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => void handleDelete(d.id)}
-                              >
-                                remover
-                              </Button>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </CardHeader>
-                    {d.source_excerpt && (
-                      <CardContent className="pt-0">
-                        <details className="group">
-                          <summary className="cursor-pointer text-xs font-medium uppercase tracking-wide text-amber-700">
-                            Trecho da proposta original
-                          </summary>
-                          <pre className="mt-2 overflow-x-auto whitespace-pre-wrap rounded border-l-4 border-amber-400 bg-amber-50 p-3 font-mono text-xs leading-relaxed text-amber-900">
+                              {isCollapsed ? "expandir" : "colapsar"}
+                            </Button>
+                          </div>
+                          {!isCollapsed && (
+                            <pre className="mt-2 overflow-x-auto whitespace-pre-wrap rounded border-l-4 border-amber-400 bg-amber-50 p-3 font-mono text-xs leading-relaxed text-amber-900">
 {d.source_excerpt}
-                          </pre>
-                        </details>
-                      </CardContent>
-                    )}
-                  </Card>
-                ))}
+                            </pre>
+                          )}
+                        </CardContent>
+                      )}
+                    </Card>
+                  );
+                })}
               </div>
             </section>
           ))}
         </div>
 
-        {/* Lado direito — metadata da baseline */}
         <aside className="space-y-4">
           <Card>
             <CardHeader>
@@ -218,11 +282,19 @@ export default function BaselineReviewPage() {
             </CardHeader>
             <CardContent className="space-y-2 text-sm text-muted-foreground">
               {summary ? <p>{summary}</p> : <p>Sem resumo gerado.</p>}
+              <p className="pt-2 text-xs">
+                <strong className="text-foreground">{deliverableCount}</strong> entregáveis em{" "}
+                <strong className="text-foreground">{phaseCount}</strong> fase
+                {phaseCount === 1 ? "" : "s"}.
+              </p>
               {phasesPayload.length > 0 && (
                 <ul className="space-y-1 pt-2">
                   {phasesPayload.map((p, i) => (
                     <li key={i} className="text-xs">
                       <strong>{p.name ?? p.phase_id}</strong>
+                      {typeof p.deliverable_count === "number" ? (
+                        <span> ({p.deliverable_count})</span>
+                      ) : null}
                     </li>
                   ))}
                 </ul>
@@ -258,6 +330,32 @@ export default function BaselineReviewPage() {
           }}
         />
       )}
+
+      {/* Modal de ativação (F3.5.2) */}
+      <Dialog open={activateOpen} onOpenChange={(o) => !activating && setActivateOpen(o)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Ativar baseline?</DialogTitle>
+            <DialogDescription className="pt-2">
+              Você está aceitando <strong className="text-foreground">{deliverableCount}</strong>{" "}
+              entregáveis em <strong className="text-foreground">{phaseCount}</strong> fase
+              {phaseCount === 1 ? "" : "s"} como contrato deste projeto. Após ativação, mudanças
+              exigirão upload de proposta v2.
+              <span className="mt-2 block font-medium text-destructive">
+                Esta ação não pode ser desfeita.
+              </span>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setActivateOpen(false)} disabled={activating}>
+              Cancelar
+            </Button>
+            <Button onClick={handleActivate} disabled={activating}>
+              {activating ? "Ativando…" : "Sim, ativar baseline"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppShell>
   );
 }
