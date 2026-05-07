@@ -33,3 +33,31 @@ Decisões tomadas durante a construção que merecem registro. Convenção: cabe
 **Decisão:** `RESEND_FROM_EMAIL` aponta para `christopher.tominaga@jumplabel.com.br` (email pessoal corporativo do Christopher, já em domínio jumplabel.com.br) durante o piloto. Trocar para `notificacoes@jump.tec.br` (ou similar) quando o DNS estiver configurado, na Fase 5.
 
 **Consequência:** notificações iniciais sairão do email pessoal do dono do produto — aceitável para piloto, não ideal para produção em escala.
+
+## 2026-05-07 — F0 / Portas do compose parametrizadas para evitar conflito local
+
+**Contexto:** na máquina do dev as portas 5432 (Postgres) e 3000 (Node) estavam ocupadas por outros processos host — Postgres do OpenMetadata e algum dev server Node. Subir o compose colidiria.
+
+**Decisão:** parametrizar os mapeamentos de porta no `docker-compose.yml` com defaults non-default (`POSTGRES_HOST_PORT=55432`, `REDIS_HOST_PORT=56379`, `BACKEND_HOST_PORT=8000`, `FRONTEND_HOST_PORT=13000`). Quem quiser usar 5432/3000 sobrescreve via `.env`. Ports internas dos containers seguem padrão (5432/6379/8000/3000); só o host muda.
+
+**Consequência:** `/health-check` aponta para `http://localhost:8000` e o frontend é servido em `:13000`. README atualizado nesse sentido na próxima iteração.
+
+## 2026-05-07 — F0 / Pin de Next.js corrigido para 14.2.35 (CVE)
+
+**Contexto:** `next@14.2.18` tem CVE divulgada em 2025-12-11. `npm install` warna explicitamente.
+
+**Decisão:** pin para `next@14.2.35` e `eslint-config-next@14.2.35` (último 14.2.x patch disponível no momento). Mantém major Next 14 conforme stack obrigatória do prompt.
+
+**Consequência:** sem mudança funcional; package-lock regerado limpo após `rm -rf node_modules` (workaround para bug `Invalid Version` do Arborist com lock antigo).
+
+## 2026-05-07 — F0 / Validação Docker pendente / contornada com pytest+vitest locais
+
+**Contexto:** durante a validação F0, Docker Desktop entrou em estado degradado (comandos `docker ps`, `docker images`, `docker compose build` timeoutavam ou hangavam após o `docker system prune -a -f --volumes`). Reinício do Docker Desktop só estabilizou parcialmente.
+
+**Decisão:** validação local de `docker compose up` é remetida ao próximo ciclo (quando Docker estiver estável). No lugar, validamos:
+- `pytest` no backend rodando com Python 3.12 e venv local — 1 teste passou em 0.56s.
+- `vitest` no frontend com Node 24 e Next.js 14.2.35 — 1 teste passou em 9ms.
+- `docker compose config --services` retorna todos os 4 serviços (YAML válido).
+- CI do GitHub Actions exercita o `docker compose` em Linux limpo — usado como fonte de verdade até Docker local estabilizar.
+
+**Consequência:** `/health` e `/health-check` end-to-end ainda não foram observados rodando localmente. Esse smoke fica como item explícito de "validar antes de F1.S0", quando o Docker da máquina worker for o mesmo onde o agent-runner vai rodar.
