@@ -394,7 +394,29 @@ async def test_diff_de_baselines_detecta_added_removed_changed(
     assert body["removed"][0]["code"] == "d-002"
     assert len(body["changed"]) == 1
     assert body["changed"][0]["code"] == "d-003"
-    assert body["scope_changes_created"] == 2  # added + removed
+    # GET é read-only; não cria ScopeChanges. ScopeChanges são criados pelo worker
+    # (ou via chamada explícita a `diff_baselines`).
+    assert "scope_changes_created" not in body
+
+    # Idempotência: chamar diff_baselines duas vezes não duplica ScopeChanges
+    from app.api.v1.client_portal import diff_baselines
+    from app.models import ScopeChange
+    from sqlalchemy import select as _select
+
+    first = await diff_baselines(
+        db_session, project_id=project.id, base_baseline=b1, new_baseline=b2
+    )
+    assert first["scope_changes_created"] == 2
+    second = await diff_baselines(
+        db_session, project_id=project.id, base_baseline=b1, new_baseline=b2
+    )
+    assert second["scope_changes_created"] == 0  # idempotente
+    rows = (
+        await db_session.execute(
+            _select(ScopeChange).where(ScopeChange.impact_baseline_id == b2.id)
+        )
+    ).scalars().all()
+    assert len(rows) == 2
 
 
 # ---------- Notificações ----------

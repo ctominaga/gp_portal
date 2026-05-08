@@ -227,3 +227,52 @@ async def get_active_baseline(
         return None
     deliverables = await _load_deliverables(baseline.id, db)
     return BaselinePublic.model_validate(_serialize_baseline(baseline, deliverables))
+
+
+@router.get("/projects/{project_id}/baselines")
+async def list_project_baselines(
+    project_id: uuid.UUID,
+    user: User = Depends(require_any_role(Role.GP, Role.PMO, Role.OPERATOR)),
+    db: AsyncSession = Depends(get_db),
+) -> list[dict]:
+    """Lista metadados (sem deliverables) de todos os baselines do projeto, ordenados
+    do mais recente para o mais antigo. Usado para escolher pares de comparação."""
+    project = await db.get(Project, project_id)
+    if not project:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "projeto não encontrado")
+    if user.role == Role.GP and project.gp_user_id != user.id:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "GP não é dono desse projeto")
+    rows = list(
+        (
+            await db.execute(
+                select(Baseline)
+                .where(Baseline.project_id == project_id)
+                .order_by(Baseline.created_at.desc())
+            )
+        ).scalars().all()
+    )
+    out: list[dict] = []
+    for b in rows:
+        deliv_count = (
+            await db.execute(
+                select(Deliverable.id).where(Deliverable.baseline_id == b.id)
+            )
+        ).scalars().all()
+        audit = (b.payload or {}).get("audit") if isinstance(b.payload, dict) else None
+        out.append(
+            {
+                "id": str(b.id),
+                "proposal_id": str(b.proposal_id),
+                "status": b.status.value,
+                "activated_at": b.activated_at.isoformat() if b.activated_at else None,
+                "created_at": b.created_at.isoformat(),
+                "deliverable_count": len(deliv_count),
+                "source_proposal_filename": (
+                    audit.get("source_proposal_filename") if audit else None
+                ),
+                "source_proposal_version": (
+                    audit.get("source_proposal_version") if audit else None
+                ),
+            }
+        )
+    return out

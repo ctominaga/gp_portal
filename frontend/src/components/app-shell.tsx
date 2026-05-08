@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
+import { NotificationBell } from "@/components/notification-bell";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth-context";
 
@@ -24,18 +25,40 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
   if (!user) return null;
 
+  const navByRole = (() => {
+    if (user.role === "PMO" || user.role === "OPERATOR") {
+      return [
+        { href: "/pmo/portfolio", label: "Portfólio" },
+        { href: "/projetos", label: "Projetos" },
+      ];
+    }
+    if (user.role === "CLIENT") {
+      return [{ href: "/portal", label: "Meus projetos" }];
+    }
+    return [
+      { href: "/dashboard", label: "Dashboard" },
+      { href: "/projetos", label: "Projetos" },
+    ];
+  })();
+
+  const home = user.role === "CLIENT" ? "/portal" : user.role === "PMO" ? "/pmo/portfolio" : "/dashboard";
+
   return (
     <div className="min-h-screen bg-muted/30">
       <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
         <div className="container mx-auto flex h-14 items-center gap-6">
-          <Link href="/dashboard" className="font-semibold tracking-tight">
+          <Link href={home} className="font-semibold tracking-tight">
             Jump GP Portal
           </Link>
           <nav className="hidden gap-4 text-sm text-muted-foreground md:flex">
-            <Link href="/dashboard" className="hover:text-foreground">Dashboard</Link>
-            <Link href="/projetos" className="hover:text-foreground">Projetos</Link>
+            {navByRole.map((n) => (
+              <Link key={n.href} href={n.href} className="hover:text-foreground">
+                {n.label}
+              </Link>
+            ))}
           </nav>
           <div className="ml-auto flex items-center gap-3 text-sm">
+            <NotificationBell />
             <span className="hidden text-muted-foreground sm:inline">
               {user.name} <span className="text-xs">({user.role})</span>
             </span>

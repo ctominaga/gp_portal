@@ -125,6 +125,9 @@ export default function ProjectDetailPage() {
             <Button asChild variant="outline">
               <Link href={`/projetos/${project.id}/reports`}>Histórico</Link>
             </Button>
+            <Button asChild variant="outline">
+              <Link href={`/projetos/${project.id}/diff`}>Comparar baselines</Link>
+            </Button>
           </CardContent>
         </Card>
       </div>

@@ -197,16 +197,18 @@ async def _build_view(project: Project, db: AsyncSession) -> ClientProjectView:
 # ---------- diff de propostas / baselines ----------
 
 
-async def diff_baselines(
+async def compute_baseline_diff(
     db: AsyncSession,
     *,
-    project_id: uuid.UUID,
     base_baseline: Baseline,
     new_baseline: Baseline,
 ) -> dict:
-    """Compara dois baselines do MESMO projeto e produz diff por código de
-    Deliverable. Cria ScopeChange para cada added/removed."""
-    from app.models import Deliverable, ScopeChange
+    """Read-only: compara dois baselines do MESMO projeto e devolve added/removed/changed.
+
+    Não cria ScopeChange. Use `diff_baselines` para criar ScopeChange (chamado
+    pelo worker quando uma nova baseline é gerada).
+    """
+    from app.models import Deliverable
 
     rows_old = list(
         (
@@ -229,7 +231,6 @@ async def diff_baselines(
     added = []
     removed = []
     changed = []
-    scope_changes_created = 0
 
     for code, d_new in by_code_new.items():
         if code not in by_code_old:
@@ -243,14 +244,6 @@ async def diff_baselines(
                 "complexity_old": None,
                 "complexity_new": d_new.complexity.value if d_new.complexity else None,
             })
-            db.add(
-                ScopeChange(
-                    project_id=project_id,
-                    description=f"Adicionado: {code} · {d_new.title}",
-                    impact_baseline_id=new_baseline.id,
-                )
-            )
-            scope_changes_created += 1
         else:
             d_old = by_code_old[code]
             if (
@@ -281,25 +274,73 @@ async def diff_baselines(
                 "complexity_old": d_old.complexity.value if d_old.complexity else None,
                 "complexity_new": None,
             })
-            db.add(
-                ScopeChange(
-                    project_id=project_id,
-                    description=f"Removido: {code} · {d_old.title}",
-                    impact_baseline_id=new_baseline.id,
-                )
-            )
-            scope_changes_created += 1
 
-    if scope_changes_created:
-        await db.commit()
     return {
         "base_baseline_id": str(base_baseline.id),
         "new_baseline_id": str(new_baseline.id),
         "added": added,
         "removed": removed,
         "changed": changed,
-        "scope_changes_created": scope_changes_created,
     }
+
+
+async def diff_baselines(
+    db: AsyncSession,
+    *,
+    project_id: uuid.UUID,
+    base_baseline: Baseline,
+    new_baseline: Baseline,
+) -> dict:
+    """Compara dois baselines e cria um ScopeChange por added/removed.
+
+    Idempotente: só cria ScopeChange para itens que ainda não têm registro
+    correspondente para `new_baseline.id`. Chamado pelo worker quando uma v2+
+    é gerada e (com idempotência garantida) pode ser chamado por endpoints.
+    """
+    from app.models import ScopeChange
+
+    diff = await compute_baseline_diff(
+        db, base_baseline=base_baseline, new_baseline=new_baseline
+    )
+    existing_descriptions: set[str] = set(
+        (
+            await db.execute(
+                select(ScopeChange.description).where(
+                    ScopeChange.impact_baseline_id == new_baseline.id
+                )
+            )
+        ).scalars().all()
+    )
+
+    scope_changes_created = 0
+    for entry in diff["added"]:
+        desc = f"Adicionado: {entry['code']} · {entry['title_new']}"
+        if desc in existing_descriptions:
+            continue
+        db.add(
+            ScopeChange(
+                project_id=project_id,
+                description=desc,
+                impact_baseline_id=new_baseline.id,
+            )
+        )
+        scope_changes_created += 1
+    for entry in diff["removed"]:
+        desc = f"Removido: {entry['code']} · {entry['title_old']}"
+        if desc in existing_descriptions:
+            continue
+        db.add(
+            ScopeChange(
+                project_id=project_id,
+                description=desc,
+                impact_baseline_id=new_baseline.id,
+            )
+        )
+        scope_changes_created += 1
+
+    if scope_changes_created:
+        await db.commit()
+    return {**diff, "scope_changes_created": scope_changes_created}
 
 
 @router.get("/diff/{base_baseline_id}/{new_baseline_id}")
@@ -324,12 +365,10 @@ async def baseline_diff(
     project = await db.get(Project, base.project_id)
     if user.role == Role.GP and project and project.gp_user_id != user.id:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "GP não é dono desse projeto")
-    return await diff_baselines(
-        db, project_id=base.project_id, base_baseline=base, new_baseline=new_b
-    )
+    return await compute_baseline_diff(db, base_baseline=base, new_baseline=new_b)
 
 
-__all__ = ["router", "diff_baselines"]
+__all__ = ["router", "diff_baselines", "compute_baseline_diff"]
 
 
 # Garantir que BaselineStatus é importável (usado por _build_view)

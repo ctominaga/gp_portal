@@ -177,3 +177,143 @@ export interface ReportSummary {
   created_at: string;
   submitted_at: string | null;
 }
+
+// ---- F4 ----
+
+export type ApprovalStage = "pmo" | "client";
+export type ApprovalDecisionValue = "approved" | "rejected" | "requested_changes";
+
+export interface ApprovalRecord {
+  id: string;
+  report_id: string;
+  approver_id: string;
+  stage: ApprovalStage;
+  decision: ApprovalDecisionValue;
+  comment: string | null;
+  decided_at: string;
+}
+
+export interface AIInsight {
+  id: string;
+  scope: "project" | "portfolio";
+  project_id: string | null;
+  report_id: string | null;
+  agent_run_id: string | null;
+  payload: {
+    kind?: string;
+    severity?: string;
+    headline?: string;
+    detail?: string;
+    evidence?: Record<string, unknown>;
+    [k: string]: unknown;
+  };
+  created_at: string;
+}
+
+export type HealthBand = "green" | "amber" | "red";
+
+export interface HealthScoreComponents {
+  progress: number;
+  risks: number;
+  pendings: number;
+  schedule: number;
+}
+
+export interface HealthScore {
+  project_id: string;
+  score: number;
+  band: HealthBand;
+  components: HealthScoreComponents;
+  last_report_id: string | null;
+  last_report_period_end: string | null;
+}
+
+export interface PortfolioCard {
+  project_id: string;
+  project_name: string;
+  client_name: string;
+  gp_user_id: string;
+  gp_name: string | null;
+  health: HealthScore;
+  last_report_rag: RAGStatus | null;
+  open_risks_count: number;
+  open_critical_alerts: number;
+  pending_client_items: number;
+}
+
+export interface PortfolioOverview {
+  projects: PortfolioCard[];
+  total_projects: number;
+  avg_health_score: number | null;
+  counts_by_band: Record<HealthBand, number>;
+}
+
+export interface PortfolioConfig {
+  weight_progress: number;
+  weight_risks: number;
+  weight_pendings: number;
+  weight_schedule: number;
+  updated_at: string;
+  updated_by_id: string | null;
+}
+
+export interface ClientReport {
+  id: string;
+  period_start: string;
+  period_end: string;
+  rag_status: RAGStatus | null;
+  status: ReportStatus;
+  highlights: string | null;
+  next_steps: string | null;
+  submitted_at: string | null;
+  approved_at: string | null;
+  pending_items: Array<{
+    description: string;
+    due_date: string | null;
+    owner_party: string | null;
+  }>;
+}
+
+export interface ClientProjectView {
+  id: string;
+  name: string;
+  client_name: string;
+  status: string;
+  started_at: string | null;
+  latest_rag: RAGStatus | null;
+  health_score: number | null;
+  open_pending_items: number;
+  open_risks_count: number;
+  reports: ClientReport[];
+}
+
+export interface BaselineDiffEntry {
+  kind: "added" | "removed" | "changed";
+  code: string | null;
+  title_old: string | null;
+  title_new: string | null;
+  phase_old: string | null;
+  phase_new: string | null;
+  complexity_old: string | null;
+  complexity_new: string | null;
+}
+
+export interface BaselineDiff {
+  base_baseline_id: string;
+  new_baseline_id: string;
+  added: BaselineDiffEntry[];
+  removed: BaselineDiffEntry[];
+  changed: BaselineDiffEntry[];
+  /** Apenas presente na resposta do worker (após criar ScopeChanges); GET é somente leitura. */
+  scope_changes_created?: number;
+}
+
+export interface InAppNotification {
+  id: string;
+  kind: string;
+  title: string;
+  body: string | null;
+  link: string | null;
+  read_at: string | null;
+  created_at: string;
+}
