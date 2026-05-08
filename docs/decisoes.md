@@ -62,6 +62,20 @@ Decisões tomadas durante a construção que merecem registro. Convenção: cabe
 
 **Consequência:** `/health` e `/health-check` end-to-end ainda não foram observados rodando localmente. Esse smoke fica como item explícito de "validar antes de F1.S0", quando o Docker da máquina worker for o mesmo onde o agent-runner vai rodar.
 
+## 2026-05-08 — Governança / Spec consolidada v3.1 vira fonte única, deprecando v2.0, v2.1 e v3.0
+
+**Contexto:** auditoria do F4 revelou que a v3.0 (escrita como delta da v2.1) omitiu prescrições funcionais que a equipe assumia válidas (3 estágios de aprovação do PMO, fórmula Health Score com 5 componentes, retrospectiva, versionamento de escopo, modo assistido). A v2.1 nunca existiu como arquivo standalone — era delta da v2.0 mantido só na conversa. Implementação prosseguiu sem fonte única, e a tela de revisão do PMO acabou com 2 ações (não 3) e Health Score com 4 dimensões (não 5) sem registro deliberado dessa redução.
+
+**Decisão:** `docs/spec_consolidada_v3.1.md` é a fonte funcional canônica única, autossuficiente. Substitui v2.0, v2.1 e v3.0. As versões anteriores ficam em `docs/spec_history/` (`v3.0.md` movida da raiz `Jump-GP-portal/`, `v1.0.pdf` movida de `~/Downloads`) como referência histórica — **não devem ser usadas como fonte de prescrição**.
+
+**Política para futuras versões da spec:**
+- Toda nova versão é autossuficiente, **não delta**
+- Toda nova versão começa com diff explícito (alterado / removido / adicionado) em relação à anterior, no cabeçalho do documento
+- Versão anterior é movida para `docs/spec_history/v<N>.<m>.md` no mesmo commit que sobe a nova
+- README aponta sempre para a versão canônica atual
+
+**Consequência:** desvios da implementação atual contra a v3.1 viram backlog de ajustes rastreável (tabela de conformidade no próximo commit). Memória do produto registra v3.1 como referência, não mais "4 .md na raiz". Specs `02_jump_agent_runner_spec.md`, `03_prompt_claude_code.md`, `04_decisoes_operacionais.md` permanecem na raiz `Jump-GP-portal/` por enquanto — só a spec funcional foi consolidada.
+
 ## 2026-05-08 — F4 / Mocks Playwright usam URL absoluta do API server, não glob amplo
 
 **Contexto:** durante geração de screenshots do F4, o spec usava `page.route("**/portfolio", ...)`. O glob `**/portfolio` casa qualquer URL terminada em `/portfolio` — então tanto a chamada da API (`http://localhost:8000/portfolio`) quanto a navegação Next (`http://localhost:3100/pmo/portfolio`) eram interceptadas e devolviam JSON. O browser exibia o JSON cru com pretty-print, e o `waitForSelector("text=SAS→Databricks")` "passava" porque a string aparece tanto no `project_name` do JSON quanto na UI esperada. O PNG comitado era do JSON, não da UI.
