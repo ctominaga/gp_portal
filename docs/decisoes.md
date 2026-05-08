@@ -61,3 +61,11 @@ Decisões tomadas durante a construção que merecem registro. Convenção: cabe
 - CI do GitHub Actions exercita o `docker compose` em Linux limpo — usado como fonte de verdade até Docker local estabilizar.
 
 **Consequência:** `/health` e `/health-check` end-to-end ainda não foram observados rodando localmente. Esse smoke fica como item explícito de "validar antes de F1.S0", quando o Docker da máquina worker for o mesmo onde o agent-runner vai rodar.
+
+## 2026-05-08 — F4 / Mocks Playwright usam URL absoluta do API server, não glob amplo
+
+**Contexto:** durante geração de screenshots do F4, o spec usava `page.route("**/portfolio", ...)`. O glob `**/portfolio` casa qualquer URL terminada em `/portfolio` — então tanto a chamada da API (`http://localhost:8000/portfolio`) quanto a navegação Next (`http://localhost:3100/pmo/portfolio`) eram interceptadas e devolviam JSON. O browser exibia o JSON cru com pretty-print, e o `waitForSelector("text=SAS→Databricks")` "passava" porque a string aparece tanto no `project_name` do JSON quanto na UI esperada. O PNG comitado era do JSON, não da UI.
+
+**Decisão:** todo `page.route()` em specs Playwright deve usar URL absoluta com escopo do API server (constante `API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"`), não glob amplo `**/...`. Aplicado preventivamente também em `screenshots.spec.ts` (F3.5), que estava OK por sorte de naming (frontend usa `/projetos`, backend `/projects`) mas era frágil.
+
+**Consequência:** mocks deixam de competir com o roteamento do Next. Adicionado helper `assertReactUiRendered(page)` no spec F4 (verifica >=1 `<h1>`) chamado antes de cada `page.screenshot()`, com teste negativo que injeta o bug e confirma que o helper rejeita. Próximos specs Playwright que usem `page.route()` devem seguir essa convenção.
