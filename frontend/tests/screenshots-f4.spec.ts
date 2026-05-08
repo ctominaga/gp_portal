@@ -10,7 +10,24 @@
  *  5. Comparação de propostas v1 vs v2
  */
 import path from "node:path";
-import { test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
+
+/**
+ * Anti-regressão: garante que a página renderizou a UI React e não JSON cru.
+ * Quando um page.route() amplo intercepta a navegação Next, o browser exibe a
+ * resposta JSON e o body fica sem nenhum <h1>. Esta checagem é barata e cobre
+ * o cenário inteiro: tela em branco, tela só de loading skeleton sem h1, e o
+ * JSON-bug do F4-1.
+ */
+async function assertReactUiRendered(page: Page): Promise<void> {
+  await expect(
+    page.locator("h1"),
+    "Nenhum <h1> renderizado — Possivelmente um page.route() interceptou a " +
+      "navegação Next e o browser está mostrando JSON cru, ou a página falhou " +
+      "ao carregar. Confira que os mocks page.route() escopam ao host do backend " +
+      "(${API}/...) e não usam glob amplo (**/...).",
+  ).not.toHaveCount(0);
+}
 
 const SCREENSHOT_DIR = path.resolve(__dirname, "../../docs/screenshots");
 
@@ -388,6 +405,7 @@ test.describe("Screenshots F4", () => {
     await page.waitForSelector("text=Pipeline ESG");
     await page.waitForSelector("text=Migração Mainframe");
     await page.waitForTimeout(400);
+    await assertReactUiRendered(page);
     await page.screenshot({
       path: path.join(SCREENSHOT_DIR, "f4-1-pmo-portfolio.png"),
       fullPage: true,
@@ -424,6 +442,7 @@ test.describe("Screenshots F4", () => {
         "da sprint 3.",
     );
     await page.waitForTimeout(200);
+    await assertReactUiRendered(page);
     await page.screenshot({
       path: path.join(SCREENSHOT_DIR, "f4-2-pmo-review-with-comment.png"),
       fullPage: true,
@@ -456,6 +475,7 @@ test.describe("Screenshots F4", () => {
     await page.waitForSelector("text=SAS→Databricks");
     await page.waitForSelector("text=Pendências aguardando você");
     await page.waitForTimeout(400);
+    await assertReactUiRendered(page);
     await page.screenshot({
       path: path.join(SCREENSHOT_DIR, "f4-3-portal-cliente.png"),
       fullPage: true,
@@ -469,6 +489,7 @@ test.describe("Screenshots F4", () => {
     await page.goto("/pmo/portfolio/config", { waitUntil: "domcontentloaded" });
     await page.waitForSelector("text=Health Score");
     await page.waitForTimeout(400);
+    await assertReactUiRendered(page);
     await page.screenshot({
       path: path.join(SCREENSHOT_DIR, "f4-4-health-score-config.png"),
       fullPage: true,
@@ -501,9 +522,29 @@ test.describe("Screenshots F4", () => {
     await page.waitForSelector("text=Comparar baselines");
     await page.waitForSelector("text=Migração rotina TFS-X");
     await page.waitForTimeout(400);
+    await assertReactUiRendered(page);
     await page.screenshot({
       path: path.join(SCREENSHOT_DIR, "f4-5-diff-propostas.png"),
       fullPage: true,
     });
+  });
+
+  // Teste negativo: garantia de que o helper anti-regressão realmente
+  // protege contra o cenário "página JSON disfarçada de UI" do bug original.
+  test("anti-regressão: assertReactUiRendered falha em página JSON cru", async ({
+    page,
+  }) => {
+    await page.route("**/*", async (route) => {
+      if (route.request().resourceType() === "document") {
+        await route.fulfill({
+          contentType: "application/json",
+          body: JSON.stringify({ pretendingToBeUi: "SAS→Databricks" }),
+        });
+      } else {
+        await route.fallback();
+      }
+    });
+    await page.goto("/qualquer-url", { waitUntil: "domcontentloaded" });
+    await expect(assertReactUiRendered(page)).rejects.toThrow();
   });
 });
