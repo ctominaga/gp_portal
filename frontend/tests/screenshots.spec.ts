@@ -8,6 +8,14 @@ import { test } from "@playwright/test";
 
 const SCREENSHOT_DIR = path.resolve(__dirname, "../../docs/screenshots");
 
+// Importante: page.route() casa o glob contra a URL completa, não só o path.
+// Glob amplo tipo `**/reports/{id}` casa TANTO o backend quanto qualquer rota Next
+// terminando no mesmo segmento — devolvendo JSON em vez de HTML. Hoje os specs
+// passam por sorte de naming (frontend usa /projetos/.../reports/{id}/edit, backend
+// usa /reports/{id}), mas isso é frágil. Scopa todo mock ao host do backend.
+// Ver docs/decisoes.md.
+const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
 const PROJECT_ID = "22222222-2222-2222-2222-222222222222";
 const BASELINE_ID = "11111111-1111-1111-1111-111111111111";
 const REPORT_ID = "44444444-4444-4444-4444-444444444444";
@@ -179,7 +187,7 @@ test.describe("Screenshots F3.5", () => {
       window.localStorage.setItem("jump.token", "fake-token");
     });
 
-    await page.route("**/auth/me", async (route) => {
+    await page.route(`${API}/auth/me`, async (route) => {
       await route.fulfill({
         json: {
           id: "u1",
@@ -191,15 +199,15 @@ test.describe("Screenshots F3.5", () => {
       });
     });
 
-    await page.route(`**/projects/${PROJECT_ID}/active-baseline`, async (r) => {
+    await page.route(`${API}/projects/${PROJECT_ID}/active-baseline`, async (r) => {
       await r.fulfill({ json: fakeBaseline });
     });
 
-    await page.route(`**/baselines/${BASELINE_ID}`, async (r) => {
+    await page.route(`${API}/baselines/${BASELINE_ID}`, async (r) => {
       await r.fulfill({ json: fakeBaseline });
     });
 
-    await page.route("**/events/stream", async (r) => {
+    await page.route(`${API}/events/stream`, async (r) => {
       await r.fulfill({
         body: "event: connected\ndata: {}\n\n",
         contentType: "text/event-stream",
@@ -207,7 +215,7 @@ test.describe("Screenshots F3.5", () => {
     });
 
     // PATCH em /reports/* — apenas reflete o body para evitar erro de autosave
-    await page.route(`**/reports/${REPORT_ID}`, async (route) => {
+    await page.route(`${API}/reports/${REPORT_ID}`, async (route) => {
       if (route.request().method() === "PATCH") {
         await route.fulfill({ json: {} });
       } else {
@@ -253,7 +261,7 @@ test.describe("Screenshots F3.5", () => {
       rag_qualidade: "R",
       progresses: [],
     });
-    await page.route(`**/reports/${REPORT_ID}`, async (route) => {
+    await page.route(`${API}/reports/${REPORT_ID}`, async (route) => {
       if (route.request().method() === "GET") await route.fulfill({ json: empty });
       else await route.fulfill({ json: empty });
     });
@@ -280,7 +288,7 @@ test.describe("Screenshots F3.5", () => {
         "Bug regulatório encontrado em IRRBB exigiu reabertura da sprint 3.",
       progresses: [],
     });
-    await page.route(`**/reports/${REPORT_ID}`, async (route) => {
+    await page.route(`${API}/reports/${REPORT_ID}`, async (route) => {
       if (route.request().method() === "GET") await route.fulfill({ json: filled });
       else await route.fulfill({ json: filled });
     });
@@ -321,7 +329,7 @@ test.describe("Screenshots F3.5", () => {
         },
       ],
     });
-    await page.route(`**/reports/${REPORT_ID}`, async (route) => {
+    await page.route(`${API}/reports/${REPORT_ID}`, async (route) => {
       if (route.request().method() === "GET") await route.fulfill({ json: rep });
       else await route.fulfill({ json: rep });
     });
@@ -347,7 +355,7 @@ test.describe("Screenshots F3.5", () => {
         { deliverable_id: "d2", status: "in_progress", percent_complete: 90 },
       ],
     });
-    await page.route(`**/reports/${REPORT_ID}`, async (route) => {
+    await page.route(`${API}/reports/${REPORT_ID}`, async (route) => {
       if (route.request().method() === "GET") await route.fulfill({ json: rep });
       else await route.fulfill({ json: rep });
     });
