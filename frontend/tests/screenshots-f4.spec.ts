@@ -14,6 +14,12 @@ import { test } from "@playwright/test";
 
 const SCREENSHOT_DIR = path.resolve(__dirname, "../../docs/screenshots");
 
+// Importante: Playwright route() casa o GLOB contra a URL completa, não só o path.
+// `**/portfolio` casaria TANTO o backend (http://localhost:8000/portfolio) QUANTO a
+// página Next (http://localhost:3100/pmo/portfolio) — devolvendo JSON em vez de HTML.
+// Por isso scopamos cada mock ao host do backend.
+const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
 const PROJECT_BRADESCO_ID = "22222222-2222-2222-2222-222222222222";
 const PROJECT_AMARELO_ID = "33333333-3333-3333-3333-333333333333";
 const PROJECT_VERMELHO_ID = "44444444-4444-4444-4444-444444444444";
@@ -319,7 +325,7 @@ test.describe("Screenshots F4", () => {
     });
 
     // /auth/me — papéis variam por tela. Default: PMO
-    await page.route("**/auth/me", async (route) => {
+    await page.route(`${API}/auth/me`, async (route) => {
       await route.fulfill({
         json: {
           id: "u-pmo-1",
@@ -332,7 +338,7 @@ test.describe("Screenshots F4", () => {
     });
 
     // SSE
-    await page.route("**/events/stream", async (r) => {
+    await page.route(`${API}/events/stream`, async (r) => {
       await r.fulfill({
         body: "event: connected\ndata: {}\n\n",
         contentType: "text/event-stream",
@@ -340,10 +346,10 @@ test.describe("Screenshots F4", () => {
     });
 
     // Notificações (bell)
-    await page.route("**/notifications/unread-count", async (r) => {
+    await page.route(`${API}/notifications/unread-count`, async (r) => {
       await r.fulfill({ json: { unread: 2 } });
     });
-    await page.route("**/notifications", async (r) => {
+    await page.route(`${API}/notifications`, async (r) => {
       if (r.request().method() === "GET") {
         await r.fulfill({
           json: [
@@ -374,7 +380,7 @@ test.describe("Screenshots F4", () => {
   });
 
   test("F4-1: Dashboard PMO com 3 projetos (G/A/R)", async ({ page }) => {
-    await page.route("**/portfolio", async (r) => {
+    await page.route(`${API}/portfolio`, async (r) => {
       await r.fulfill({ json: portfolioOverview });
     });
     await page.goto("/pmo/portfolio", { waitUntil: "domcontentloaded" });
@@ -391,16 +397,16 @@ test.describe("Screenshots F4", () => {
   test("F4-2: Aprovação de report com AIInsights e dialog 'pedir revisão' aberto", async ({
     page,
   }) => {
-    await page.route(`**/reports/${REPORT_ID}`, async (r) => {
+    await page.route(`${API}/reports/${REPORT_ID}`, async (r) => {
       await r.fulfill({ json: reportSubmitted });
     });
-    await page.route(`**/projects/${PROJECT_BRADESCO_ID}`, async (r) => {
+    await page.route(`${API}/projects/${PROJECT_BRADESCO_ID}`, async (r) => {
       await r.fulfill({ json: projectBradesco });
     });
-    await page.route(`**/reports/${REPORT_ID}/approvals`, async (r) => {
+    await page.route(`${API}/reports/${REPORT_ID}/approvals`, async (r) => {
       await r.fulfill({ json: [] });
     });
-    await page.route(`**/reports/${REPORT_ID}/insights`, async (r) => {
+    await page.route(`${API}/reports/${REPORT_ID}/insights`, async (r) => {
       await r.fulfill({ json: aiInsights });
     });
 
@@ -429,7 +435,7 @@ test.describe("Screenshots F4", () => {
     await context.addInitScript(() => {
       window.localStorage.setItem("jump.token", "fake-token-client");
     });
-    await page.route("**/auth/me", async (route) => {
+    await page.route(`${API}/auth/me`, async (route) => {
       await route.fulfill({
         json: {
           id: "u-cli-1",
@@ -440,7 +446,7 @@ test.describe("Screenshots F4", () => {
         },
       });
     });
-    await page.route(`**/client/projects/${PROJECT_BRADESCO_ID}`, async (r) => {
+    await page.route(`${API}/client/projects/${PROJECT_BRADESCO_ID}`, async (r) => {
       await r.fulfill({ json: clientProjectView });
     });
 
@@ -457,7 +463,7 @@ test.describe("Screenshots F4", () => {
   });
 
   test("F4-4: Configuração de pesos do Health Score", async ({ page }) => {
-    await page.route("**/portfolio/config", async (r) => {
+    await page.route(`${API}/portfolio/config`, async (r) => {
       await r.fulfill({ json: portfolioConfig });
     });
     await page.goto("/pmo/portfolio/config", { waitUntil: "domcontentloaded" });
@@ -470,14 +476,14 @@ test.describe("Screenshots F4", () => {
   });
 
   test("F4-5: Comparação de propostas v1 vs v2", async ({ page }) => {
-    await page.route(`**/projects/${PROJECT_BRADESCO_ID}/baselines`, async (r) => {
+    await page.route(`${API}/projects/${PROJECT_BRADESCO_ID}/baselines`, async (r) => {
       await r.fulfill({ json: baselinesList });
     });
-    await page.route(`**/client/diff/${BASELINE_V1_ID}/${BASELINE_V2_ID}`, async (r) => {
+    await page.route(`${API}/client/diff/${BASELINE_V1_ID}/${BASELINE_V2_ID}`, async (r) => {
       await r.fulfill({ json: baselineDiff });
     });
     // Use GP user para ter permissão no diff
-    await page.route("**/auth/me", async (route) => {
+    await page.route(`${API}/auth/me`, async (route) => {
       await route.fulfill({
         json: {
           id: "u-gp-1",
