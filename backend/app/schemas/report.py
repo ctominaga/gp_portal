@@ -83,10 +83,15 @@ class PendingItemIn(BaseModel):
     owner_party: str | None = None
     due_date: date | None = None
     status: PendingItemStatus = PendingItemStatus.OPEN
+    # spec v3.1 §4.2.5 — "se não resolvido, o que afeta"
+    impact: str | None = None
 
 
 class PendingItemPublic(PendingItemIn):
     id: uuid.UUID
+    # spec v3.1 §4.2.5 — "Data de abertura: quando foi registrado".
+    # Servido como `created_at`; UI pode renderizar com label "Aberto em".
+    created_at: datetime
     model_config = {"from_attributes": True}
 
 

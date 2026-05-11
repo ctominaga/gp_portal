@@ -269,9 +269,21 @@ export default function ReviewReportPage() {
           <CardContent className="space-y-2 text-sm">
             {report.pending_items.length === 0 && <p className="text-muted-foreground">—</p>}
             {report.pending_items.map((p, i) => (
-              <div key={i} className="flex items-start gap-2">
-                <Badge variant="outline">{p.owner_party ?? "?"}</Badge>
-                <span>{p.description}</span>
+              <div key={i} className="rounded-md border p-2">
+                <div className="flex items-start gap-2">
+                  <Badge variant="outline">{p.owner_party ?? "?"}</Badge>
+                  <span className="flex-1">{p.description}</span>
+                </div>
+                {p.impact && (
+                  <p className="mt-1 text-xs italic text-muted-foreground">
+                    impacto: {p.impact}
+                  </p>
+                )}
+                {p.created_at && (
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    Aberto em {new Date(p.created_at).toLocaleDateString("pt-BR")}
+                  </p>
+                )}
               </div>
             ))}
           </CardContent>

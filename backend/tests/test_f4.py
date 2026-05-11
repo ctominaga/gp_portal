@@ -675,6 +675,90 @@ async def test_action_plan_expand_linked_descriptions_em_get_report(
     assert ap["linked_deliverable_title"] == deliv.title
 
 
+# ---------- F5.1 PendingItem: impact + open_date (v3.1 §4.2.5) ----------
+
+
+@pytest.mark.asyncio
+async def test_pending_item_impact_nullable_e_created_at_default(db_session) -> None:
+    """`impact` aceita null e string; `created_at` cumpre `open_date` (default=now)."""
+    from datetime import datetime as _dt
+
+    project = await _seed_project(db_session, gp_email="gp-pi1@x.com")
+    report = await _seed_full_report(db_session, project=project)
+
+    p_sem = PendingItem(
+        report_id=report.id,
+        description="acesso ao Databricks ainda pendente",
+        owner_party="client",
+        status=PendingItemStatus.OPEN,
+    )
+    p_com = PendingItem(
+        report_id=report.id,
+        description="validação técnica da rotina IRRBB",
+        owner_party="client",
+        status=PendingItemStatus.OPEN,
+        impact="Bloqueia entrega da Sprint 3 e fecha gate regulatório",
+    )
+    db_session.add_all([p_sem, p_com])
+    await db_session.commit()
+    await db_session.refresh(p_sem)
+    await db_session.refresh(p_com)
+
+    assert p_sem.impact is None
+    assert p_com.impact.startswith("Bloqueia")
+    # `created_at` cumpre `open_date` semanticamente — default=now sempre populado
+    assert isinstance(p_sem.created_at, _dt)
+    assert isinstance(p_com.created_at, _dt)
+
+
+@pytest.mark.asyncio
+async def test_pending_item_impact_rejeita_string_vazia_via_schema(db_session) -> None:
+    """Validação Pydantic: description não pode ser vazia; impact pode ser
+    null mas se preenchido aceita qualquer string."""
+    from pydantic import ValidationError as _PV
+
+    from app.schemas.report import PendingItemIn
+
+    # description vazia → falha
+    with pytest.raises(_PV):
+        PendingItemIn(description="", impact="x")
+    # impact null → OK
+    obj = PendingItemIn(description="x")
+    assert obj.impact is None
+    # impact string → OK
+    obj2 = PendingItemIn(description="x", impact="some impact")
+    assert obj2.impact == "some impact"
+
+
+@pytest.mark.asyncio
+async def test_pending_item_payload_expoe_impact_e_created_at(
+    client: AsyncClient, db_session
+) -> None:
+    """GET /reports/{id} retorna pending_items com impact + created_at."""
+    project = await _seed_project(db_session, gp_email="gp-pi3@x.com")
+    report = await _seed_full_report(db_session, project=project)
+    db_session.add(PendingItem(
+        report_id=report.id,
+        description="cred. Databricks",
+        owner_party="client",
+        status=PendingItemStatus.OPEN,
+        impact="atrasa Sprint 3",
+    ))
+    await db_session.commit()
+
+    gp = await _login(client, role="GP", email="gp-pi3@x.com")
+    r = await client.get(
+        f"/reports/{report.id}",
+        headers={"Authorization": f"Bearer {gp}"},
+    )
+    assert r.status_code == 200
+    pendings = r.json()["pending_items"]
+    assert len(pendings) == 1
+    item = pendings[0]
+    assert item["impact"] == "atrasa Sprint 3"
+    assert item["created_at"] is not None
+
+
 @pytest.mark.asyncio
 async def test_compute_resolution_rate_pendings_resolved_vs_total(db_session) -> None:
     """3 abertas + 0 resolvidas → 0. Adiciona 2 resolvidas → 2/5 = 40."""

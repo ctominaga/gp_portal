@@ -173,6 +173,7 @@ export default function ReportEditPage() {
           owner_party: p.owner_party,
           due_date: p.due_date,
           status: p.status,
+          impact: p.impact ?? null,
         })),
       };
       await api.patch(`/reports/${rid}`, payload);
@@ -764,7 +765,13 @@ export default function ReportEditPage() {
           <ListEditor<PendingItem>
             title="Itens pendentes (do cliente ou terceiros)"
             items={draft.pending_items}
-            empty={{ description: "", owner_party: "client", due_date: null, status: "open" }}
+            empty={{
+              description: "",
+              owner_party: "client",
+              due_date: null,
+              status: "open",
+              impact: null,
+            }}
             onChange={(pending_items) => setDraft({ ...draft, pending_items })}
             disabled={isReadonly}
             renderItem={(p, set) => (
@@ -785,6 +792,21 @@ export default function ReportEditPage() {
                   value={p.due_date ?? ""}
                   onChange={(e) => set({ ...p, due_date: e.target.value || null })}
                 />
+                {/* spec v3.1 §4.2.5 — impacto se não resolvido (opcional) */}
+                <div className="sm:col-span-3">
+                  <Label className="text-xs">Impacto se não resolvido (opcional)</Label>
+                  <Textarea
+                    rows={2}
+                    placeholder="o que será afetado se a pendência ficar aberta"
+                    value={p.impact ?? ""}
+                    onChange={(e) => set({ ...p, impact: e.target.value || null })}
+                  />
+                </div>
+                {p.created_at && (
+                  <p className="sm:col-span-3 text-xs text-muted-foreground">
+                    Aberto em: {new Date(p.created_at).toLocaleDateString("pt-BR")}
+                  </p>
+                )}
               </div>
             )}
           />

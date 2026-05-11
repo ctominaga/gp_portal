@@ -626,19 +626,33 @@ class ActionPlan(Base):
 
 
 class PendingItem(Base):
-    """Item pendente que depende do cliente ou de terceiro — visível no portal."""
+    """Item pendente que depende do cliente ou de terceiro (spec v3.1 §4.2.5).
+
+    `created_at` cumpre o papel da "Data de abertura" descrita na spec
+    (open_date semântico — quando foi registrado). `impact` é texto livre
+    descrevendo o que será afetado se não for resolvido.
+    """
 
     __tablename__ = "pending_items"
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=_new_uuid)
     report_id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), ForeignKey("reports.id"))
     description: Mapped[str] = mapped_column(Text, nullable=False)
-    owner_party: Mapped[str | None] = mapped_column(String(50), nullable=True)  # 'client'|'jump'|...
+    # spec v3.1 §4.2.5 — "responsible_type: interno ou cliente"; semanticamente
+    # equivalente a `owner_party` ('client'/'jump'/...).
+    owner_party: Mapped[str | None] = mapped_column(String(50), nullable=True)
     due_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     status: Mapped[PendingItemStatus] = mapped_column(
         SAEnum(PendingItemStatus, name="pending_item_status", native_enum=False),
         default=PendingItemStatus.OPEN,
         nullable=False,
+    )
+    # spec v3.1 §4.2.5 — "Impacto no projeto: se não resolvido, o que afeta".
+    impact: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # spec v3.1 §4.2.5 — "Data de abertura: quando foi registrado".
+    # Cumprido por `created_at` (não duplicamos com campo `open_date`).
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=_utcnow, nullable=False
     )
 
 

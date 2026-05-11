@@ -202,6 +202,11 @@ export interface PendingItem {
   owner_party: string | null;
   due_date: string | null;
   status: PendingItemStatus;
+  // spec v3.1 §4.2.5 — "se não resolvido, o que afeta"
+  impact?: string | null;
+  // spec v3.1 §4.2.5 — "Data de abertura: quando foi registrado".
+  // Servido pelo backend como `created_at`; UI pode renderizar como "Aberto em".
+  created_at?: string;
 }
 
 export interface Report {

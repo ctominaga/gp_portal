@@ -126,10 +126,10 @@ Inclui débitos P2 da auditoria + F2.8 adiado:
 - D. Endpoint `POST /projects/{id}/close` + UI + `ProjectRetrospective` com 4 campos estruturados (§10.4)
 - E. `ScopeChange`: faltam `baseline_from_id`, `baseline_to_id`, `change_type`, `approved_by` (§10.5/9.5)
 - ~~F. `Risk`: falta probability/impact separados + `mitigation_plan` (§4.2.3/9.5)~~ → endereçado em **F5.1 ETAPA 2B** (commit `e888415`). RiskStatus reescrito (IDENTIFIED/MONITORING/MITIGATED/MATERIALIZED). 3 débitos menores P3 listados abaixo.
-- G. `ActionPlan`: falta `objective`, `linked_risk_id`, `linked_deliverable_id` (§4.2.4/9.5)
-- H. `Deliverable`: falta `acceptance_criteria`, `dependencies`, `status` (§9.5)
+- ~~G. `ActionPlan`: falta `objective`, `linked_risk_id`, `linked_deliverable_id` (§4.2.4/9.5)~~ → endereçado em **F5.1 ActionPlan** (commit `edaec34`). Expansão `linked_*_description/title` em lote no GET.
+- ~~H. `Deliverable`: falta `acceptance_criteria`, `dependencies`, `status` (§9.5)~~ → endereçado em **F5.1 Deliverable** (commit `1284bc5`). +4 campos (`type`, `acceptance_criteria`, `dependencies`, `status`), +2 enums realinhados (`complexity` 3→5 PT-BR, `category` String→enum), cross-model auto-update `Deliverable.status=CONCLUDED` quando DeliveryProgress satisfaz as 3 condições.
 - ~~I. `DeliveryProgress.acceptance_confirmed` não persiste resultado do modal~~ → endereçado em AJUSTE I no F4.
-- J. `PendingItem`: falta `impact` e `open_date` distinto (§4.2.5/9.5)
+- ~~J. `PendingItem`: falta `impact` e `open_date` distinto (§4.2.5/9.5)~~ → endereçado em **F5.1 PendingItem** (commit a seguir). `impact` adicionado (Text nullable); `created_at` cumpre `open_date` semanticamente (não duplicamos com campo dedicado).
 - **K. F2.8 — smoke real do agente leitor** (novo): instalar `claude` nativamente no WSL Linux, rodar smoke contra `bradesco_sas_databricks.expected.json`, gerar `docs/f28-bradesco-baseline-quality.md`. Compartilha pré-requisito com F2.6 (worker real). Ver ADR.
 - **L. Atualizar v3.1 §6.4.1 e gerar v3.2 consolidada** (novo): a spec funcional v3.1 §6.4.1 lista enums de `DeliverableType` (Documento/Software/Serviço/Treinamento) e omite `category`/`complexity` que o prompt `proposal_reader_v1.md` realmente usa. Implementação seguiu o prompt (fonte). Próxima edição da spec consolida vocabulário do prompt + adiciona seção sobre `confidence_score`/`confidence_notes`. Mantém a regra de "toda nova versão começa com diff explícito do que foi alterado" (ADR 2026-05-08 — Governança).
 
