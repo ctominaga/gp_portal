@@ -412,7 +412,39 @@ test.describe("Screenshots F4", () => {
     });
   });
 
-  test("F4-2: Aprovação de report com AIInsights e dialog 'pedir revisão' aberto", async ({
+  test("F4-2a: Header da revisão PMO com os 3 botões de decisão (spec v3.1 §10.1)", async ({
+    page,
+  }) => {
+    await page.route(`${API}/reports/${REPORT_ID}`, async (r) => {
+      await r.fulfill({ json: reportSubmitted });
+    });
+    await page.route(`${API}/projects/${PROJECT_BRADESCO_ID}`, async (r) => {
+      await r.fulfill({ json: projectBradesco });
+    });
+    await page.route(`${API}/reports/${REPORT_ID}/approvals`, async (r) => {
+      await r.fulfill({ json: [] });
+    });
+    await page.route(`${API}/reports/${REPORT_ID}/insights`, async (r) => {
+      await r.fulfill({ json: aiInsights });
+    });
+
+    await page.goto(`/pmo/reports/${REPORT_ID}/review`, {
+      waitUntil: "domcontentloaded",
+    });
+    await page.waitForSelector("text=Revisão de report");
+    // Garante que os 3 botões existem (Pedir revisão / Aprovar com comentário / Aprovar)
+    await page.waitForSelector('button:has-text("Pedir revisão")');
+    await page.waitForSelector('button:has-text("Aprovar com comentário")');
+    await page.waitForSelector('button:text-is("Aprovar")');
+    await page.waitForTimeout(200);
+    await assertReactUiRendered(page);
+    await page.screenshot({
+      path: path.join(SCREENSHOT_DIR, "f4-2a-pmo-review-three-buttons.png"),
+      fullPage: true,
+    });
+  });
+
+  test("F4-2: Modal 'Aprovar com comentário' aberto com nota interna preenchida (spec v3.1 §10.1)", async ({
     page,
   }) => {
     await page.route(`${API}/reports/${REPORT_ID}`, async (r) => {
@@ -433,13 +465,15 @@ test.describe("Screenshots F4", () => {
     });
     await page.waitForSelector("text=Revisão de report");
     await page.waitForSelector("text=Risco crítico aberto");
-    // Abre dialog "pedir revisão" e digita comentário
-    await page.locator('button:has-text("Pedir revisão")').first().click();
-    await page.waitForSelector("text=Comentário obrigatório");
+    // Abre o NOVO modal "Aprovar com comentário"
+    await page.locator('button:has-text("Aprovar com comentário")').first().click();
+    // Copy explícita do modal — confirma que está no diálogo correto
+    await page.waitForSelector("text=nota interna ao GP");
+    await page.waitForSelector("text=não aparece no portal do cliente");
     await page.locator("textarea").fill(
-      "Por favor, detalhar plano de mitigação do bug IRRBB e adicionar marcos de validação " +
-        "regulatória até o próximo sprint. Também precisamos de evidência da reabertura " +
-        "da sprint 3.",
+      "Aprovado. Atenção no próximo report: detalhar plano de mitigação do bug " +
+        "regulatório IRRBB e anexar evidência da reabertura da sprint 3. Esta nota " +
+        "é interna ao GP e não vai ao cliente.",
     );
     await page.waitForTimeout(200);
     await assertReactUiRendered(page);

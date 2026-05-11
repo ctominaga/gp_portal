@@ -137,12 +137,23 @@ async def notify_approval_decision(
                 )
         gp = await db.get(User, project.gp_user_id)
         if gp:
+            # Quando aprovação tem nota interna, destacar no corpo da notificação
+            # — o comment é visível ao GP no histórico, mas nunca ao cliente.
+            if approval.comment and approval.comment.strip():
+                body = (
+                    f"Período {report.period_start} → {report.period_end}. "
+                    f'Nota interna do PMO: "{approval.comment.strip()}"'
+                )
+                kind = "report_pmo_approved_with_comment"
+            else:
+                body = f"Período {report.period_start} → {report.period_end}."
+                kind = "report_pmo_approved"
             await _create_inapp(
                 db,
                 user_id=gp.id,
-                kind="report_pmo_approved",
+                kind=kind,
                 title=f"PMO aprovou seu report: {project.name}",
-                body=f"Período {report.period_start} → {report.period_end}.",
+                body=body,
                 link=f"/projetos/{project.id}/reports/{report.id}/edit",
             )
     elif report.status == ReportStatus.CLIENT_RELEASED:

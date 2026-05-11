@@ -181,7 +181,10 @@ export interface ReportSummary {
 // ---- F4 ----
 
 export type ApprovalStage = "pmo" | "client";
-export type ApprovalDecisionValue = "approved" | "rejected" | "requested_changes";
+export type ApprovalDecisionValue =
+  | "approved"
+  | "approved_with_comment"
+  | "requested_changes";
 
 export interface ApprovalRecord {
   id: string;

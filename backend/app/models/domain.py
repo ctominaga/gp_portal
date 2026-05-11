@@ -156,7 +156,7 @@ class ApprovalStage(str, enum.Enum):
 
 class ApprovalDecision(str, enum.Enum):
     APPROVED = "approved"
-    REJECTED = "rejected"
+    APPROVED_WITH_COMMENT = "approved_with_comment"
     REQUESTED_CHANGES = "requested_changes"
 
 

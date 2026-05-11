@@ -139,4 +139,73 @@ describe("ReviewReportPage", () => {
     );
     expect(apiMock.post).not.toHaveBeenCalled();
   });
+
+  it("header tem 3 ações distintas (Pedir revisão / Aprovar com comentário / Aprovar)", async () => {
+    setupGets();
+    render(<ReviewReportPage />);
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /Pedir revisão/i })).toBeTruthy(),
+    );
+    expect(screen.getByRole("button", { name: /Pedir revisão/i })).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: /Aprovar com comentário/i }),
+    ).toBeTruthy();
+    // 'Aprovar' sem o sufixo — usar match exato evitando casar com o botão acima
+    expect(screen.getByRole("button", { name: /^Aprovar$/ })).toBeTruthy();
+  });
+
+  it("'Aprovar com comentário' exige comment e comunica que a nota é interna", async () => {
+    setupGets();
+    apiMock.post.mockResolvedValueOnce({ data: {} });
+    render(<ReviewReportPage />);
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: /Aprovar com comentário/i }),
+      ).toBeTruthy(),
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: /Aprovar com comentário/i }),
+    );
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: /Sim, aprovar com nota/i }),
+      ).toBeTruthy(),
+    );
+    // Copy explícita: "nota interna ao GP", "não aparece no portal do cliente"
+    expect(screen.getByText(/nota interna ao GP/i)).toBeTruthy();
+    expect(screen.getByText(/não aparece no portal do cliente/i)).toBeTruthy();
+
+    // Sem comment → toast.error, sem POST
+    fireEvent.click(
+      screen.getByRole("button", { name: /Sim, aprovar com nota/i }),
+    );
+    await waitFor(() =>
+      expect(toastMock.error).toHaveBeenCalledWith(
+        expect.stringMatching(/comentário|nota/i),
+      ),
+    );
+    expect(apiMock.post).not.toHaveBeenCalled();
+  });
+
+  it("'Aprovar' (direto) envia decision=approved sem exigir comentário", async () => {
+    setupGets();
+    apiMock.post.mockResolvedValueOnce({ data: {} });
+    render(<ReviewReportPage />);
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /^Aprovar$/ })).toBeTruthy(),
+    );
+    fireEvent.click(screen.getByRole("button", { name: /^Aprovar$/ }));
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: /Sim, aprovar/i }),
+      ).toBeTruthy(),
+    );
+    fireEvent.click(screen.getByRole("button", { name: /Sim, aprovar/i }));
+    await waitFor(() =>
+      expect(apiMock.post).toHaveBeenCalledWith(
+        "/reports/r1/decide",
+        expect.objectContaining({ decision: "approved" }),
+      ),
+    );
+  });
 });

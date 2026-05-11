@@ -1,9 +1,15 @@
-"""Aprovação 3 estágios + leitura de IAInsights.
+"""Aprovação em 3 estágios + leitura de IAInsights (spec v3.1 §10.1).
 
 Estados:
   draft → submitted (GP submete)
-  submitted → pmo_approved | needs_revision | rejected (PMO decide)
+  submitted → pmo_approved | needs_revision (PMO decide)
   pmo_approved → client_released | needs_revision (Cliente decide)
+
+Decisões possíveis (PMO ou Cliente):
+  - `approved`              : libera para próximo estágio. Comentário opcional.
+  - `approved_with_comment` : libera, mas anexa nota INTERNA (não vai ao cliente).
+                              Comentário obrigatório (não vazio).
+  - `requested_changes`     : devolve para revisão. Comentário obrigatório.
 
 Cada decisão grava um ReportApproval. Notifica via SSE/in-app/email.
 """
@@ -38,13 +44,13 @@ router = APIRouter(tags=["approvals"])
 
 
 def _next_status(stage: ApprovalStage, decision: ApprovalDecision) -> ReportStatus:
-    if decision == ApprovalDecision.APPROVED:
+    # APPROVED e APPROVED_WITH_COMMENT seguem para o próximo estágio.
+    # O comment de APPROVED_WITH_COMMENT é interno (GP+PMO no histórico),
+    # nunca vai ao Portal do Cliente — `ClientReportPublic` não expõe approvals.
+    if decision in (ApprovalDecision.APPROVED, ApprovalDecision.APPROVED_WITH_COMMENT):
         return (
             ReportStatus.PMO_APPROVED if stage == ApprovalStage.PMO else ReportStatus.CLIENT_RELEASED
         )
-    if decision == ApprovalDecision.REQUESTED_CHANGES:
-        return ReportStatus.NEEDS_REVISION
-    # rejected
     return ReportStatus.NEEDS_REVISION
 
 
@@ -81,12 +87,15 @@ async def decide_report(
             f"report em {report.status.value} não aceita decisão",
         )
 
-    # Comentário obrigatório quando recusa/pede mudança
-    if payload.decision in (ApprovalDecision.REQUESTED_CHANGES, ApprovalDecision.REJECTED):
+    # Comentário obrigatório quando pede mudança ou aprova com nota interna.
+    if payload.decision in (
+        ApprovalDecision.REQUESTED_CHANGES,
+        ApprovalDecision.APPROVED_WITH_COMMENT,
+    ):
         if not payload.comment or not payload.comment.strip():
             raise HTTPException(
                 status.HTTP_400_BAD_REQUEST,
-                "comentário obrigatório para requested_changes/rejected",
+                "comentário obrigatório para requested_changes/approved_with_comment",
             )
 
     new_status = _next_status(stage, payload.decision)

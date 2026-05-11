@@ -1,6 +1,11 @@
 "use client";
 
-import { AlertTriangle, CheckCircle2, MessageSquareWarning } from "lucide-react";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  MessageSquarePlus,
+  MessageSquareWarning,
+} from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -39,7 +44,9 @@ export default function ReviewReportPage() {
   const [project, setProject] = useState<Project | null>(null);
   const [approvals, setApprovals] = useState<ApprovalRecord[]>([]);
   const [insights, setInsights] = useState<AIInsight[]>([]);
-  const [decisionOpen, setDecisionOpen] = useState<"approved" | "requested_changes" | null>(null);
+  const [decisionOpen, setDecisionOpen] = useState<
+    "approved" | "approved_with_comment" | "requested_changes" | null
+  >(null);
   const [comment, setComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -65,17 +72,28 @@ export default function ReviewReportPage() {
 
   async function decide() {
     if (!decisionOpen) return;
-    if (decisionOpen === "requested_changes" && !comment.trim()) {
+    const trimmed = comment.trim();
+    if (decisionOpen === "requested_changes" && !trimmed) {
       toast.error("Comentário obrigatório para pedir revisão.");
+      return;
+    }
+    if (decisionOpen === "approved_with_comment" && !trimmed) {
+      toast.error("Comentário obrigatório para aprovar com nota interna.");
       return;
     }
     setSubmitting(true);
     try {
       await api.post(`/reports/${rid}/decide`, {
         decision: decisionOpen,
-        comment: comment.trim() || null,
+        comment: trimmed || null,
       });
-      toast.success(decisionOpen === "approved" ? "Report aprovado" : "Revisão solicitada");
+      const msg =
+        decisionOpen === "requested_changes"
+          ? "Revisão solicitada"
+          : decisionOpen === "approved_with_comment"
+            ? "Report aprovado com nota interna ao GP"
+            : "Report aprovado";
+      toast.success(msg);
       router.replace("/pmo/portfolio");
     } catch (e) {
       toast.error(asApiError(e).message);
@@ -107,7 +125,7 @@ export default function ReviewReportPage() {
           </h1>
         </div>
         {canDecide ? (
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button
               variant="outline"
               onClick={() => {
@@ -117,6 +135,17 @@ export default function ReviewReportPage() {
             >
               <MessageSquareWarning className="mr-2 h-4 w-4" />
               Pedir revisão
+            </Button>
+            <Button
+              variant="outline"
+              className="border-primary/40 text-primary hover:bg-primary/5"
+              onClick={() => {
+                setDecisionOpen("approved_with_comment");
+                setComment("");
+              }}
+            >
+              <MessageSquarePlus className="mr-2 h-4 w-4" />
+              Aprovar com comentário
             </Button>
             <Button
               onClick={() => {
@@ -247,33 +276,79 @@ export default function ReviewReportPage() {
             <CardTitle className="text-base">Histórico de decisões</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
-            {approvals.map((a) => (
-              <div key={a.id} className="rounded-md border p-2 text-xs">
-                <strong className="capitalize">{a.stage}</strong> ·{" "}
-                <Badge variant="outline">{a.decision}</Badge> · {a.decided_at}
-                {a.comment && <p className="pt-1 italic">"{a.comment}"</p>}
-              </div>
-            ))}
+            {approvals.map((a) => {
+              const Icon =
+                a.decision === "approved"
+                  ? CheckCircle2
+                  : a.decision === "approved_with_comment"
+                    ? MessageSquarePlus
+                    : MessageSquareWarning;
+              const label =
+                a.decision === "approved"
+                  ? "Aprovado direto"
+                  : a.decision === "approved_with_comment"
+                    ? "Aprovado com comentário"
+                    : "Revisão pedida";
+              const tone =
+                a.decision === "requested_changes"
+                  ? "text-amber-700"
+                  : "text-emerald-700";
+              return (
+                <div key={a.id} className="rounded-md border p-2 text-xs">
+                  <div className={`flex items-center gap-2 ${tone}`}>
+                    <Icon className="h-3.5 w-3.5" />
+                    <strong className="capitalize">{a.stage}</strong>
+                    <span>·</span>
+                    <Badge variant="outline">{label}</Badge>
+                    <span className="text-muted-foreground">· {a.decided_at}</span>
+                  </div>
+                  {a.comment && (
+                    <p className="pt-1 italic">
+                      {a.decision === "approved_with_comment" && (
+                        <span className="not-italic mr-1 text-primary">
+                          [nota interna]
+                        </span>
+                      )}
+                      &ldquo;{a.comment}&rdquo;
+                    </p>
+                  )}
+                </div>
+              );
+            })}
           </CardContent>
         </Card>
       )}
 
-      {/* Dialog de decisão */}
+      {/* Dialog de decisão — 3 caminhos (spec v3.1 §10.1) */}
       <Dialog open={decisionOpen !== null} onOpenChange={(o) => !o && setDecisionOpen(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {decisionOpen === "approved" ? "Aprovar report" : "Pedir revisão"}
+              {decisionOpen === "approved" && "Aprovar report"}
+              {decisionOpen === "approved_with_comment" && "Aprovar com comentário"}
+              {decisionOpen === "requested_changes" && "Pedir revisão"}
             </DialogTitle>
             <DialogDescription>
-              {decisionOpen === "approved"
-                ? "Aprovar libera o report para o cliente confirmar leitura. Esta ação atualiza o Health Score do projeto."
-                : "Comentário obrigatório. O GP recebe notificação in-app e por e-mail explicando o que ajustar."}
+              {decisionOpen === "approved" &&
+                "Aprova o report e o libera para o cliente confirmar leitura. Sem nota interna."}
+              {decisionOpen === "approved_with_comment" && (
+                <>
+                  Aprova o report e libera para o cliente. O comentário é{" "}
+                  <strong className="text-primary">nota interna ao GP</strong>,{" "}
+                  <strong>não aparece no portal do cliente</strong>.
+                </>
+              )}
+              {decisionOpen === "requested_changes" &&
+                "Comentário obrigatório. O GP recebe notificação in-app e por e-mail explicando o que ajustar."}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
             <Label className="text-sm">
-              Comentário {decisionOpen === "requested_changes" && <span className="text-destructive">*</span>}
+              Comentário{" "}
+              {(decisionOpen === "requested_changes" ||
+                decisionOpen === "approved_with_comment") && (
+                <span className="text-destructive">*</span>
+              )}
             </Label>
             <Textarea
               rows={4}
@@ -282,7 +357,9 @@ export default function ReviewReportPage() {
               placeholder={
                 decisionOpen === "approved"
                   ? "(opcional) bom report, parabéns à equipe"
-                  : "Explique o que precisa ser revisto…"
+                  : decisionOpen === "approved_with_comment"
+                    ? "Ex.: aprovado, mas atenção a X no próximo report"
+                    : "Explique o que precisa ser revisto…"
               }
             />
           </div>
@@ -295,7 +372,9 @@ export default function ReviewReportPage() {
                 ? "Enviando…"
                 : decisionOpen === "approved"
                   ? "Sim, aprovar"
-                  : "Sim, pedir revisão"}
+                  : decisionOpen === "approved_with_comment"
+                    ? "Sim, aprovar com nota"
+                    : "Sim, pedir revisão"}
             </Button>
           </DialogFooter>
         </DialogContent>

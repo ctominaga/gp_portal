@@ -281,6 +281,90 @@ async def test_aprovacao_pmo_requested_changes_exige_comentario(
 
 
 @pytest.mark.asyncio
+async def test_aprovacao_pmo_com_comentario_exige_comment_e_libera_para_cliente(
+    client: AsyncClient, db_session
+) -> None:
+    """AJUSTE A: APPROVED_WITH_COMMENT exige comment e segue para PMO_APPROVED."""
+    project = await _seed_project(
+        db_session, gp_email="gp-awc@x.com", client_email="cli-awc@x.com"
+    )
+    report = await _seed_full_report(db_session, project=project)
+    pmo = await _login(client, role="PMO", email="pmo-awc@x.com")
+
+    # Sem comment → 400
+    r = await client.post(
+        f"/reports/{report.id}/decide",
+        headers={"Authorization": f"Bearer {pmo}"},
+        json={"decision": "approved_with_comment"},
+    )
+    assert r.status_code == 400, r.text
+    assert "comentário" in r.text.lower()
+
+    # Comment vazio → 400
+    r2 = await client.post(
+        f"/reports/{report.id}/decide",
+        headers={"Authorization": f"Bearer {pmo}"},
+        json={"decision": "approved_with_comment", "comment": "   "},
+    )
+    assert r2.status_code == 400
+
+    # Com comment → 200; status vai a PMO_APPROVED (mesmo destino de APPROVED)
+    r3 = await client.post(
+        f"/reports/{report.id}/decide",
+        headers={"Authorization": f"Bearer {pmo}"},
+        json={
+            "decision": "approved_with_comment",
+            "comment": "ok, mas atenção a X no próximo report",
+        },
+    )
+    assert r3.status_code == 200, r3.text
+    body = r3.json()
+    assert body["decision"] == "approved_with_comment"
+    assert body["comment"] == "ok, mas atenção a X no próximo report"
+
+    rep_get = await client.get(
+        f"/reports/{report.id}", headers={"Authorization": f"Bearer {pmo}"}
+    )
+    assert rep_get.json()["status"] == "pmo_approved"
+
+
+@pytest.mark.asyncio
+async def test_cliente_nao_ve_comment_de_aprovacao_pmo(
+    client: AsyncClient, db_session
+) -> None:
+    """AJUSTE A: o comment de APPROVED_WITH_COMMENT é nota interna ao GP/PMO,
+    nunca aparece no payload do Portal do Cliente."""
+    project = await _seed_project(
+        db_session, gp_email="gp-noseg@x.com", client_email="cli-noseg@x.com"
+    )
+    report = await _seed_full_report(db_session, project=project)
+    pmo = await _login(client, role="PMO", email="pmo-noseg@x.com")
+    secret = "NOTA INTERNA — não pode vazar pro cliente"
+
+    # PMO aprova com comentário
+    r = await client.post(
+        f"/reports/{report.id}/decide",
+        headers={"Authorization": f"Bearer {pmo}"},
+        json={"decision": "approved_with_comment", "comment": secret},
+    )
+    assert r.status_code == 200, r.text
+
+    # Cliente vê seu projeto: comment NÃO pode aparecer em lugar nenhum do payload
+    cli = await _login(client, role="CLIENT", email="cli-noseg@x.com")
+    r_list = await client.get(
+        "/client/projects", headers={"Authorization": f"Bearer {cli}"}
+    )
+    assert r_list.status_code == 200
+    assert secret not in r_list.text
+
+    r_one = await client.get(
+        f"/client/projects/{project.id}", headers={"Authorization": f"Bearer {cli}"}
+    )
+    assert r_one.status_code == 200
+    assert secret not in r_one.text
+
+
+@pytest.mark.asyncio
 async def test_cliente_so_aprova_pos_pmo(
     client: AsyncClient, db_session
 ) -> None:
