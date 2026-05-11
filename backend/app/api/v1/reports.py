@@ -78,6 +78,38 @@ async def _serialize_report(report: Report, db: AsyncSession) -> ReportPublic:
             await db.execute(select(ActionPlan).where(ActionPlan.report_id == report.id))
         ).scalars().all()
     )
+
+    # Expand de vínculos (spec v3.1 §4.2.4) — busca descrições em lote para
+    # evitar N+1 nas próximas linhas. Vazio se nenhum plano tem vínculo.
+    linked_risk_ids = {a.linked_risk_id for a in action_plans if a.linked_risk_id}
+    linked_deliv_ids = {a.linked_deliverable_id for a in action_plans if a.linked_deliverable_id}
+    risk_desc_by_id: dict[uuid.UUID, str] = {}
+    deliv_title_by_id: dict[uuid.UUID, str] = {}
+    if linked_risk_ids:
+        rows = (
+            await db.execute(
+                select(Risk.id, Risk.description).where(Risk.id.in_(linked_risk_ids))
+            )
+        ).all()
+        risk_desc_by_id = {r[0]: r[1] for r in rows}
+    if linked_deliv_ids:
+        rows = (
+            await db.execute(
+                select(Deliverable.id, Deliverable.title).where(
+                    Deliverable.id.in_(linked_deliv_ids)
+                )
+            )
+        ).all()
+        deliv_title_by_id = {r[0]: r[1] for r in rows}
+
+    def _serialize_action_plan(a: ActionPlan) -> ActionPlanPublic:
+        obj = ActionPlanPublic.model_validate(a, from_attributes=True)
+        if a.linked_risk_id and a.linked_risk_id in risk_desc_by_id:
+            obj.linked_risk_description = risk_desc_by_id[a.linked_risk_id]
+        if a.linked_deliverable_id and a.linked_deliverable_id in deliv_title_by_id:
+            obj.linked_deliverable_title = deliv_title_by_id[a.linked_deliverable_id]
+        return obj
+
     pending_items = list(
         (
             await db.execute(select(PendingItem).where(PendingItem.report_id == report.id))
@@ -107,7 +139,7 @@ async def _serialize_report(report: Report, db: AsyncSession) -> ReportPublic:
         approved_at=report.approved_at,
         progresses=[DeliveryProgressPublic.model_validate(p, from_attributes=True) for p in progresses],
         risks=[RiskPublic.model_validate(r, from_attributes=True) for r in risks],
-        action_plans=[ActionPlanPublic.model_validate(a, from_attributes=True) for a in action_plans],
+        action_plans=[_serialize_action_plan(a) for a in action_plans],
         pending_items=[PendingItemPublic.model_validate(p, from_attributes=True) for p in pending_items],
     )
 

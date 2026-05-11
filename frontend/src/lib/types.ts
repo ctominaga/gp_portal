@@ -144,9 +144,18 @@ export interface Risk {
 export interface ActionPlan {
   id?: string;
   description: string;
+  // spec v3.1 §4.2.4 — "Objetivo: por que essa ação foi criada"
+  objective: string;
   owner_id: string | null;
   due_date: string | null;
   status: ActionPlanStatus;
+  // Vinculações opcionais e independentes (spec v3.1 §4.2.4).
+  linked_risk_id?: string | null;
+  linked_deliverable_id?: string | null;
+  // Expansão preenchida pelo backend em GET /reports/{id} para exibir
+  // descrição do vínculo na UI sem precisar de query adicional.
+  linked_risk_description?: string | null;
+  linked_deliverable_title?: string | null;
 }
 
 export interface PendingItem {

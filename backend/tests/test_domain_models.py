@@ -151,7 +151,11 @@ async def test_inserir_full_chain_project_proposal_baseline_deliverable_report(
                 report_id=report.id, description="atraso",
                 probability=RiskProbability.ALTA, impact=RiskImpact.MEDIO,
             ),
-            ActionPlan(report_id=report.id, description="reunir todos"),
+            ActionPlan(
+                report_id=report.id,
+                description="reunir todos",
+                objective="alinhar equipe antes do gate",
+            ),
             PendingItem(report_id=report.id, description="acesso DB", owner_party="client"),
             ScopeChange(project_id=project.id, description="novo módulo"),
             ReportApproval(

@@ -125,13 +125,19 @@ Inclui débitos P2 da auditoria + F2.8 adiado:
 - C. Modo de Report Assistido por IA (§10.2)
 - D. Endpoint `POST /projects/{id}/close` + UI + `ProjectRetrospective` com 4 campos estruturados (§10.4)
 - E. `ScopeChange`: faltam `baseline_from_id`, `baseline_to_id`, `change_type`, `approved_by` (§10.5/9.5)
-- F. `Risk`: falta probability/impact separados + `mitigation_plan` (§4.2.3/9.5)
+- ~~F. `Risk`: falta probability/impact separados + `mitigation_plan` (§4.2.3/9.5)~~ → endereçado em **F5.1 ETAPA 2B** (commit `e888415`). RiskStatus reescrito (IDENTIFIED/MONITORING/MITIGATED/MATERIALIZED). 3 débitos menores P3 listados abaixo.
 - G. `ActionPlan`: falta `objective`, `linked_risk_id`, `linked_deliverable_id` (§4.2.4/9.5)
 - H. `Deliverable`: falta `acceptance_criteria`, `dependencies`, `status` (§9.5)
 - ~~I. `DeliveryProgress.acceptance_confirmed` não persiste resultado do modal~~ → endereçado em AJUSTE I no F4.
 - J. `PendingItem`: falta `impact` e `open_date` distinto (§4.2.5/9.5)
 - **K. F2.8 — smoke real do agente leitor** (novo): instalar `claude` nativamente no WSL Linux, rodar smoke contra `bradesco_sas_databricks.expected.json`, gerar `docs/f28-bradesco-baseline-quality.md`. Compartilha pré-requisito com F2.6 (worker real). Ver ADR.
 - **L. Atualizar v3.1 §6.4.1 e gerar v3.2 consolidada** (novo): a spec funcional v3.1 §6.4.1 lista enums de `DeliverableType` (Documento/Software/Serviço/Treinamento) e omite `category`/`complexity` que o prompt `proposal_reader_v1.md` realmente usa. Implementação seguiu o prompt (fonte). Próxima edição da spec consolida vocabulário do prompt + adiciona seção sobre `confidence_score`/`confidence_notes`. Mantém a regra de "toda nova versão começa com diff explícito do que foi alterado" (ADR 2026-05-08 — Governança).
+
+### Débitos menores de F5.1 (P3 — escolhidos conscientemente)
+
+- **F5.1.a — `open_critical` calculado em Python, não SQL.** `Risk.level` é property derivada (não coluna), então `app/api/v1/portfolio.py:open_critical` faz `sum(1 for r in rows if r.level == RiskLevel.CRITICAL)`. Aceitável para o piloto Bradesco (~5-10 riscos por report). Vai aparecer com 50+ projetos. **Alternativa:** GENERATED COLUMN `level` no Postgres com índice — torna filtro SQL e mantém matriz como fonte da verdade via trigger/view.
+- **F5.1.b — `Severity` (frontend) vs `RiskLevel` (backend) coexistem.** Mesmos 4 valores `low/medium/high/critical`, dois nomes em camadas diferentes. Frontend mantém `Severity` exclusivamente para `AIInsight.payload.severity` (campo livre dentro de JSON, sem relação com Risk). Unificar nomenclatura em ciclo posterior.
+- **F5.1.c — Vitest não renderiza shadcn `<TabsContent>` em jsdom isolado.** Tentativa de criar `tests/report-edit-risks.test.tsx` em F5.1 falhou: clique no `<TabsTrigger>` não troca o painel ativo. Cobertura visual via Playwright compensou. **Alternativa:** `userEvent` async + `findByRole`, ou mock de `@radix-ui/react-tabs`. Item de hardening de testes — vale uma sessão dedicada quando outros formulários do wizard precisarem de teste isolado.
 
 ---
 

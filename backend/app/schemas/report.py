@@ -60,13 +60,21 @@ class RiskPublic(RiskIn):
 
 class ActionPlanIn(BaseModel):
     description: str = Field(min_length=1)
+    objective: str = Field(min_length=1)  # spec v3.1 §4.2.4 — "por que a ação foi criada"
     owner_id: uuid.UUID | None = None
     due_date: date | None = None
     status: ActionPlanStatus = ActionPlanStatus.OPEN
+    # Vinculações opcionais e independentes (spec v3.1 §4.2.4)
+    linked_risk_id: uuid.UUID | None = None
+    linked_deliverable_id: uuid.UUID | None = None
 
 
 class ActionPlanPublic(ActionPlanIn):
     id: uuid.UUID
+    # Expansão opcional dos vínculos — preenchida pelo backend quando útil
+    # para a UI (ex: revisão do PMO mostrar título do risco/deliverable).
+    linked_risk_description: str | None = None
+    linked_deliverable_title: str | None = None
     model_config = {"from_attributes": True}
 
 

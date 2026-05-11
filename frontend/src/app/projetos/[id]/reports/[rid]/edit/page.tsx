@@ -161,9 +161,12 @@ export default function ReportEditPage() {
         })),
         action_plans: d.action_plans.map((a) => ({
           description: a.description,
+          objective: a.objective,
           owner_id: a.owner_id,
           due_date: a.due_date,
           status: a.status,
+          linked_risk_id: a.linked_risk_id ?? null,
+          linked_deliverable_id: a.linked_deliverable_id ?? null,
         })),
         pending_items: d.pending_items.map((p) => ({
           description: p.description,
@@ -662,14 +665,22 @@ export default function ReportEditPage() {
           <ListEditor<ActionPlan>
             title="Planos de ação"
             items={draft.action_plans}
-            empty={{ description: "", owner_id: null, due_date: null, status: "open" }}
+            empty={{
+              description: "",
+              objective: "",
+              owner_id: null,
+              due_date: null,
+              status: "open",
+              linked_risk_id: null,
+              linked_deliverable_id: null,
+            }}
             onChange={(action_plans) => setDraft({ ...draft, action_plans })}
             disabled={isReadonly}
             renderItem={(a, set) => (
               <div className="grid gap-2 sm:grid-cols-[1fr_140px_120px]">
                 <Textarea
                   rows={2}
-                  placeholder="descrição"
+                  placeholder="ação (o que será feito)"
                   value={a.description}
                   onChange={(e) => set({ ...a, description: e.target.value })}
                 />
@@ -688,6 +699,62 @@ export default function ReportEditPage() {
                   value={a.due_date ?? ""}
                   onChange={(e) => set({ ...a, due_date: e.target.value || null })}
                 />
+                {/* spec v3.1 §4.2.4 — objetivo (obrigatório) */}
+                <div className="sm:col-span-3">
+                  <Label className="text-xs">
+                    Objetivo <span className="text-destructive">*</span>
+                  </Label>
+                  <Textarea
+                    rows={2}
+                    placeholder="por que essa ação foi criada"
+                    value={a.objective}
+                    onChange={(e) => set({ ...a, objective: e.target.value })}
+                  />
+                </div>
+                {/* Vinculações opcionais — selects independentes */}
+                <div className="sm:col-span-3 grid gap-2 sm:grid-cols-2">
+                  <div>
+                    <Label className="text-xs">Risco vinculado (opcional)</Label>
+                    <Select
+                      value={a.linked_risk_id ?? "__none__"}
+                      onValueChange={(v) =>
+                        set({ ...a, linked_risk_id: v === "__none__" ? null : v })
+                      }
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">— nenhum —</SelectItem>
+                        {draft.risks
+                          .filter((r) => r.id && (r.status === "identified" || r.status === "monitoring"))
+                          .map((r) => (
+                            <SelectItem key={r.id} value={r.id!}>
+                              {r.description.slice(0, 60)}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-xs">Entregável vinculado (opcional)</Label>
+                    <Select
+                      value={a.linked_deliverable_id ?? "__none__"}
+                      onValueChange={(v) =>
+                        set({ ...a, linked_deliverable_id: v === "__none__" ? null : v })
+                      }
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">— nenhum —</SelectItem>
+                        {(activeBaseline?.deliverables ?? []).map((d) => (
+                          <SelectItem key={d.id} value={d.id}>
+                            {d.code ? `${d.code} · ` : ""}
+                            {d.title.slice(0, 60)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </div>
             )}
           />

@@ -276,6 +276,51 @@ export default function ReviewReportPage() {
             ))}
           </CardContent>
         </Card>
+        {/* spec v3.1 §4.2.4 — planos de ação com vinculação visível ao PMO */}
+        {report.action_plans.length > 0 && (
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle className="text-base">
+                Planos de ação ({report.action_plans.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              {report.action_plans.map((a, i) => (
+                <div
+                  key={i}
+                  className="rounded-md border p-2"
+                  title={a.objective || undefined}
+                >
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant={a.status === "done" ? "green" : a.status === "in_progress" ? "amber" : "outline"}>
+                      {a.status}
+                    </Badge>
+                    <span className="flex-1">{a.description}</span>
+                  </div>
+                  {(a.linked_risk_description || a.linked_deliverable_title) && (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {a.linked_risk_description && (
+                        <span className="mr-2">
+                          → vinculado ao risco: <em>{a.linked_risk_description}</em>
+                        </span>
+                      )}
+                      {a.linked_deliverable_title && (
+                        <span>
+                          → vinculado ao entregável: <em>{a.linked_deliverable_title}</em>
+                        </span>
+                      )}
+                    </p>
+                  )}
+                  {a.objective && (
+                    <p className="mt-1 text-xs italic text-muted-foreground">
+                      objetivo: {a.objective}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {approvals.length > 0 && (

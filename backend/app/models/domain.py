@@ -497,11 +497,22 @@ class Risk(Base):
 
 
 class ActionPlan(Base):
+    """Plano de ação (spec v3.1 §4.2.4).
+
+    `description` é a ação (o que será feito); `objective` é o porquê. Pode
+    estar vinculado a um Risk (mitigação) e/ou a um Deliverable (acelerador
+    de entrega) — ambos opcionais e independentes. `ON DELETE SET NULL` em
+    ambas as FKs: se o risco/deliverable for removido, o plano persiste
+    desvinculado (não desaparece junto).
+    """
+
     __tablename__ = "action_plans"
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=_new_uuid)
     report_id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), ForeignKey("reports.id"))
     description: Mapped[str] = mapped_column(Text, nullable=False)
+    # spec v3.1 §4.2.4 — "Objetivo: por que essa ação foi criada"
+    objective: Mapped[str] = mapped_column(Text, nullable=False)
     owner_id: Mapped[uuid.UUID | None] = mapped_column(
         Uuid(as_uuid=True), ForeignKey("users.id"), nullable=True
     )
@@ -510,6 +521,17 @@ class ActionPlan(Base):
         SAEnum(ActionPlanStatus, name="action_plan_status", native_enum=False),
         default=ActionPlanStatus.OPEN,
         nullable=False,
+    )
+    # spec v3.1 §4.2.4 — "Vinculação: Risco ou entrega relacionada (opcional)"
+    linked_risk_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("risks.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    linked_deliverable_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("deliverables.id", ondelete="SET NULL"),
+        nullable=True,
     )
 
 

@@ -228,7 +228,8 @@ async def test_create_e_patch_report_idempotente(
                  "probability": "alta", "impact": "medio"},
             ],
             "action_plans": [
-                {"description": "agendar reunião com Bradesco"},
+                {"description": "agendar reunião com Bradesco",
+                 "objective": "alinhar prazos da Sprint 4"},
             ],
             "pending_items": [
                 {"description": "credenciais databricks", "owner_party": "client"},

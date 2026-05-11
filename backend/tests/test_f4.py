@@ -310,6 +310,187 @@ async def test_compute_risk_inverse_inclui_identified_e_monitoring(db_session) -
     assert set(OPEN_RISK_STATUSES) == {RiskStatus.IDENTIFIED, RiskStatus.MONITORING}
 
 
+# ---------- F5.1 ActionPlan: objective + vinculações (v3.1 §4.2.4) ----------
+
+
+@pytest.mark.asyncio
+async def test_action_plan_com_objective_e_vinculacao_a_risk(db_session) -> None:
+    """ActionPlan vinculado a Risk persiste e a FK é navegável."""
+    from app.models import ActionPlan, ActionPlanStatus
+
+    project = await _seed_project(db_session, gp_email="gp-ap1@x.com")
+    report = await _seed_full_report(db_session, project=project, risks=1)
+    # pega o risco criado
+    risk = (
+        await db_session.execute(__import__("sqlalchemy").select(Risk).where(Risk.report_id == report.id))
+    ).scalar_one()
+
+    ap = ActionPlan(
+        report_id=report.id,
+        description="contratar consultoria externa",
+        objective="reduzir probabilidade do risco IRRBB",
+        linked_risk_id=risk.id,
+        status=ActionPlanStatus.OPEN,
+    )
+    db_session.add(ap)
+    await db_session.commit()
+    await db_session.refresh(ap)
+
+    assert ap.linked_risk_id == risk.id
+    assert ap.linked_deliverable_id is None
+    assert ap.objective == "reduzir probabilidade do risco IRRBB"
+
+
+@pytest.mark.asyncio
+async def test_action_plan_com_vinculacao_a_deliverable(db_session) -> None:
+    """ActionPlan vinculado a Deliverable persiste."""
+    from app.models import ActionPlan, ActionPlanStatus, Deliverable
+    from sqlalchemy import select as _select
+
+    project = await _seed_project(db_session, gp_email="gp-ap2@x.com")
+    report = await _seed_full_report(db_session, project=project, total_deliv=2)
+    deliv = (
+        await db_session.execute(_select(Deliverable).limit(1))
+    ).scalar_one()
+
+    ap = ActionPlan(
+        report_id=report.id,
+        description="acelerar revisão técnica",
+        objective="garantir d-001 entregue no prazo",
+        linked_deliverable_id=deliv.id,
+        status=ActionPlanStatus.OPEN,
+    )
+    db_session.add(ap)
+    await db_session.commit()
+    await db_session.refresh(ap)
+
+    assert ap.linked_deliverable_id == deliv.id
+    assert ap.linked_risk_id is None
+
+
+@pytest.mark.asyncio
+async def test_action_plan_sem_vinculacoes_eh_valido(db_session) -> None:
+    """ActionPlan independente — sem linked_* — é permitido."""
+    from app.models import ActionPlan, ActionPlanStatus
+
+    project = await _seed_project(db_session, gp_email="gp-ap3@x.com")
+    report = await _seed_full_report(db_session, project=project)
+
+    ap = ActionPlan(
+        report_id=report.id,
+        description="documentar processo",
+        objective="reduzir bus factor",
+        status=ActionPlanStatus.OPEN,
+    )
+    db_session.add(ap)
+    await db_session.commit()
+    await db_session.refresh(ap)
+
+    assert ap.linked_risk_id is None
+    assert ap.linked_deliverable_id is None
+
+
+@pytest.mark.asyncio
+async def test_action_plan_set_null_quando_risk_deletado(db_session) -> None:
+    """ON DELETE SET NULL: ao remover o risco, ActionPlan persiste com linked_risk_id=NULL.
+
+    Comportamento esperado da migration 0011 (`ondelete="SET NULL"` na FK).
+    Em SQLite (testes in-memory), `PRAGMA foreign_keys=ON` precisa estar ativo
+    para que ON DELETE SET NULL funcione — o conftest já faz isso via event.
+    """
+    from app.models import ActionPlan, ActionPlanStatus
+    from sqlalchemy import event as _event
+
+    # Garantia: ativar FKs no SQLite para este teste
+    conn = await db_session.connection()
+    await conn.exec_driver_sql("PRAGMA foreign_keys=ON")
+
+    project = await _seed_project(db_session, gp_email="gp-ap4@x.com")
+    report = await _seed_full_report(db_session, project=project, risks=1)
+    risk = (
+        await db_session.execute(__import__("sqlalchemy").select(Risk).where(Risk.report_id == report.id))
+    ).scalar_one()
+
+    ap = ActionPlan(
+        report_id=report.id,
+        description="ação que vai virar órfã",
+        objective="testar ON DELETE SET NULL",
+        linked_risk_id=risk.id,
+    )
+    db_session.add(ap)
+    await db_session.commit()
+    ap_id = ap.id
+    risk_id = risk.id
+
+    # Deleta o risco
+    await db_session.delete(risk)
+    await db_session.commit()
+    db_session.expire_all()
+
+    refetched = await db_session.get(ActionPlan, ap_id)
+    assert refetched is not None  # ActionPlan sobrevive
+    assert refetched.linked_risk_id is None  # vinculação ficou NULL
+
+
+@pytest.mark.asyncio
+async def test_action_plan_objective_obrigatorio_no_schema_pydantic() -> None:
+    """ActionPlanIn rejeita objective vazio ou ausente (validação Pydantic)."""
+    from pydantic import ValidationError as _PydanticError
+
+    from app.schemas.report import ActionPlanIn
+
+    # Ausente → falha
+    with pytest.raises(_PydanticError):
+        ActionPlanIn(description="x")
+    # Vazio → falha (min_length=1)
+    with pytest.raises(_PydanticError):
+        ActionPlanIn(description="x", objective="")
+    # OK
+    obj = ActionPlanIn(description="x", objective="por isso")
+    assert obj.objective == "por isso"
+
+
+@pytest.mark.asyncio
+async def test_action_plan_expand_linked_descriptions_em_get_report(
+    client: AsyncClient, db_session
+) -> None:
+    """GET /reports/{id} preenche linked_risk_description e linked_deliverable_title
+    quando o ActionPlan tem vínculos. Spec v3.1 §4.2.4 — útil para UI da revisão PMO."""
+    from app.models import ActionPlan, ActionPlanStatus, Deliverable
+    from sqlalchemy import select as _select
+
+    project = await _seed_project(db_session, gp_email="gp-ap6@x.com")
+    report = await _seed_full_report(db_session, project=project, risks=1, total_deliv=2)
+    risk = (
+        await db_session.execute(_select(Risk).where(Risk.report_id == report.id))
+    ).scalar_one()
+    deliv = (
+        await db_session.execute(_select(Deliverable).limit(1))
+    ).scalar_one()
+    db_session.add(ActionPlan(
+        report_id=report.id,
+        description="ação vinculada",
+        objective="testar expansão",
+        linked_risk_id=risk.id,
+        linked_deliverable_id=deliv.id,
+        status=ActionPlanStatus.OPEN,
+    ))
+    await db_session.commit()
+
+    gp = await _login(client, role="GP", email="gp-ap6@x.com")
+    r = await client.get(
+        f"/reports/{report.id}", headers={"Authorization": f"Bearer {gp}"}
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert len(body["action_plans"]) == 1
+    ap = body["action_plans"][0]
+    assert ap["objective"] == "testar expansão"
+    # Expansão preenchida
+    assert ap["linked_risk_description"] == risk.description
+    assert ap["linked_deliverable_title"] == deliv.title
+
+
 @pytest.mark.asyncio
 async def test_compute_resolution_rate_pendings_resolved_vs_total(db_session) -> None:
     """3 abertas + 0 resolvidas → 0. Adiciona 2 resolvidas → 2/5 = 40."""
