@@ -62,6 +62,21 @@ Decisões tomadas durante a construção que merecem registro. Convenção: cabe
 
 **Consequência:** `/health` e `/health-check` end-to-end ainda não foram observados rodando localmente. Esse smoke fica como item explícito de "validar antes de F1.S0", quando o Docker da máquina worker for o mesmo onde o agent-runner vai rodar.
 
+## 2026-05-11 — F2.8 adiado para F5 com setup limpo do WSL
+
+**Contexto:** tentativa de executar o smoke real do agente leitor (F2.8) contra a proposta gold-standard do Bradesco revelou que o `claude` CLI v2.1.138, instalado no Windows e executado via mount WSL, tem comportamento errático: login interativo via TUI (`claude /login`) reporta "Login successful", mas invocação headless (`claude -p`) imediatamente depois retorna "Not logged in · Please run /login". Bug ou incompatibilidade entre subscription Team e modo headless da versão atual.
+
+Setup atual também não atende à spec do `jump-agent-runner`, que assume `claude` instalado **nativamente no WSL Linux** com configuração isolada (não binário Windows acessado por mount). Resolver isso é pré-requisito de F2.6 (worker real) e de F2.8 (smoke), então ambos serão endereçados juntos em F5.
+
+**Decisão:**
+1. Adiar F2.8 para F5 como sub-task explícita.
+2. Em F5, criar sub-tarefa para: (a) instalar `claude` nativamente no WSL (Ubuntu-22.04), (b) executar F2.8 nesse setup limpo, (c) executar F2.6 (worker real) no mesmo setup.
+3. Mantém preparação útil que pode ser feita agora: prompt versionado `proposal_reader_v1.md` (quando recebido) e schema Pydantic `ProposalExtraction`. Não dependem do WSL.
+
+**Consequência:** piloto Bradesco entra com agente leitor **não-validado empiricamente** contra proposta real. Mitigação é o **modo shadow** já previsto na spec v3.1 §1.5: extração apresentada como sugestão, baseline só ativado após revisão manual completa do GP. Não é decisão de "modo manual permanente" — é validação adiada.
+
+**Risco residual aceito:** a aposta arquitetural do agente leitor já foi validada em F1 com smokes triviais. A qualidade da extração real contra proposta complexa do Bradesco ficará conhecida na primeira semana de piloto. Se a precisão for baixa, decisão de subir para modo automático fica adiada — não há perda operacional irreversível.
+
 ## 2026-05-11 — F4 / AJUSTE B / Health Score reescrito para 5 componentes (spec v3.1 §10.3)
 
 **Contexto:** auditoria contra a v3.1 mostrou que a implementação original tinha 4 componentes (progress / risks / pendings / schedule) com fórmulas que não correspondiam às prescrições da spec — em particular `progress` (% concluído bruto) era usado em vez de "Status RAG médio", `schedule` (% sem deviation_flag) em vez de SPI real÷planejado, e Estabilidade do status RAG não era computada. Pesos defaults eram 40/20/20/20, divergentes do 35/25/20/10/10 ancorado na spec.

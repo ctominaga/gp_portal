@@ -107,6 +107,30 @@ Esses são os AJUSTES 2 e 3 que você sinalizou no início desta conversa, agora
 - Gráficos do dashboard PMO: padrões cruzados entre projetos? (§4.4)
 - Status do `Risk` cobre os 4 valores da spec (Identificado/Monitoramento/Mitigado/Materializado)? Vi só `OPEN` no modelo
 - Fluxo de aprovação do PMO sobre `ScopeChange` (não só criação automática) (§10.5)
+- **Hardening de testes — mock pode mentir matematicamente:** o mock do Playwright F4-1 (`screenshots-f4.spec.ts`) tinha `score` inconsistente com a soma ponderada dos `components`, e nenhum teste pegou — só pegou na auditoria manual. Padrão vai aparecer em outros mocks (portfolio, delivery progress, etc.). Vale uma sessão dedicada de "consistency assertion" — pre-flight que valida invariantes do dado mock antes de gerar PNG.
+
+## Validação prática do agente leitor (F2.8) — adiada para F5
+
+| Item | Estado | Onde |
+|---|---|---|
+| Smoke real do agente leitor contra `bradesco_sas_databricks.expected.json` | ⏸️ **adiado para F5** | Bloqueado por `claude` headless errático no setup atual (Windows binary via mount WSL). Ver ADR `2026-05-11 — F2.8 adiado...` em `decisoes.md`. |
+| Prompt versionado `proposal_reader_v1.md` | 📥 a receber | Preparação útil independente. Vai para `jump-report/docs/prompts/` quando recebido. |
+| Schema Pydantic `ProposalExtraction` | ✅ feito | `backend/app/schemas/proposal_extraction.py` (commit `feat(backend): schema ProposalExtraction com validacoes`). Preparação útil independente do smoke. |
+| Modo shadow no piloto Bradesco (§1.5) | ✅ já especificado | Extração apresentada como sugestão; baseline só ativado após revisão manual do GP. Mitiga risco de extração não-validada empiricamente. |
+
+## Débitos F5 (atualizados pós-AJUSTE B)
+
+Inclui débitos P2 da auditoria + F2.8 adiado:
+
+- C. Modo de Report Assistido por IA (§10.2)
+- D. Endpoint `POST /projects/{id}/close` + UI + `ProjectRetrospective` com 4 campos estruturados (§10.4)
+- E. `ScopeChange`: faltam `baseline_from_id`, `baseline_to_id`, `change_type`, `approved_by` (§10.5/9.5)
+- F. `Risk`: falta probability/impact separados + `mitigation_plan` (§4.2.3/9.5)
+- G. `ActionPlan`: falta `objective`, `linked_risk_id`, `linked_deliverable_id` (§4.2.4/9.5)
+- H. `Deliverable`: falta `acceptance_criteria`, `dependencies`, `status` (§9.5)
+- ~~I. `DeliveryProgress.acceptance_confirmed` não persiste resultado do modal~~ → endereçado em AJUSTE I no F4.
+- J. `PendingItem`: falta `impact` e `open_date` distinto (§4.2.5/9.5)
+- **K. F2.8 — smoke real do agente leitor** (novo): instalar `claude` nativamente no WSL Linux, rodar smoke contra `bradesco_sas_databricks.expected.json`, gerar `docs/f28-bradesco-baseline-quality.md`. Compartilha pré-requisito com F2.6 (worker real). Ver ADR.
 
 ---
 
