@@ -334,6 +334,210 @@ async def test_health_score_classificacao_textual_3_faixas(db_session) -> None:
 
 
 @pytest.mark.asyncio
+async def test_health_score_bradesco_scenario_documental(
+    db_session, capsys
+) -> None:
+    """Documental: cenário Bradesco-like realista expõe os 5 intermediários
+    para validação manual da matemática (spec v3.1 §10.3).
+
+    Cenário:
+      - Projeto iniciado 2026-01-10, hoje fixado em 2026-05-11
+      - Baseline ativo com 5 deliverables (due_dates entre fev/jun 2026)
+      - Progresso real: 3 done, 1 in_progress 60%, 1 planejado 0%
+      - 5 reports submetidos: 4 Verdes + 1 último com RAG misto (P=A, E=G, Q=G)
+      - 1 risco crítico aberto no último report
+      - 5 pendências no último: 4 resolved + 1 open
+      - Pesos default 35/25/20/10/10
+    """
+    today = date(2026, 5, 11)
+    start = date(2026, 1, 10)
+
+    # Cria GP e projeto com started_at
+    gp = User(name="GP-Br", email="gp-bradesco-doc@x.com",
+              password_hash=hash_password("JumpDev123!"), role=Role.GP)
+    db_session.add(gp)
+    await db_session.flush()
+    project = Project(
+        name="SAS→Databricks", client_name="Bradesco",
+        gp_user_id=gp.id, started_at=start,
+    )
+    db_session.add(project)
+    await db_session.flush()
+
+    # Proposal + Baseline ativo
+    proposal = Proposal(
+        project_id=project.id, version=1, file_url="x", file_sha256="a" * 64,
+        original_filename="p.pdf", size_bytes=1, status=ProposalStatus.EXTRACTED,
+        uploaded_by_id=gp.id,
+    )
+    db_session.add(proposal)
+    await db_session.flush()
+    baseline = Baseline(
+        project_id=project.id, proposal_id=proposal.id,
+        status=BaselineStatus.ACTIVE, payload={},
+    )
+    db_session.add(baseline)
+    await db_session.flush()
+
+    # 5 deliverables com due_dates espalhadas pelo projeto
+    deliv_specs = [
+        ("d-001", "Análise SAS",             date(2026, 2, 15), 100),
+        ("d-002", "Mapeamento dependências", date(2026, 3, 15), 100),
+        ("d-003", "Migração rotina A",       date(2026, 4, 15), 100),
+        ("d-004", "Migração rotina B",       date(2026, 5, 15),  60),
+        ("d-005", "Validação Databricks",    date(2026, 6, 15),   0),
+    ]
+    delivs = []
+    for code, title, due, _real in deliv_specs:
+        d = Deliverable(
+            baseline_id=baseline.id, code=code, title=title,
+            phase="fase-1", complexity=DeliverableComplexity.MEDIUM, due_date=due,
+        )
+        db_session.add(d)
+        delivs.append(d)
+    await db_session.flush()
+
+    # 5 reports submetidos (4 Verdes + 1 RAG misto no último)
+    rags = [
+        ("G", "G", "G", date(2026, 1, 31)),
+        ("G", "G", "G", date(2026, 2, 28)),
+        ("G", "G", "G", date(2026, 3, 31)),
+        ("G", "G", "G", date(2026, 4, 30)),
+        ("A", "G", "G", date(2026, 5, 10)),  # último — RAG misto
+    ]
+    last_report = None
+    for i, (rp, re_, rq, pend) in enumerate(rags):
+        # rag_status agregado = worst-of-3
+        agg = RAGStatus(rp) if rp == "R" else (
+            RAGStatus(re_) if re_ == "R" else (
+                RAGStatus(rq) if rq == "R" else (
+                    RAGStatus("A") if "A" in (rp, re_, rq) else RAGStatus("G")
+                )
+            )
+        )
+        r = Report(
+            project_id=project.id,
+            period_start=date(pend.year, pend.month, 1),
+            period_end=pend,
+            rag_prazo=RAGStatus(rp), rag_escopo=RAGStatus(re_), rag_qualidade=RAGStatus(rq),
+            rag_status=agg, status=ReportStatus.SUBMITTED,
+            submitted_at=datetime.now(UTC), created_by_id=gp.id,
+        )
+        db_session.add(r)
+        await db_session.flush()
+        last_report = r
+
+    # DeliveryProgress no último report — 3 done, 1 60%, 1 0%
+    assert last_report is not None
+    for d, (_, _, _, pct) in zip(delivs, deliv_specs):
+        st = (
+            ProgressStatus.DONE if pct >= 100
+            else ProgressStatus.IN_PROGRESS if pct > 0
+            else ProgressStatus.PLANNED
+        )
+        db_session.add(
+            DeliveryProgress(
+                report_id=last_report.id, deliverable_id=d.id,
+                status=st, percent_complete=pct,
+            )
+        )
+    # 1 risco crítico aberto + 5 pendências (4 resolved + 1 open)
+    db_session.add(Risk(
+        report_id=last_report.id, description="Bug regulatório IRRBB",
+        severity=Severity("critical"), status=RiskStatus.OPEN,
+    ))
+    for i in range(4):
+        db_session.add(PendingItem(
+            report_id=last_report.id, description=f"resolved-{i}",
+            owner_party="client", status=PendingItemStatus.RESOLVED,
+        ))
+    db_session.add(PendingItem(
+        report_id=last_report.id, description="open-cliente",
+        owner_party="client", status=PendingItemStatus.OPEN,
+    ))
+    await db_session.commit()
+
+    # Computa cada componente individualmente para expor a matemática
+    rag_avg = health_score.compute_rag_avg(last_report)
+    # SPI precisa de hoje fixado — chamamos a função baixa-nível com `today`
+    spi = await health_score.compute_spi(db_session, project, today=today)
+    risk_inv = await health_score.compute_risk_inverse(db_session, last_report)
+    res_rate = await health_score.compute_resolution_rate(db_session, last_report)
+    stab = await health_score.compute_stability(db_session, project)
+
+    # Agora score final (com pesos default)
+    breakdown = await health_score.compute_for_project(db_session, project.id)
+    # SPI no breakdown usa hoje real do sistema — só batemos os outros 4
+    # componentes contra os intermediários. Para SPI, exibimos a versão
+    # calculada com `today` fixado.
+    weights = breakdown.weights_applied
+
+    print("\n========== Validacao documental (spec v3.1 sec 10.3) ==========")
+    print(f"Projeto: Bradesco SAS->Databricks (started_at=2026-01-10, hoje fixado=2026-05-11)")
+    print(f"5 reports submetidos (G/G/G/G + A-G-G no último)")
+    print()
+    print("Componente 1 - rag_avg:")
+    print(f"  Ultimo report: rag_prazo=A(50), rag_escopo=G(100), rag_qualidade=G(100)")
+    print(f"  Media = (50 + 100 + 100) / 3 = {rag_avg}")
+    print()
+    print("Componente 2 - spi (com today=2026-05-11):")
+    span_days = lambda d: (d - start).days
+    for d, (_, t, due, real) in zip(delivs, deliv_specs):
+        if due <= start: continue
+        planned = max(0, min(100, (today - start).days / (due - start).days * 100))
+        print(f"  {d.code} '{t}' due={due} → %planejado={planned:.1f} | %real={real}")
+    print(f"  SPI = média(reais) / média(planejados) × 100, cap 100 = {spi:.1f}")
+    print()
+    print("Componente 3 - risk_inverse:")
+    print(f"  1 risco critico aberto (valor=100, peso=100)")
+    print(f"  Media ponderada = (100*100) / 100 = 100")
+    print(f"  Inverso = 100 - 100 = {risk_inv}")
+    print()
+    print("Componente 4 - resolution_rate:")
+    print(f"  Pendencias no report: 4 resolved + 1 open = 5 total")
+    print(f"  Taxa = 4/5 * 100 = {res_rate}")
+    print()
+    print("Componente 5 - stability:")
+    print(f"  Ultimos 5 reports (rag agregado, mais recente primeiro):")
+    print(f"  [A, G, G, G, G] - oscilou no ultimo, nao todos iguais")
+    print(f"  -> 30 (heuristica 'oscilacao ou <3 reports iguais')")
+    print(f"  Calculado: {stab}")
+    print()
+    print(f"Pesos aplicados: {weights}")
+    print(f"Score = {rag_avg:.1f}*{weights['rag_avg']} + {spi:.1f}*{weights['spi']} "
+          f"+ {risk_inv:.1f}*{weights['risk_inverse']} + {res_rate:.1f}*{weights['resolution_rate']} "
+          f"+ {stab:.1f}*{weights['stability']}")
+    score_manual = (
+        rag_avg * weights['rag_avg']
+        + spi * weights['spi']
+        + risk_inv * weights['risk_inverse']
+        + res_rate * weights['resolution_rate']
+        + stab * weights['stability']
+    )
+    print(f"     = {score_manual:.2f} (band={health_score._band(score_manual)})")
+    print()
+    print(f"breakdown.score (sistema, com today=runtime): {breakdown.score} "
+          f"(band={breakdown.band})")
+    print("======================================================\n")
+
+    # Asserts: matemática bate com expectativa
+    assert rag_avg == pytest.approx(83.333, abs=0.01)
+    assert risk_inv == 0.0
+    assert res_rate == 80.0
+    assert stab == 30.0
+    # SPI esperado: span de cada deliverable:
+    # d-001: due 2026-02-15, span=36d; elapsed_today=122d → planned=cap(100), real=100 ✓
+    # d-002: due 2026-03-15, span=64d; elapsed_today=122d → planned=cap(100), real=100 ✓
+    # d-003: due 2026-04-15, span=95d; elapsed_today=122d → planned=cap(100), real=100 ✓
+    # d-004: due 2026-05-15, span=125d; elapsed_today=122d → planned=97.6, real=60
+    # d-005: due 2026-06-15, span=156d; elapsed_today=122d → planned=78.2, real=0
+    # média_real = (100+100+100+60+0)/5 = 72
+    # média_planejado = (100+100+100+97.6+78.2)/5 = 95.16
+    # SPI = 72/95.16 × 100 = 75.66
+    assert spi == pytest.approx(75.66, abs=0.5)
+
+
+@pytest.mark.asyncio
 async def test_health_score_cached_persistido_no_project_apos_submit(
     client: AsyncClient, db_session
 ) -> None:
