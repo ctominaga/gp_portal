@@ -345,7 +345,7 @@ test.describe("Screenshots F3.5", () => {
     });
   });
 
-  test("F3.5.6: confirmação inline de critério de aceite", async ({ page }) => {
+  test("F3.5.6: critério de aceite confirmado persiste badge no entregável (spec v3.1 §4.2.2)", async ({ page }) => {
     const rep = makeFakeReport({
       rag_prazo: "G",
       rag_escopo: "G",
@@ -374,6 +374,10 @@ test.describe("Screenshots F3.5", () => {
     await page.waitForTimeout(150);
     await page.getByRole("option", { name: /Concluído/i }).click();
     await page.waitForSelector("text=Critério de aceite foi atingido?");
+    // Confirma o aceite — modal envia acceptance_confirmed=true ao draft (AJUSTE I)
+    await page.getByRole("button", { name: /Sim, concluído/i }).click();
+    // Aguarda badge "aceite confirmado" aparecer no card do entregável
+    await page.waitForSelector("text=aceite confirmado");
     await page.waitForTimeout(200);
     await page.screenshot({
       path: path.join(SCREENSHOT_DIR, "f35-6-wizard-criterio-aceite.png"),

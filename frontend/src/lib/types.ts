@@ -113,6 +113,9 @@ export interface DeliveryProgress {
   comment: string | null;
   revised_date?: string | null;
   deviation_flag?: boolean;
+  // spec v3.1 §4.2.2 — confirmação do modal "Critério de aceite foi atingido?".
+  // Obrigatório true quando status=done + percent_complete=100 (validado no backend).
+  acceptance_confirmed?: boolean | null;
 }
 
 export interface Risk {

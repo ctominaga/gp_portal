@@ -376,6 +376,12 @@ class DeliveryProgress(Base):
     revised_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     deviation_flag: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
+    # Persistência da confirmação do modal "Critério de aceite foi atingido?"
+    # (spec v3.1 §4.2.2). Quando GP marca status=done + percent_complete=100,
+    # o backend exige acceptance_confirmed=True. Nullable porque progressos
+    # parciais não passam pelo modal.
+    acceptance_confirmed: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+
 
 class Risk(Base):
     __tablename__ = "risks"

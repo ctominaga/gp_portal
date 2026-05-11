@@ -537,6 +537,187 @@ async def test_health_score_bradesco_scenario_documental(
     assert spi == pytest.approx(75.66, abs=0.5)
 
 
+# ---------- AJUSTE I: DeliveryProgress.acceptance_confirmed (spec v3.1 §4.2.2) ----------
+
+
+@pytest.mark.asyncio
+async def test_patch_progress_done_100_sem_acceptance_falha(
+    client: AsyncClient, db_session
+) -> None:
+    """status=done + percent_complete=100 sem acceptance_confirmed=true → 400."""
+    project = await _seed_project(db_session, gp_email="gp-acc1@x.com")
+    proposal = Proposal(
+        project_id=project.id, version=1, file_url="x", file_sha256="a" * 64,
+        original_filename="p.pdf", size_bytes=1, status=ProposalStatus.EXTRACTED,
+        uploaded_by_id=project.gp_user_id,
+    )
+    db_session.add(proposal)
+    await db_session.flush()
+    baseline = Baseline(
+        project_id=project.id, proposal_id=proposal.id,
+        status=BaselineStatus.ACTIVE, payload={},
+    )
+    db_session.add(baseline)
+    await db_session.flush()
+    deliv = Deliverable(
+        baseline_id=baseline.id, code="d-001", title="Entregavel",
+        phase="fase-1", due_date=date(2026, 6, 1),
+    )
+    db_session.add(deliv)
+    report = Report(
+        project_id=project.id,
+        period_start=date(2026, 5, 1), period_end=date(2026, 5, 15),
+        status=ReportStatus.DRAFT, created_by_id=project.gp_user_id,
+    )
+    db_session.add(report)
+    await db_session.commit()
+
+    gp = await _login(client, role="GP", email="gp-acc1@x.com")
+    r = await client.patch(
+        f"/reports/{report.id}",
+        headers={"Authorization": f"Bearer {gp}"},
+        json={
+            "progresses": [
+                {
+                    "deliverable_id": str(deliv.id),
+                    "status": "done",
+                    "percent_complete": 100,
+                    # acceptance_confirmed AUSENTE — backend rejeita
+                }
+            ]
+        },
+    )
+    assert r.status_code == 400, r.text
+    assert "aceite" in r.text.lower()
+
+
+@pytest.mark.asyncio
+async def test_patch_progress_done_100_com_acceptance_persiste(
+    client: AsyncClient, db_session
+) -> None:
+    """status=done + percent_complete=100 + acceptance_confirmed=true → 200 e persiste."""
+    project = await _seed_project(db_session, gp_email="gp-acc2@x.com")
+    proposal = Proposal(
+        project_id=project.id, version=1, file_url="x", file_sha256="b" * 64,
+        original_filename="p.pdf", size_bytes=1, status=ProposalStatus.EXTRACTED,
+        uploaded_by_id=project.gp_user_id,
+    )
+    db_session.add(proposal)
+    await db_session.flush()
+    baseline = Baseline(
+        project_id=project.id, proposal_id=proposal.id,
+        status=BaselineStatus.ACTIVE, payload={},
+    )
+    db_session.add(baseline)
+    await db_session.flush()
+    deliv = Deliverable(
+        baseline_id=baseline.id, code="d-001", title="Entregavel",
+        phase="fase-1", due_date=date(2026, 6, 1),
+    )
+    db_session.add(deliv)
+    report = Report(
+        project_id=project.id,
+        period_start=date(2026, 5, 1), period_end=date(2026, 5, 15),
+        status=ReportStatus.DRAFT, created_by_id=project.gp_user_id,
+    )
+    db_session.add(report)
+    await db_session.commit()
+
+    gp = await _login(client, role="GP", email="gp-acc2@x.com")
+    r = await client.patch(
+        f"/reports/{report.id}",
+        headers={"Authorization": f"Bearer {gp}"},
+        json={
+            "progresses": [
+                {
+                    "deliverable_id": str(deliv.id),
+                    "status": "done",
+                    "percent_complete": 100,
+                    "acceptance_confirmed": True,
+                }
+            ]
+        },
+    )
+    assert r.status_code == 200, r.text
+
+    # Verifica persistência no banco
+    from app.models import DeliveryProgress as _DP
+
+    rows = (
+        await db_session.execute(
+            __import__("sqlalchemy").select(_DP).where(_DP.report_id == report.id)
+        )
+    ).scalars().all()
+    assert len(rows) == 1
+    assert rows[0].acceptance_confirmed is True
+
+
+@pytest.mark.asyncio
+async def test_patch_progress_parcial_nao_exige_acceptance(
+    client: AsyncClient, db_session
+) -> None:
+    """Progressos parciais (status != done OU percent < 100) não passam pela
+    validação — acceptance_confirmed continua opcional (nullable)."""
+    project = await _seed_project(db_session, gp_email="gp-acc3@x.com")
+    proposal = Proposal(
+        project_id=project.id, version=1, file_url="x", file_sha256="c" * 64,
+        original_filename="p.pdf", size_bytes=1, status=ProposalStatus.EXTRACTED,
+        uploaded_by_id=project.gp_user_id,
+    )
+    db_session.add(proposal)
+    await db_session.flush()
+    baseline = Baseline(
+        project_id=project.id, proposal_id=proposal.id,
+        status=BaselineStatus.ACTIVE, payload={},
+    )
+    db_session.add(baseline)
+    await db_session.flush()
+    deliv = Deliverable(
+        baseline_id=baseline.id, code="d-001", title="Entregavel",
+        phase="fase-1", due_date=date(2026, 6, 1),
+    )
+    db_session.add(deliv)
+    report = Report(
+        project_id=project.id,
+        period_start=date(2026, 5, 1), period_end=date(2026, 5, 15),
+        status=ReportStatus.DRAFT, created_by_id=project.gp_user_id,
+    )
+    db_session.add(report)
+    await db_session.commit()
+
+    gp = await _login(client, role="GP", email="gp-acc3@x.com")
+    # in_progress 60% sem acceptance_confirmed → OK
+    r = await client.patch(
+        f"/reports/{report.id}",
+        headers={"Authorization": f"Bearer {gp}"},
+        json={
+            "progresses": [
+                {
+                    "deliverable_id": str(deliv.id),
+                    "status": "in_progress",
+                    "percent_complete": 60,
+                }
+            ]
+        },
+    )
+    assert r.status_code == 200, r.text
+    # done com pct < 100 → também OK (estado raro mas válido)
+    r2 = await client.patch(
+        f"/reports/{report.id}",
+        headers={"Authorization": f"Bearer {gp}"},
+        json={
+            "progresses": [
+                {
+                    "deliverable_id": str(deliv.id),
+                    "status": "done",
+                    "percent_complete": 90,
+                }
+            ]
+        },
+    )
+    assert r2.status_code == 200, r2.text
+
+
 @pytest.mark.asyncio
 async def test_health_score_cached_persistido_no_project_apos_submit(
     client: AsyncClient, db_session

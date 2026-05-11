@@ -26,6 +26,9 @@ class DeliveryProgressIn(BaseModel):
     percent_complete: int = Field(ge=0, le=100, default=0)
     comment: str | None = None
     revised_date: date | None = None
+    # Persistência da confirmação do modal "Critério de aceite foi atingido?"
+    # (spec v3.1 §4.2.2). Obrigatório quando status=done + percent_complete=100.
+    acceptance_confirmed: bool | None = None
 
 
 class DeliveryProgressPublic(DeliveryProgressIn):

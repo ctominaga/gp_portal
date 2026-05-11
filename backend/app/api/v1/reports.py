@@ -14,6 +14,7 @@ from app.models import (
     Deliverable,
     DeliveryProgress,
     PendingItem,
+    ProgressStatus,
     Project,
     RAGStatus,
     Report,
@@ -187,6 +188,22 @@ async def patch_report(
             report.rag_status = agg
 
     if "progresses" in data:
+        # spec v3.1 §4.2.2: status=done + percent=100 exige confirmação do
+        # critério de aceite (modal "Critério de aceite foi atingido?"). Sem
+        # acceptance_confirmed=True, o save é rejeitado.
+        for p in data["progresses"] or []:
+            is_done_complete = (
+                p.get("status") == ProgressStatus.DONE.value
+                and p.get("percent_complete") == 100
+            )
+            if is_done_complete and p.get("acceptance_confirmed") is not True:
+                raise HTTPException(
+                    status.HTTP_400_BAD_REQUEST,
+                    "entregável marcado como concluído com 100% exige "
+                    "confirmação do critério de aceite "
+                    "(acceptance_confirmed=true)",
+                )
+
         # Pré-carrega due_date dos deliverables envolvidos para calcular deviation_flag
         deliv_ids = [p["deliverable_id"] for p in (data["progresses"] or [])]
         due_by_deliv: dict[uuid.UUID, date | None] = {}

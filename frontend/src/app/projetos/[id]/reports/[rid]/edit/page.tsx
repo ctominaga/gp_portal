@@ -412,10 +412,18 @@ export default function ReportEditPage() {
                     className="grid gap-3 rounded-md border p-3 sm:grid-cols-[1fr_140px_120px_140px]"
                   >
                     <div>
-                      <p className="text-sm font-medium">
-                        {d?.code ? `${d.code} · ` : ""}
-                        {d?.title ?? p.deliverable_id}
-                      </p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-sm font-medium">
+                          {d?.code ? `${d.code} · ` : ""}
+                          {d?.title ?? p.deliverable_id}
+                        </p>
+                        {/* spec v3.1 §4.2.2: badge quando GP confirmou critério de aceite */}
+                        {p.acceptance_confirmed === true && (
+                          <Badge variant="green" className="gap-1 text-xs">
+                            <CheckCircle2 className="h-3 w-3" /> aceite confirmado
+                          </Badge>
+                        )}
+                      </div>
                       {d?.phase && (
                         <p className="text-xs text-muted-foreground">{d.phase}</p>
                       )}
@@ -542,7 +550,14 @@ export default function ReportEditPage() {
                     if (acceptanceConfirm === null) return;
                     const next = [...draft.progresses];
                     const i = acceptanceConfirm.index;
-                    next[i] = { ...next[i], status: "done", percent_complete: 100 };
+                    // spec v3.1 §4.2.2: persistir acceptance_confirmed=true.
+                    // Backend rejeita salvar status=done + 100% sem esta flag.
+                    next[i] = {
+                      ...next[i],
+                      status: "done",
+                      percent_complete: 100,
+                      acceptance_confirmed: true,
+                    };
                     setDraft({ ...draft, progresses: next });
                     setAcceptanceConfirm(null);
                   }}
