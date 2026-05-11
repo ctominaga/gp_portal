@@ -5,7 +5,7 @@ import uuid
 from datetime import UTC, date, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import delete, select
+from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db, require_any_role
@@ -248,6 +248,14 @@ async def patch_report(
             due_by_deliv = {r[0]: r[1] for r in rows}
 
         await db.execute(delete(DeliveryProgress).where(DeliveryProgress.report_id == report.id))
+        # Cross-model auto-update (spec v3.1 §4.2.2 + §6.4.1): DeliveryProgress
+        # com status=done + percent=100 + acceptance_confirmed=True promove
+        # Deliverable.status para CONCLUDED. Caso patológico de
+        # `acceptance_confirmed=True` em progresso parcial NÃO promove
+        # (a regra é a conjunção das 3 condições, não só a flag).
+        from app.models import DeliverableStatus as _DStatus
+
+        deliv_ids_to_conclude: set[uuid.UUID] = set()
         for p in data["progresses"] or []:
             revised = p.get("revised_date")
             planned = due_by_deliv.get(p["deliverable_id"])
@@ -258,6 +266,18 @@ async def patch_report(
                     deviation_flag=deviation,
                     **p,
                 )
+            )
+            if (
+                p.get("status") == ProgressStatus.DONE.value
+                and p.get("percent_complete") == 100
+                and p.get("acceptance_confirmed") is True
+            ):
+                deliv_ids_to_conclude.add(p["deliverable_id"])
+        if deliv_ids_to_conclude:
+            await db.execute(
+                update(Deliverable)
+                .where(Deliverable.id.in_(deliv_ids_to_conclude))
+                .values(status=_DStatus.CONCLUDED)
             )
     if "risks" in data:
         await db.execute(delete(Risk).where(Risk.report_id == report.id))

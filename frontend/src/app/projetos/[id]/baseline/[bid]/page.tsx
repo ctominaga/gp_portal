@@ -38,9 +38,11 @@ import type { Baseline, BaselineAudit, Deliverable } from "@/lib/types";
 type DialogMode = { kind: "edit"; deliverable: Deliverable } | { kind: "create" } | null;
 
 const COMPLEXITY_TOOLTIPS: Record<string, string> = {
-  low: "Baixa: rotinas pequenas, dependências mínimas, baixo risco regulatório.",
-  medium: "Média: rotinas com lógica intermediária, algumas dependências entre etapas.",
-  high: "Alta: alta densidade lógica, múltiplas dependências, regras regulatórias complexas.",
+  baixa: "Baixa: rotinas pequenas, dependências mínimas, baixo risco regulatório.",
+  "baixa-media": "Baixa-Média: rotinas pequenas com algum acoplamento.",
+  media: "Média: rotinas com lógica intermediária, algumas dependências entre etapas.",
+  "media-alta": "Média-Alta: lógica intermediária com risco regulatório ou múltiplas dependências.",
+  alta: "Alta: alta densidade lógica, múltiplas dependências, regras regulatórias complexas.",
 };
 
 export default function BaselineReviewPage() {
@@ -220,9 +222,9 @@ export default function BaselineReviewPage() {
                               <Badge
                                 title={COMPLEXITY_TOOLTIPS[d.complexity]}
                                 variant={
-                                  d.complexity === "high"
+                                  d.complexity === "alta" || d.complexity === "media-alta"
                                     ? "red"
-                                    : d.complexity === "medium"
+                                    : d.complexity === "media"
                                       ? "amber"
                                       : "green"
                                 }
@@ -381,16 +383,20 @@ function DeliverableDialog({
   onSaved: () => void | Promise<void>;
 }) {
   const isEdit = mode.kind === "edit";
-  const initial = isEdit
+  const initial: Partial<DeliverableInput> = isEdit
     ? {
         code: mode.deliverable.code ?? "",
         title: mode.deliverable.title,
         description: mode.deliverable.description ?? "",
         phase: mode.deliverable.phase ?? "",
-        category: mode.deliverable.category ?? "",
-        complexity: (mode.deliverable.complexity ?? undefined) as "low" | "medium" | "high" | undefined,
+        category: mode.deliverable.category ?? undefined,
+        complexity: mode.deliverable.complexity ?? undefined,
+        type: mode.deliverable.type ?? undefined,
         source_excerpt: mode.deliverable.source_excerpt ?? "",
         due_date: mode.deliverable.due_date ?? "",
+        acceptance_criteria: mode.deliverable.acceptance_criteria ?? "",
+        dependencies: mode.deliverable.dependencies ?? [],
+        status: mode.deliverable.status,
       }
     : { title: "" };
 
@@ -463,19 +469,97 @@ function DeliverableDialog({
               <Select
                 value={watch("complexity") ?? ""}
                 onValueChange={(v) =>
-                  setValue("complexity", v as "low" | "medium" | "high", { shouldDirty: true })
+                  setValue(
+                    "complexity",
+                    v as DeliverableInput["complexity"],
+                    { shouldDirty: true },
+                  )
                 }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="—" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="low">low</SelectItem>
-                  <SelectItem value="medium">medium</SelectItem>
-                  <SelectItem value="high">high</SelectItem>
+                  <SelectItem value="baixa">baixa</SelectItem>
+                  <SelectItem value="baixa-media">baixa-media</SelectItem>
+                  <SelectItem value="media">media</SelectItem>
+                  <SelectItem value="media-alta">media-alta</SelectItem>
+                  <SelectItem value="alta">alta</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+          </div>
+          {/* spec v3.1 §4.2.2 + §6.4.1 — campos novos em F5.1 */}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1">
+              <Label>Status</Label>
+              <Select
+                value={watch("status") ?? "not_started"}
+                onValueChange={(v) =>
+                  setValue(
+                    "status",
+                    v as DeliverableInput["status"],
+                    { shouldDirty: true },
+                  )
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="not_started">Não iniciado</SelectItem>
+                  <SelectItem value="in_progress">Em andamento</SelectItem>
+                  <SelectItem value="concluded">Concluído</SelectItem>
+                  <SelectItem value="blocked">Bloqueado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label>Tipo</Label>
+              <Select
+                value={watch("type") ?? ""}
+                onValueChange={(v) =>
+                  setValue("type", v as DeliverableInput["type"], { shouldDirty: true })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="—" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="code_migration">code_migration</SelectItem>
+                  <SelectItem value="documentation">documentation</SelectItem>
+                  <SelectItem value="knowledge_transfer">knowledge_transfer</SelectItem>
+                  <SelectItem value="stabilization">stabilization</SelectItem>
+                  <SelectItem value="deliverable_software">deliverable_software</SelectItem>
+                  <SelectItem value="assessment">assessment</SelectItem>
+                  <SelectItem value="model">model</SelectItem>
+                  <SelectItem value="infrastructure">infrastructure</SelectItem>
+                  <SelectItem value="other">other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="space-y-1">
+            <Label>Critério de aceite</Label>
+            <Textarea
+              rows={2}
+              placeholder="Como saber que está concluído (ex: notebook em prod com 100% paridade)."
+              {...register("acceptance_criteria")}
+            />
+          </div>
+          <div className="space-y-1">
+            <Label>Dependências (separadas por vírgula)</Label>
+            <Input
+              placeholder="d-000, external:databricks-env"
+              defaultValue={(initial.dependencies ?? []).join(", ")}
+              onBlur={(e) => {
+                const list = e.target.value
+                  .split(",")
+                  .map((s) => s.trim())
+                  .filter(Boolean);
+                setValue("dependencies", list, { shouldDirty: true });
+              }}
+            />
           </div>
           <div className="space-y-1">
             <Label>Trecho da proposta (source excerpt)</Label>

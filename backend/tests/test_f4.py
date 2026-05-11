@@ -310,6 +310,190 @@ async def test_compute_risk_inverse_inclui_identified_e_monitoring(db_session) -
     assert set(OPEN_RISK_STATUSES) == {RiskStatus.IDENTIFIED, RiskStatus.MONITORING}
 
 
+# ---------- F5.1 Deliverable: type + acceptance + deps + status auto-update (v3.1 §4.2.2/§6.4.1) ----------
+
+
+@pytest.mark.asyncio
+async def test_deliverable_novos_campos_persistem(db_session) -> None:
+    """acceptance_criteria, dependencies (lista), status default."""
+    from app.models import DeliverableStatus, DeliverableType, DeliverableCategory
+
+    project = await _seed_project(db_session, gp_email="gp-dnew@x.com")
+    proposal = Proposal(
+        project_id=project.id, version=1, file_url="x", file_sha256="a" * 64,
+        original_filename="p.pdf", size_bytes=1, status=ProposalStatus.EXTRACTED,
+        uploaded_by_id=project.gp_user_id,
+    )
+    db_session.add(proposal)
+    await db_session.flush()
+    baseline = Baseline(
+        project_id=project.id, proposal_id=proposal.id,
+        status=BaselineStatus.ACTIVE, payload={},
+    )
+    db_session.add(baseline)
+    await db_session.flush()
+    deliv = Deliverable(
+        baseline_id=baseline.id,
+        code="d-001",
+        title="Migração rotina A",
+        type=DeliverableType.CODE_MIGRATION,
+        category=DeliverableCategory.TECHNICAL,
+        complexity=DeliverableComplexity.LOW,
+        acceptance_criteria="Notebook executando em prod com 100% paridade",
+        dependencies=["d-000", "external:databricks-env-ready"],
+    )
+    db_session.add(deliv)
+    await db_session.commit()
+    await db_session.refresh(deliv)
+
+    assert deliv.status == DeliverableStatus.NOT_STARTED  # default
+    assert deliv.acceptance_criteria.startswith("Notebook")
+    assert deliv.dependencies == ["d-000", "external:databricks-env-ready"]
+    assert deliv.type == DeliverableType.CODE_MIGRATION
+    assert deliv.category == DeliverableCategory.TECHNICAL
+
+
+@pytest.mark.asyncio
+async def test_deliverable_dependencies_aceita_lista_vazia_e_default(
+    db_session,
+) -> None:
+    """`dependencies` é NOT NULL com default `[]`. Não criar com lista
+    explícita → vem `[]`. Criar com lista → preservada."""
+    project = await _seed_project(db_session, gp_email="gp-ddep@x.com")
+    proposal = Proposal(
+        project_id=project.id, version=1, file_url="x", file_sha256="b" * 64,
+        original_filename="p.pdf", size_bytes=1, status=ProposalStatus.EXTRACTED,
+        uploaded_by_id=project.gp_user_id,
+    )
+    db_session.add(proposal)
+    await db_session.flush()
+    baseline = Baseline(
+        project_id=project.id, proposal_id=proposal.id,
+        status=BaselineStatus.ACTIVE, payload={},
+    )
+    db_session.add(baseline)
+    await db_session.flush()
+    d1 = Deliverable(baseline_id=baseline.id, title="sem deps")
+    d2 = Deliverable(baseline_id=baseline.id, title="com deps", dependencies=[])
+    db_session.add_all([d1, d2])
+    await db_session.commit()
+    await db_session.refresh(d1)
+    await db_session.refresh(d2)
+    assert d1.dependencies == []
+    assert d2.dependencies == []
+
+
+# --- 3 casos do auto-update Deliverable.status = CONCLUDED ---
+
+
+async def _seed_one_deliverable(db, gp_email: str) -> tuple[Project, Deliverable, Report]:
+    """Helper: 1 projeto + 1 baseline ativo + 1 deliverable + 1 report draft."""
+    project = await _seed_project(db, gp_email=gp_email)
+    proposal = Proposal(
+        project_id=project.id, version=1, file_url="x",
+        file_sha256="a" * 64, original_filename="p.pdf", size_bytes=1,
+        status=ProposalStatus.EXTRACTED, uploaded_by_id=project.gp_user_id,
+    )
+    db.add(proposal)
+    await db.flush()
+    baseline = Baseline(
+        project_id=project.id, proposal_id=proposal.id,
+        status=BaselineStatus.ACTIVE, payload={},
+    )
+    db.add(baseline)
+    await db.flush()
+    deliv = Deliverable(
+        baseline_id=baseline.id, code="d-001", title="Entregavel teste",
+        due_date=date(2026, 6, 1),
+    )
+    db.add(deliv)
+    report = Report(
+        project_id=project.id,
+        period_start=date(2026, 5, 1), period_end=date(2026, 5, 15),
+        status=ReportStatus.DRAFT, created_by_id=project.gp_user_id,
+    )
+    db.add(report)
+    await db.commit()
+    return project, deliv, report
+
+
+@pytest.mark.asyncio
+async def test_auto_update_done_100_sem_acceptance_falha_e_nao_promove(
+    client: AsyncClient, db_session
+) -> None:
+    """Cenário 1: done+100 sem acceptance_confirmed → backend já rejeita 400
+    (validação AJUSTE I). Deliverable.status permanece NOT_STARTED.
+    Esse teste defende o invariante: status nunca muda sem trilha completa.
+    """
+    from app.models import DeliverableStatus
+
+    _, deliv, report = await _seed_one_deliverable(db_session, "gp-au1@x.com")
+    gp = await _login(client, role="GP", email="gp-au1@x.com")
+    r = await client.patch(
+        f"/reports/{report.id}",
+        headers={"Authorization": f"Bearer {gp}"},
+        json={"progresses": [{
+            "deliverable_id": str(deliv.id),
+            "status": "done", "percent_complete": 100,
+            # acceptance_confirmed AUSENTE → 400 do AJUSTE I
+        }]},
+    )
+    assert r.status_code == 400
+    await db_session.refresh(deliv)
+    assert deliv.status == DeliverableStatus.NOT_STARTED  # invariante mantido
+
+
+@pytest.mark.asyncio
+async def test_auto_update_done_100_com_acceptance_promove_para_concluded(
+    client: AsyncClient, db_session
+) -> None:
+    """Cenário 2: done+100+acceptance_confirmed=true → Deliverable.status=CONCLUDED."""
+    from app.models import DeliverableStatus
+
+    _, deliv, report = await _seed_one_deliverable(db_session, "gp-au2@x.com")
+    gp = await _login(client, role="GP", email="gp-au2@x.com")
+    r = await client.patch(
+        f"/reports/{report.id}",
+        headers={"Authorization": f"Bearer {gp}"},
+        json={"progresses": [{
+            "deliverable_id": str(deliv.id),
+            "status": "done", "percent_complete": 100,
+            "acceptance_confirmed": True,
+        }]},
+    )
+    assert r.status_code == 200, r.text
+    # Recarrega o deliverable depois da promoção cross-model
+    await db_session.refresh(deliv)
+    assert deliv.status == DeliverableStatus.CONCLUDED
+
+
+@pytest.mark.asyncio
+async def test_auto_update_parcial_com_acceptance_indevido_nao_promove(
+    client: AsyncClient, db_session
+) -> None:
+    """Cenário 3 (patológico): progresso parcial (60%) com acceptance_confirmed=true
+    (caso que não deveria existir, mas pode aparecer por bug de cliente) →
+    Deliverable.status NÃO promove. Defende o invariante: a regra é a
+    CONJUNÇÃO das 3 condições, não só a flag.
+    """
+    from app.models import DeliverableStatus
+
+    _, deliv, report = await _seed_one_deliverable(db_session, "gp-au3@x.com")
+    gp = await _login(client, role="GP", email="gp-au3@x.com")
+    r = await client.patch(
+        f"/reports/{report.id}",
+        headers={"Authorization": f"Bearer {gp}"},
+        json={"progresses": [{
+            "deliverable_id": str(deliv.id),
+            "status": "in_progress", "percent_complete": 60,
+            "acceptance_confirmed": True,  # flag presente mas progresso é parcial
+        }]},
+    )
+    assert r.status_code == 200, r.text
+    await db_session.refresh(deliv)
+    assert deliv.status == DeliverableStatus.NOT_STARTED
+
+
 # ---------- F5.1 ActionPlan: objective + vinculações (v3.1 §4.2.4) ----------
 
 

@@ -63,14 +63,28 @@ describe("deliverableSchema", () => {
     expect(deliverableSchema.safeParse({ title: "" }).success).toBe(false);
     expect(deliverableSchema.safeParse({ title: "A" }).success).toBe(true);
   });
-  it("aceita complexity opcional", () => {
-    expect(
-      deliverableSchema.safeParse({ title: "A", complexity: "high" }).success,
-    ).toBe(true);
+  it("aceita complexity opcional (5 níveis PT-BR após F5.1)", () => {
+    for (const c of ["baixa", "baixa-media", "media", "media-alta", "alta"] as const) {
+      expect(deliverableSchema.safeParse({ title: "A", complexity: c }).success).toBe(true);
+    }
   });
-  it("rejeita complexity fora do enum", () => {
+  it("rejeita complexity fora do enum (valores antigos 'low'/'medium'/'high' não passam mais)", () => {
     expect(
       deliverableSchema.safeParse({ title: "A", complexity: "xtreme" as never }).success,
     ).toBe(false);
+    expect(
+      deliverableSchema.safeParse({ title: "A", complexity: "high" as never }).success,
+    ).toBe(false);
+  });
+  it("aceita campos novos do F5.1 (type, acceptance_criteria, dependencies, status)", () => {
+    const r = deliverableSchema.safeParse({
+      title: "A",
+      type: "code_migration",
+      category: "tecnico",
+      acceptance_criteria: "notebook em prod",
+      dependencies: ["d-000"],
+      status: "in_progress",
+    });
+    expect(r.success).toBe(true);
   });
 });

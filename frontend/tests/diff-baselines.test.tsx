@@ -71,7 +71,7 @@ const diffPayload: BaselineDiff = {
       phase_old: null,
       phase_new: "fase-3",
       complexity_old: null,
-      complexity_new: "high",
+      complexity_new: "alta",
     },
   ],
   removed: [
@@ -82,7 +82,7 @@ const diffPayload: BaselineDiff = {
       title_new: null,
       phase_old: "fase-2",
       phase_new: null,
-      complexity_old: "low",
+      complexity_old: "baixa",
       complexity_new: null,
     },
   ],
@@ -94,8 +94,8 @@ const diffPayload: BaselineDiff = {
       title_new: "Pipeline (escopo expandido)",
       phase_old: "fase-1",
       phase_new: "fase-2",
-      complexity_old: "medium",
-      complexity_new: "high",
+      complexity_old: "media",
+      complexity_new: "alta",
     },
   ],
 };

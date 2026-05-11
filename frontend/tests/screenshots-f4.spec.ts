@@ -339,7 +339,7 @@ const baselineDiff = {
       phase_old: null,
       phase_new: "fase-3",
       complexity_old: null,
-      complexity_new: "high",
+      complexity_new: "alta",
     },
     {
       kind: "added",
@@ -349,7 +349,7 @@ const baselineDiff = {
       phase_old: null,
       phase_new: "fase-3",
       complexity_old: null,
-      complexity_new: "medium",
+      complexity_new: "media",
     },
   ],
   removed: [
@@ -360,7 +360,7 @@ const baselineDiff = {
       title_new: null,
       phase_old: "fase-2",
       phase_new: null,
-      complexity_old: "low",
+      complexity_old: "baixa",
       complexity_new: null,
     },
   ],
@@ -372,8 +372,8 @@ const baselineDiff = {
       title_new: "Migração rotina C com lógica intermediária + testes regulatórios",
       phase_old: "fase-2",
       phase_new: "fase-2",
-      complexity_old: "medium",
-      complexity_new: "high",
+      complexity_old: "media",
+      complexity_new: "alta",
     },
   ],
 };

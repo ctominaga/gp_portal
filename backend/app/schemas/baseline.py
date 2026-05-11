@@ -7,7 +7,13 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from app.models import BaselineStatus, DeliverableComplexity
+from app.models import (
+    BaselineStatus,
+    DeliverableCategory,
+    DeliverableComplexity,
+    DeliverableStatus,
+    DeliverableType,
+)
 
 
 class DeliverablePublic(BaseModel):
@@ -16,10 +22,15 @@ class DeliverablePublic(BaseModel):
     title: str
     description: str | None
     phase: str | None
-    category: str | None
+    category: DeliverableCategory | None
     complexity: DeliverableComplexity | None
+    type: DeliverableType | None
     source_excerpt: str | None
     due_date: date | None
+    # spec v3.1 §4.2.2 + §6.4.1 — novos em F5.1
+    acceptance_criteria: str | None
+    dependencies: list[str] = Field(default_factory=list)
+    status: DeliverableStatus
     order_index: int
 
     model_config = {"from_attributes": True}
@@ -30,10 +41,14 @@ class DeliverableUpdate(BaseModel):
     title: str | None = Field(default=None, min_length=1, max_length=300)
     description: str | None = None
     phase: str | None = Field(default=None, max_length=100)
-    category: str | None = Field(default=None, max_length=100)
+    category: DeliverableCategory | None = None
     complexity: DeliverableComplexity | None = None
+    type: DeliverableType | None = None
     source_excerpt: str | None = None
     due_date: date | None = None
+    acceptance_criteria: str | None = None
+    dependencies: list[str] | None = None
+    status: DeliverableStatus | None = None
     order_index: int | None = None
 
 
@@ -42,10 +57,14 @@ class DeliverableCreate(BaseModel):
     title: str = Field(min_length=1, max_length=300)
     description: str | None = None
     phase: str | None = None
-    category: str | None = None
+    category: DeliverableCategory | None = None
     complexity: DeliverableComplexity | None = None
+    type: DeliverableType | None = None
     source_excerpt: str | None = None
     due_date: date | None = None
+    acceptance_criteria: str | None = None
+    dependencies: list[str] = Field(default_factory=list)
+    status: DeliverableStatus = DeliverableStatus.NOT_STARTED
     order_index: int = 0
 
 

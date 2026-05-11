@@ -67,9 +67,70 @@ class BaselineStatus(str, enum.Enum):
 
 
 class DeliverableComplexity(str, enum.Enum):
-    LOW = "low"
-    MEDIUM = "medium"
-    HIGH = "high"
+    """Faixa de complexidade do entregável (spec v3.1 §4.2.2 + prompt v1 §3).
+
+    Vocabulário do prompt `proposal_reader_v1.md` — 5 níveis PT-BR. Drop+recreate
+    da versão antiga (3 valores `low/medium/high`) feito em F5.1 Deliverable com
+    COUNT=0 (mesmas condições da migration 0010).
+    """
+
+    LOW = "baixa"
+    LOW_MEDIUM = "baixa-media"
+    MEDIUM = "media"
+    MEDIUM_HIGH = "media-alta"
+    HIGH = "alta"
+
+
+class DeliverableType(str, enum.Enum):
+    """Tipo do entregável (prompt `proposal_reader_v1.md` §3 — 9 valores).
+
+    Mesmo enum do schema `ProposalExtraction.DeliverableType`. Persistido na
+    entidade `Deliverable` para o backend manter coerência com o output do
+    agente leitor.
+    """
+
+    CODE_MIGRATION = "code_migration"
+    DOCUMENTATION = "documentation"
+    KNOWLEDGE_TRANSFER = "knowledge_transfer"
+    STABILIZATION = "stabilization"
+    DELIVERABLE_SOFTWARE = "deliverable_software"
+    ASSESSMENT = "assessment"
+    MODEL = "model"
+    INFRASTRUCTURE = "infrastructure"
+    OTHER = "other"
+
+
+class DeliverableCategory(str, enum.Enum):
+    """Categoria do entregável (prompt v1 §3 — 5 valores PT-BR).
+
+    Substitui `category` String(100) livre por enum fechado em F5.1 Deliverable.
+    """
+
+    TECHNICAL = "tecnico"
+    TECHNICAL_REGULATORY = "tecnico-regulatorio"
+    BUSINESS = "negocio"
+    TRANSVERSAL = "transversal"
+    GOVERNANCE = "governanca"
+
+
+class DeliverableStatus(str, enum.Enum):
+    """Ciclo de vida do entregável (spec v3.1 §6.4.1).
+
+    Status inicial: NOT_STARTED ("Não iniciado"). Auto-promovido para CONCLUDED
+    quando todas as 3 condições do `DeliveryProgress` correspondente forem
+    satisfeitas: status=done + percent_complete=100 + acceptance_confirmed=True.
+
+    Labels PT-BR para UI:
+      NOT_STARTED  → "Não iniciado"
+      IN_PROGRESS  → "Em andamento"
+      CONCLUDED    → "Concluído"
+      BLOCKED      → "Bloqueado"
+    """
+
+    NOT_STARTED = "not_started"
+    IN_PROGRESS = "in_progress"
+    CONCLUDED = "concluded"
+    BLOCKED = "blocked"
 
 
 class ReportStatus(str, enum.Enum):
@@ -348,18 +409,47 @@ class Deliverable(Base):
     )
 
     code: Mapped[str | None] = mapped_column(String(50), nullable=True)  # ex: 'd-001'
+    # `title` mantém o nome historico — semanticamente equivalente a `name` da spec.
     title: Mapped[str] = mapped_column(String(300), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     phase: Mapped[str | None] = mapped_column(String(100), nullable=True)  # ex: 'sprint-1'
-    category: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    # category passa a ser enum fechado (D2 alinhada ao prompt v1 em F5.1).
+    category: Mapped[DeliverableCategory | None] = mapped_column(
+        SAEnum(DeliverableCategory, name="deliverable_category", native_enum=False),
+        nullable=True,
+    )
+    # complexity expandido para 5 valores PT-BR (D1 alinhada ao prompt v1).
     complexity: Mapped[DeliverableComplexity | None] = mapped_column(
         SAEnum(DeliverableComplexity, name="deliverable_complexity", native_enum=False),
         nullable=True,
     )
+    # Tipo do entregável (prompt v1 §3) — novo em F5.1.
+    type: Mapped[DeliverableType | None] = mapped_column(
+        SAEnum(DeliverableType, name="deliverable_type", native_enum=False),
+        nullable=True,
+    )
 
     source_excerpt: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # `due_date` mantém o nome historico — semanticamente equivalente a `planned_date`.
     due_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+
+    # Critério para considerar o entregável aceito (spec v3.1 §4.2.2 / §6.4.1).
+    acceptance_criteria: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Dependências como JSONB de lista de strings (códigos ou descrições).
+    # Decisão F5.1: strings (não FKs) — preserva intenção entre baselines v1↔v2
+    # e permite dependências externas ao baseline no futuro.
+    dependencies: Mapped[list[str]] = mapped_column(
+        JSON, nullable=False, default=list
+    )
+    # Ciclo de vida (spec v3.1 §6.4.1) — default NOT_STARTED. Auto-promovido
+    # para CONCLUDED quando DeliveryProgress correspondente tem
+    # status=done + percent_complete=100 + acceptance_confirmed=True.
+    status: Mapped[DeliverableStatus] = mapped_column(
+        SAEnum(DeliverableStatus, name="deliverable_status", native_enum=False),
+        default=DeliverableStatus.NOT_STARTED,
+        nullable=False,
+    )
 
     order_index: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, nullable=False)

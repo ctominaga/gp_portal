@@ -53,7 +53,7 @@ const fakeBaseline = {
       description: null,
       phase: "fase-1",
       category: null,
-      complexity: "low" as const,
+      complexity: "baixa" as const,
       source_excerpt:
         "Sprint de convergência inicial, focado em grupos de menor complexidade " +
         "e baixo acoplamento. Ideal para validar o pipeline automatizado e " +
@@ -68,7 +68,7 @@ const fakeBaseline = {
       description: null,
       phase: "fase-1",
       category: null,
-      complexity: "low" as const,
+      complexity: "baixa" as const,
       source_excerpt:
         "CERM e Outros Riscos possuem baixa densidade e se encaixam na fase de estabilização.",
       due_date: "2026-06-15",
@@ -81,7 +81,7 @@ const fakeBaseline = {
       description: null,
       phase: "fase-2",
       category: null,
-      complexity: "medium" as const,
+      complexity: "media" as const,
       source_excerpt:
         "Equilíbrio entre baixa e média complexidade, com interdependência reduzida.",
       due_date: "2026-07-01",
@@ -94,7 +94,7 @@ const fakeBaseline = {
       description: null,
       phase: "fase-2",
       category: null,
-      complexity: "medium" as const,
+      complexity: "media" as const,
       source_excerpt: "Mantém alta produtividade sem exigir análise manual intensiva.",
       due_date: "2026-07-01",
       order_index: 3,
@@ -106,7 +106,7 @@ const fakeBaseline = {
       description: null,
       phase: "fase-3",
       category: null,
-      complexity: "high" as const,
+      complexity: "alta" as const,
       source_excerpt:
         "Sprint com grupos de maior densidade lógica, múltiplas dependências, cálculos regulatórios e regras complexas.",
       due_date: "2026-07-15",
@@ -119,7 +119,7 @@ const fakeBaseline = {
       description: null,
       phase: "fase-3",
       category: null,
-      complexity: "medium" as const,
+      complexity: "media" as const,
       source_excerpt:
         "Estabilização do ambiente Databricks pós-migração e transferência de conhecimento.",
       due_date: "2026-07-30",

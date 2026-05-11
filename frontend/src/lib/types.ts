@@ -51,7 +51,40 @@ export interface Proposal {
   uploaded_at: string;
 }
 
-export type DeliverableComplexity = "low" | "medium" | "high";
+// spec v3.1 §4.2.2 + prompt v1 §3 — 5 níveis PT-BR (alinhado ao backend após F5.1)
+export type DeliverableComplexity =
+  | "baixa"
+  | "baixa-media"
+  | "media"
+  | "media-alta"
+  | "alta";
+
+// spec v3.1 §4.2.2 + prompt v1 §3 — 9 tipos (alinhado ao schema ProposalExtraction)
+export type DeliverableType =
+  | "code_migration"
+  | "documentation"
+  | "knowledge_transfer"
+  | "stabilization"
+  | "deliverable_software"
+  | "assessment"
+  | "model"
+  | "infrastructure"
+  | "other";
+
+// spec v3.1 + prompt v1 — 5 categorias PT-BR
+export type DeliverableCategory =
+  | "tecnico"
+  | "tecnico-regulatorio"
+  | "negocio"
+  | "transversal"
+  | "governanca";
+
+// spec v3.1 §6.4.1 — ciclo de vida (auto-promovido para CONCLUDED via cross-model)
+export type DeliverableStatus =
+  | "not_started"
+  | "in_progress"
+  | "concluded"
+  | "blocked";
 
 export interface Deliverable {
   id: string;
@@ -59,10 +92,15 @@ export interface Deliverable {
   title: string;
   description: string | null;
   phase: string | null;
-  category: string | null;
+  category: DeliverableCategory | null;
   complexity: DeliverableComplexity | null;
+  type: DeliverableType | null;
   source_excerpt: string | null;
   due_date: string | null;
+  // spec v3.1 §4.2.2 + §6.4.1 — novos em F5.1
+  acceptance_criteria: string | null;
+  dependencies: string[];
+  status: DeliverableStatus;
   order_index: number;
 }
 

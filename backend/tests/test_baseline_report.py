@@ -102,11 +102,11 @@ async def test_patch_deliverable_atualiza_campos(
     r2 = await client.patch(
         f"/deliverables/{deliv_id}",
         headers={"Authorization": f"Bearer {tok}"},
-        json={"title": "Migrar A (revisada)", "complexity": "high"},
+        json={"title": "Migrar A (revisada)", "complexity": "alta"},
     )
     assert r2.status_code == 200, r2.text
     assert r2.json()["title"] == "Migrar A (revisada)"
-    assert r2.json()["complexity"] == "high"
+    assert r2.json()["complexity"] == "alta"
 
 
 @pytest.mark.asyncio

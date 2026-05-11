@@ -26,14 +26,33 @@ export const reportCreateSchema = z
   });
 export type ReportCreateInput = z.infer<typeof reportCreateSchema>;
 
+// Enums alinhados ao prompt v1 e ao backend após F5.1 Deliverable.
+export const DELIVERABLE_COMPLEXITY_VALUES = [
+  "baixa", "baixa-media", "media", "media-alta", "alta",
+] as const;
+export const DELIVERABLE_CATEGORY_VALUES = [
+  "tecnico", "tecnico-regulatorio", "negocio", "transversal", "governanca",
+] as const;
+export const DELIVERABLE_TYPE_VALUES = [
+  "code_migration", "documentation", "knowledge_transfer", "stabilization",
+  "deliverable_software", "assessment", "model", "infrastructure", "other",
+] as const;
+export const DELIVERABLE_STATUS_VALUES = [
+  "not_started", "in_progress", "concluded", "blocked",
+] as const;
+
 export const deliverableSchema = z.object({
   code: z.string().max(50).optional().or(z.literal("")),
   title: z.string().min(1, "informe o título").max(300),
   description: z.string().optional().or(z.literal("")),
   phase: z.string().max(100).optional().or(z.literal("")),
-  category: z.string().max(100).optional().or(z.literal("")),
-  complexity: z.enum(["low", "medium", "high"]).optional(),
+  category: z.enum(DELIVERABLE_CATEGORY_VALUES).optional(),
+  complexity: z.enum(DELIVERABLE_COMPLEXITY_VALUES).optional(),
+  type: z.enum(DELIVERABLE_TYPE_VALUES).optional(),
   source_excerpt: z.string().optional().or(z.literal("")),
   due_date: z.string().optional().or(z.literal("")),
+  acceptance_criteria: z.string().optional().or(z.literal("")),
+  dependencies: z.array(z.string()).optional(),
+  status: z.enum(DELIVERABLE_STATUS_VALUES).optional(),
 });
 export type DeliverableInput = z.infer<typeof deliverableSchema>;
