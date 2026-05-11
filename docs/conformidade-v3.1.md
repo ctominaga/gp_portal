@@ -115,7 +115,7 @@ Esses são os AJUSTES 2 e 3 que você sinalizou no início desta conversa, agora
 |---|---|---|
 | Smoke real do agente leitor contra `bradesco_sas_databricks.expected.json` | ⏸️ **adiado para F5** | Bloqueado por `claude` headless errático no setup atual (Windows binary via mount WSL). Ver ADR `2026-05-11 — F2.8 adiado...` em `decisoes.md`. |
 | Prompt versionado `proposal_reader_v1.md` | 📥 a receber | Preparação útil independente. Vai para `jump-report/docs/prompts/` quando recebido. |
-| Schema Pydantic `ProposalExtraction` | ✅ feito | `backend/app/schemas/proposal_extraction.py` (commit `feat(backend): schema ProposalExtraction com validacoes`). Preparação útil independente do smoke. |
+| Schema Pydantic `ProposalExtraction` | ✅ feito | `backend/app/schemas/proposal_extraction.py`. **Nota:** enums (`type`/`category`/`complexity`) divergem da v3.1 §6.4.1 **intencionalmente** — fonte é o prompt `proposal_reader_v1.md`. v3.1 §6.4.1 será atualizada na próxima edição da spec (**v3.2** — débito L). Acid test contra `bradesco_sas_databricks.expected.json` passa. |
 | Modo shadow no piloto Bradesco (§1.5) | ✅ já especificado | Extração apresentada como sugestão; baseline só ativado após revisão manual do GP. Mitiga risco de extração não-validada empiricamente. |
 
 ## Débitos F5 (atualizados pós-AJUSTE B)
@@ -131,6 +131,7 @@ Inclui débitos P2 da auditoria + F2.8 adiado:
 - ~~I. `DeliveryProgress.acceptance_confirmed` não persiste resultado do modal~~ → endereçado em AJUSTE I no F4.
 - J. `PendingItem`: falta `impact` e `open_date` distinto (§4.2.5/9.5)
 - **K. F2.8 — smoke real do agente leitor** (novo): instalar `claude` nativamente no WSL Linux, rodar smoke contra `bradesco_sas_databricks.expected.json`, gerar `docs/f28-bradesco-baseline-quality.md`. Compartilha pré-requisito com F2.6 (worker real). Ver ADR.
+- **L. Atualizar v3.1 §6.4.1 e gerar v3.2 consolidada** (novo): a spec funcional v3.1 §6.4.1 lista enums de `DeliverableType` (Documento/Software/Serviço/Treinamento) e omite `category`/`complexity` que o prompt `proposal_reader_v1.md` realmente usa. Implementação seguiu o prompt (fonte). Próxima edição da spec consolida vocabulário do prompt + adiciona seção sobre `confidence_score`/`confidence_notes`. Mantém a regra de "toda nova versão começa com diff explícito do que foi alterado" (ADR 2026-05-08 — Governança).
 
 ---
 
