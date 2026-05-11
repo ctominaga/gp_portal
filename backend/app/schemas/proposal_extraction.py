@@ -33,10 +33,12 @@ from typing import Annotated
 
 from pydantic import BaseModel, Field, model_validator
 
-# Regex e limites como constantes módulo-level — facilita import por testes
+# Regex e limites como constantes módulo-level — facilita import por testes.
+# SOURCE_EXCERPT_MAX vem do prompt `proposal_reader_v1.md` R4 ("Máximo 200
+# caracteres — se o trecho relevante for maior, pegue a parte mais saliente").
 DELIVERABLE_ID_PATTERN = r"^d-\d{3}$"
 PHASE_ID_PATTERN = r"^[a-z0-9][a-z0-9_-]{0,49}$"
-SOURCE_EXCERPT_MAX = 500
+SOURCE_EXCERPT_MAX = 200
 
 
 class DeliverableType(str, enum.Enum):

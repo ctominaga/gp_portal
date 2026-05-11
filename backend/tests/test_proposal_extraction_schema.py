@@ -155,7 +155,9 @@ def test_deliverable_ids_duplicados_falham() -> None:
     assert "duplicad" in str(exc.value).lower()
 
 
-def test_source_excerpt_acima_de_500_chars_falha() -> None:
+def test_source_excerpt_no_limite_passa_acima_falha() -> None:
+    """Prompt v1 R4: máximo 200 caracteres."""
+    assert SOURCE_EXCERPT_MAX == 200
     base = {
         "id": "d-001",
         "phase_id": "sprint-1",
