@@ -202,6 +202,11 @@ class Project(Base):
     started_at: Mapped[date | None] = mapped_column(Date, nullable=True)
     ended_at: Mapped[date | None] = mapped_column(Date, nullable=True)
 
+    # Cache do Health Score atual do projeto (spec v3.1 §10.3, recalculado a cada
+    # submissão de report). Permite listagens rápidas no dashboard PMO sem
+    # recomputar os 5 componentes a cada request.
+    health_score_cached: Mapped[float | None] = mapped_column(Float, nullable=True)
+
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, nullable=False)
 
 
@@ -558,20 +563,31 @@ class ProjectRetrospective(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, nullable=False)
 
 
-class PortfolioConfig(Base):
-    """Configuração singleton do portfólio — pesos do Health Score.
+def _default_weights() -> dict[str, float]:
+    """Pesos default do Health Score conforme spec v3.1 §10.3."""
+    return {
+        "rag_avg": 0.35,
+        "spi": 0.25,
+        "risk_inverse": 0.20,
+        "resolution_rate": 0.10,
+        "stability": 0.10,
+    }
 
-    Apenas uma linha (id=1). Valores em [0..1]; o serviço normaliza se
-    não somarem 1.0. Editado pelo PMO em /pmo/portfolio/config.
+
+class PortfolioConfig(Base):
+    """Configuração singleton do portfólio — pesos do Health Score (spec v3.1 §10.3).
+
+    Apenas uma linha (id=1). JSONB com 5 componentes: rag_avg, spi, risk_inverse,
+    resolution_rate, stability. Defaults 35/25/20/10/10 ancorados na spec.
+    Soma esperada = 1.00 ± 0.01 (validada no serviço de update).
     """
 
     __tablename__ = "portfolio_config"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, default=1)
-    weight_progress: Mapped[float] = mapped_column(Float, nullable=False, default=0.40)
-    weight_risks: Mapped[float] = mapped_column(Float, nullable=False, default=0.20)
-    weight_pendings: Mapped[float] = mapped_column(Float, nullable=False, default=0.20)
-    weight_schedule: Mapped[float] = mapped_column(Float, nullable=False, default=0.20)
+    health_score_weights: Mapped[dict] = mapped_column(
+        JSON, nullable=False, default=_default_weights
+    )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=_utcnow, nullable=False
     )

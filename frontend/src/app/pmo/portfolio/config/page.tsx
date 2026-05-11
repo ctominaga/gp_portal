@@ -10,33 +10,56 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api, asApiError } from "@/lib/api";
-import type { PortfolioConfig } from "@/lib/types";
+import type {
+  HealthScoreWeightKey,
+  HealthScoreWeights,
+  PortfolioConfig,
+} from "@/lib/types";
 
-const FIELDS: Array<{ key: keyof Omit<PortfolioConfig, "updated_at" | "updated_by_id">; label: string; help: string }> = [
+// Defaults da spec v3.1 §10.3
+const DEFAULT_WEIGHTS: HealthScoreWeights = {
+  rag_avg: 0.35,
+  spi: 0.25,
+  risk_inverse: 0.20,
+  resolution_rate: 0.10,
+  stability: 0.10,
+};
+
+const FIELDS: Array<{
+  key: HealthScoreWeightKey;
+  label: string;
+  help: string;
+}> = [
   {
-    key: "weight_progress",
-    label: "Progresso",
-    help: "% de entregáveis concluídos no último report.",
+    key: "rag_avg",
+    label: "Status RAG médio",
+    help: "Média das 3 dimensões do último report (Prazo, Escopo, Qualidade).",
   },
   {
-    key: "weight_risks",
-    label: "Riscos",
-    help: "Penalidade por riscos abertos (critical/high/medium/low).",
+    key: "spi",
+    label: "SPI",
+    help: "Progresso real vs. planejado das entregas (Schedule Performance Index).",
   },
   {
-    key: "weight_pendings",
-    label: "Pendências do cliente",
-    help: "Penalidade por item pendente do cliente.",
+    key: "risk_inverse",
+    label: "Risco inverso",
+    help: "Penalidade pelos riscos abertos no último report (ponderada por nível).",
   },
   {
-    key: "weight_schedule",
-    label: "Aderência ao prazo",
-    help: "% de progressos sem desvio (revised_date == due_date).",
+    key: "resolution_rate",
+    label: "Resolução",
+    help: "Pendências resolvidas vs. abertas no período.",
+  },
+  {
+    key: "stability",
+    label: "Estabilidade",
+    help: "Quantos reports consecutivos no mesmo status RAG agregado.",
   },
 ];
 
 export default function PortfolioConfigPage() {
   const [cfg, setCfg] = useState<PortfolioConfig | null>(null);
+  const [weights, setWeights] = useState<HealthScoreWeights>(DEFAULT_WEIGHTS);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -44,6 +67,7 @@ export default function PortfolioConfigPage() {
       try {
         const r = await api.get<PortfolioConfig>("/portfolio/config");
         setCfg(r.data);
+        setWeights({ ...DEFAULT_WEIGHTS, ...r.data.health_score_weights });
       } catch (e) {
         toast.error(asApiError(e).message);
       }
@@ -58,27 +82,34 @@ export default function PortfolioConfigPage() {
     );
   }
 
-  const total =
-    cfg.weight_progress + cfg.weight_risks + cfg.weight_pendings + cfg.weight_schedule;
-  const normalize = (v: number) => (total > 0 ? (v / total) * 100 : 25);
+  const total = FIELDS.reduce((acc, f) => acc + (weights[f.key] || 0), 0);
+  const normalize = (v: number) => (total > 0 ? (v / total) * 100 : 20);
+  const withinTolerance = Math.abs(total - 1.0) <= 0.01;
 
   async function save() {
-    if (!cfg) return;
+    if (!withinTolerance) {
+      toast.error(
+        `Soma dos pesos deve ser 1.00 ± 0.01 (atual: ${total.toFixed(2)})`,
+      );
+      return;
+    }
     setSaving(true);
     try {
       const r = await api.put<PortfolioConfig>("/portfolio/config", {
-        weight_progress: cfg.weight_progress,
-        weight_risks: cfg.weight_risks,
-        weight_pendings: cfg.weight_pendings,
-        weight_schedule: cfg.weight_schedule,
+        health_score_weights: weights,
       });
       setCfg(r.data);
+      setWeights({ ...DEFAULT_WEIGHTS, ...r.data.health_score_weights });
       toast.success("Pesos atualizados — Health Score recalcula em tempo real");
     } catch (e) {
       toast.error(asApiError(e).message);
     } finally {
       setSaving(false);
     }
+  }
+
+  function resetDefaults() {
+    setWeights({ ...DEFAULT_WEIGHTS });
   }
 
   return (
@@ -95,10 +126,11 @@ export default function PortfolioConfigPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>4 dimensões ponderadas</CardTitle>
+          <CardTitle>5 dimensões ponderadas</CardTitle>
           <CardDescription>
-            Os pesos são normalizados (somam 100%) antes do cálculo. Mudança aqui afeta o
-            Health Score de todos os projetos imediatamente.
+            Fórmula da <strong>spec v3.1 §10.3</strong>. Defaults ancorados em 35/25/20/10/10.
+            Soma deve ser 1.00 ± 0.01. Mudança aqui afeta o Health Score de todos os
+            projetos imediatamente.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -115,27 +147,41 @@ export default function PortfolioConfigPage() {
                   min={0}
                   max={1}
                   step={0.05}
-                  value={cfg[f.key]}
+                  value={weights[f.key]}
                   onChange={(e) =>
-                    setCfg({ ...cfg, [f.key]: Number(e.target.value || 0) } as PortfolioConfig)
+                    setWeights({
+                      ...weights,
+                      [f.key]: Number(e.target.value || 0),
+                    })
                   }
                 />
               </div>
               <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground">Normalizado</Label>
-                <p className="pt-2 font-mono text-sm">{normalize(cfg[f.key]).toFixed(1)}%</p>
+                <p className="pt-2 font-mono text-sm">{normalize(weights[f.key]).toFixed(1)}%</p>
               </div>
             </div>
           ))}
-          <div className="flex items-center justify-between border-t pt-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-4">
             <div className="text-xs text-muted-foreground">
               Soma atual:{" "}
-              <strong className="text-foreground">{total.toFixed(2)}</strong>{" "}
-              {Math.abs(total - 1) < 0.01 ? "(normalizado)" : `(será normalizado para 1.00)`}
+              <strong
+                className={
+                  withinTolerance ? "text-foreground" : "text-destructive"
+                }
+              >
+                {total.toFixed(2)}
+              </strong>{" "}
+              {withinTolerance ? "(dentro da tolerância)" : "(deve ficar em 1.00 ± 0.01)"}
             </div>
-            <Button onClick={save} disabled={saving || total <= 0}>
-              {saving ? "Salvando…" : "Salvar pesos"}
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="ghost" onClick={resetDefaults} disabled={saving}>
+                Restaurar defaults (35/25/20/10/10)
+              </Button>
+              <Button onClick={save} disabled={saving || !withinTolerance}>
+                {saving ? "Salvando…" : "Salvar pesos"}
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>

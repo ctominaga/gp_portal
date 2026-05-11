@@ -114,7 +114,18 @@ export default function PortfolioPage() {
                 </p>
               </CardHeader>
               <CardContent className="flex items-center gap-4">
-                <HealthGauge score={p.health.score} band={p.health.band} size="md" />
+                <div
+                  title={
+                    `Health Score = ${p.health.score} (${p.health.band})\n` +
+                    `RAG médio: ${p.health.components.rag_avg.toFixed(1)}\n` +
+                    `SPI: ${p.health.components.spi.toFixed(1)}\n` +
+                    `Risco inverso: ${p.health.components.risk_inverse.toFixed(1)}\n` +
+                    `Resolução: ${p.health.components.resolution_rate.toFixed(1)}\n` +
+                    `Estabilidade: ${p.health.components.stability.toFixed(1)}`
+                  }
+                >
+                  <HealthGauge score={p.health.score} band={p.health.band} size="md" />
+                </div>
                 <div className="flex-1 space-y-2 text-sm">
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-muted-foreground">Último RAG</span>
@@ -135,16 +146,19 @@ export default function PortfolioPage() {
                     )}
                     <Badge variant="outline">{p.pending_client_items} pendência(s) cliente</Badge>
                   </div>
+                  {/* 5 componentes do Health Score (spec v3.1 §10.3) */}
                   <div className="space-y-0.5 pt-1 text-xs text-muted-foreground">
                     <p>
-                      Progresso{" "}
-                      <strong className="text-foreground">{p.health.components.progress.toFixed(0)}</strong>{" "}
-                      · Riscos{" "}
-                      <strong className="text-foreground">{p.health.components.risks.toFixed(0)}</strong>{" "}
-                      · Pendências{" "}
-                      <strong className="text-foreground">{p.health.components.pendings.toFixed(0)}</strong>{" "}
-                      · Prazo{" "}
-                      <strong className="text-foreground">{p.health.components.schedule.toFixed(0)}</strong>
+                      RAG{" "}
+                      <strong className="text-foreground">{p.health.components.rag_avg.toFixed(0)}</strong>{" "}
+                      · SPI{" "}
+                      <strong className="text-foreground">{p.health.components.spi.toFixed(0)}</strong>{" "}
+                      · Risco⁻¹{" "}
+                      <strong className="text-foreground">{p.health.components.risk_inverse.toFixed(0)}</strong>{" "}
+                      · Resol.{" "}
+                      <strong className="text-foreground">{p.health.components.resolution_rate.toFixed(0)}</strong>{" "}
+                      · Estab.{" "}
+                      <strong className="text-foreground">{p.health.components.stability.toFixed(0)}</strong>
                     </p>
                   </div>
                 </div>

@@ -5,16 +5,19 @@ import uuid
 from datetime import date, datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from app.models import RAGStatus
 
 
 class HealthScoreComponents(BaseModel):
-    progress: float
-    risks: float
-    pendings: float
-    schedule: float
+    """5 componentes do Health Score (spec v3.1 §10.3), cada um em [0..100]."""
+
+    rag_avg: float
+    spi: float
+    risk_inverse: float
+    resolution_rate: float
+    stability: float
 
 
 class HealthScorePublic(BaseModel):
@@ -22,15 +25,41 @@ class HealthScorePublic(BaseModel):
     score: float
     band: Literal["green", "amber", "red"]
     components: HealthScoreComponents
+    weights_applied: dict[str, float] | None = None
     last_report_id: uuid.UUID | None
     last_report_period_end: date | None
 
 
+class HealthScoreWeights(BaseModel):
+    """Pesos dos 5 componentes do Health Score (spec v3.1 §10.3).
+
+    Defaults ancorados na spec: 35/25/20/10/10. Soma esperada = 1.00 ± 0.01.
+    """
+
+    rag_avg: float = Field(ge=0, le=1)
+    spi: float = Field(ge=0, le=1)
+    risk_inverse: float = Field(ge=0, le=1)
+    resolution_rate: float = Field(ge=0, le=1)
+    stability: float = Field(ge=0, le=1)
+
+    @model_validator(mode="after")
+    def _check_sum(self) -> "HealthScoreWeights":
+        total = (
+            self.rag_avg
+            + self.spi
+            + self.risk_inverse
+            + self.resolution_rate
+            + self.stability
+        )
+        if abs(total - 1.0) > 0.01:
+            raise ValueError(
+                f"soma dos pesos deve ser 1.00 ± 0.01 (atual: {total:.4f})"
+            )
+        return self
+
+
 class PortfolioConfigPublic(BaseModel):
-    weight_progress: float
-    weight_risks: float
-    weight_pendings: float
-    weight_schedule: float
+    health_score_weights: dict[str, float]
     updated_at: datetime
     updated_by_id: uuid.UUID | None
 
@@ -38,10 +67,9 @@ class PortfolioConfigPublic(BaseModel):
 
 
 class PortfolioConfigUpdate(BaseModel):
-    weight_progress: float = Field(ge=0, le=1)
-    weight_risks: float = Field(ge=0, le=1)
-    weight_pendings: float = Field(ge=0, le=1)
-    weight_schedule: float = Field(ge=0, le=1)
+    """Payload do PUT/PATCH /portfolio/config. Valida soma=1.00 ± 0.01."""
+
+    health_score_weights: HealthScoreWeights
 
 
 class PortfolioProjectCard(BaseModel):

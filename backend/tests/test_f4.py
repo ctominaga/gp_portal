@@ -141,18 +141,146 @@ async def _seed_full_report(
 # ---------- Health Score ----------
 
 
+# ---------- Health Score: 5 componentes da spec v3.1 §10.3 ----------
+
+
 @pytest.mark.asyncio
-async def test_health_score_default_quando_sem_report(db_session) -> None:
+async def test_health_score_componentes_neutros_quando_sem_report(db_session) -> None:
+    """Sem reports: rag_avg=50, spi=100 (sem baseline), risk_inverse=100,
+    resolution_rate=100, stability=50. Score com defaults 35/25/20/10/10."""
     project = await _seed_project(db_session, gp_email="gp1@x.com")
     breakdown = await health_score.compute_for_project(db_session, project.id)
-    # Sem report submetido → progress=50 (neutro), risks=100, pendings=100, schedule=100
-    assert breakdown.progress == 50.0
-    assert breakdown.risks == 100.0
-    assert breakdown.score >= 70  # default config dá > 70 nessa situação
+    assert breakdown.rag_avg == 50.0
+    assert breakdown.spi == 100.0
+    assert breakdown.risk_inverse == 100.0
+    assert breakdown.resolution_rate == 100.0
+    assert breakdown.stability == 50.0
+    # 50*0.35 + 100*0.25 + 100*0.20 + 100*0.10 + 50*0.10 = 77.5 → green
+    assert abs(breakdown.score - 77.5) < 0.5
+    assert breakdown.band == "green"
 
 
 @pytest.mark.asyncio
-async def test_health_score_band_red_com_riscos_criticos(db_session) -> None:
+async def test_compute_rag_avg_e_componente_independente() -> None:
+    """rag_avg é função pura sobre o report. Verde=100, Amarelo=50, Vermelho=0."""
+    from datetime import date as _d
+
+    fake_g = Report(
+        period_start=_d(2026, 5, 1),
+        period_end=_d(2026, 5, 7),
+        rag_prazo=RAGStatus.GREEN,
+        rag_escopo=RAGStatus.GREEN,
+        rag_qualidade=RAGStatus.GREEN,
+        rag_status=RAGStatus.GREEN,
+    )
+    assert health_score.compute_rag_avg(fake_g) == 100.0
+
+    fake_mix = Report(
+        period_start=_d(2026, 5, 1),
+        period_end=_d(2026, 5, 7),
+        rag_prazo=RAGStatus.GREEN,
+        rag_escopo=RAGStatus.AMBER,
+        rag_qualidade=RAGStatus.RED,
+        rag_status=RAGStatus.RED,
+    )
+    # (100 + 50 + 0) / 3 ≈ 50.0
+    assert abs(health_score.compute_rag_avg(fake_mix) - 50.0) < 0.01
+
+    assert health_score.compute_rag_avg(None) == 50.0
+
+
+@pytest.mark.asyncio
+async def test_compute_risk_inverse_e_componente_independente(db_session) -> None:
+    """4 criticais (peso 100, valor 100) → média=100 → inverse=0."""
+    project = await _seed_project(db_session, gp_email="gp-rinv@x.com")
+    report = await _seed_full_report(
+        db_session, project=project, risks=4, criticals=4
+    )
+    val = await health_score.compute_risk_inverse(db_session, report)
+    assert abs(val - 0.0) < 0.01
+
+    # Sem riscos abertos → 100
+    project2 = await _seed_project(db_session, gp_email="gp-rinv2@x.com")
+    report2 = await _seed_full_report(db_session, project=project2, risks=0)
+    val2 = await health_score.compute_risk_inverse(db_session, report2)
+    assert val2 == 100.0
+
+
+@pytest.mark.asyncio
+async def test_compute_resolution_rate_pendings_resolved_vs_total(db_session) -> None:
+    """3 abertas + 0 resolvidas → 0. Adiciona 2 resolvidas → 2/5 = 40."""
+    project = await _seed_project(db_session, gp_email="gp-res@x.com")
+    report = await _seed_full_report(db_session, project=project, pending_client=3)
+    val = await health_score.compute_resolution_rate(db_session, report)
+    assert val == 0.0
+
+    # adiciona 2 resolvidas
+    db_session.add_all(
+        [
+            PendingItem(
+                report_id=report.id,
+                description=f"resolvida-{i}",
+                owner_party="client",
+                status=PendingItemStatus.RESOLVED,
+            )
+            for i in range(2)
+        ]
+    )
+    await db_session.commit()
+    val2 = await health_score.compute_resolution_rate(db_session, report)
+    # 2 resolvidas de 5 totais (3 abertas + 2 resolvidas) = 40
+    assert abs(val2 - 40.0) < 0.5
+
+
+async def _seed_n_reports_with_rag(
+    db, project: Project, *, n: int, rags: list[str]
+) -> None:
+    """Cria n reports submetidos no mesmo projeto com os rag_status fornecidos.
+
+    Não cria propostas/baselines/deliverables — só reports, suficiente para
+    `compute_stability` que lê apenas `Report.rag_status` agregado.
+    """
+    for i in range(n):
+        rag = RAGStatus(rags[i % len(rags)])
+        r = Report(
+            project_id=project.id,
+            period_start=date(2026, 1 + i, 1),
+            period_end=date(2026, 1 + i, 15),
+            rag_prazo=rag,
+            rag_escopo=rag,
+            rag_qualidade=rag,
+            rag_status=rag,
+            status=ReportStatus.SUBMITTED,
+            submitted_at=datetime.now(UTC),
+            created_by_id=project.gp_user_id,
+        )
+        db.add(r)
+    await db.commit()
+
+
+@pytest.mark.asyncio
+async def test_compute_stability_5_reports_iguais_verde(db_session) -> None:
+    """≥5 reports todos no mesmo Verde → 100. Em Vermelho → 0. Em Amarelo → 50."""
+    project = await _seed_project(db_session, gp_email="gp-stab@x.com")
+    await _seed_n_reports_with_rag(db_session, project, n=5, rags=["G"])
+    val = await health_score.compute_stability(db_session, project)
+    assert val == 100.0
+
+
+@pytest.mark.asyncio
+async def test_compute_stability_oscilacao_da_30(db_session) -> None:
+    """5 reports oscilando G→R → oscilação = 30."""
+    project = await _seed_project(db_session, gp_email="gp-stab2@x.com")
+    await _seed_n_reports_with_rag(
+        db_session, project, n=5, rags=["G", "R", "G", "R", "G"]
+    )
+    val = await health_score.compute_stability(db_session, project)
+    assert val == 30.0
+
+
+@pytest.mark.asyncio
+async def test_health_score_band_red_com_tudo_critico(db_session) -> None:
+    """RAG=R + 4 criticais + 4 pending client + 0 done → score baixo."""
     project = await _seed_project(db_session, gp_email="gp2@x.com")
     await _seed_full_report(
         db_session,
@@ -163,8 +291,15 @@ async def test_health_score_band_red_com_riscos_criticos(db_session) -> None:
         deliverables_done=0, total_deliv=4,
     )
     breakdown = await health_score.compute_for_project(db_session, project.id)
-    assert breakdown.band == "red"
-    assert breakdown.score < 40
+    # Espera: rag_avg=0, risk_inverse=0, resolution_rate=0, stability=30 (1 report)
+    # spi varia (sem started_at fixo), mas no pior caso ainda contribui pouco.
+    # Score deve ficar em "atenção" ou "crítico" — band red OU amber é aceitavel.
+    assert breakdown.rag_avg == 0.0
+    assert breakdown.risk_inverse == 0.0
+    assert breakdown.resolution_rate == 0.0
+    assert breakdown.band in ("red", "amber")
+    # Score significativamente abaixo do projeto "tudo OK" do próximo teste
+    assert breakdown.score < 50
 
 
 @pytest.mark.asyncio
@@ -178,8 +313,47 @@ async def test_health_score_band_green_com_tudo_ok(db_session) -> None:
         deliverables_done=4, total_deliv=4,
     )
     breakdown = await health_score.compute_for_project(db_session, project.id)
+    assert breakdown.rag_avg == 100.0
+    assert breakdown.risk_inverse == 100.0
+    assert breakdown.resolution_rate == 100.0
     assert breakdown.band == "green"
     assert breakdown.score >= 70
+
+
+@pytest.mark.asyncio
+async def test_health_score_classificacao_textual_3_faixas(db_session) -> None:
+    """Confirma faixas: ≥70 green, 40-69 amber, <40 red."""
+    from app.services.health_score import _band
+
+    assert _band(85) == "green"
+    assert _band(70) == "green"
+    assert _band(69.9) == "amber"
+    assert _band(40) == "amber"
+    assert _band(39.9) == "red"
+    assert _band(0) == "red"
+
+
+@pytest.mark.asyncio
+async def test_health_score_cached_persistido_no_project_apos_submit(
+    client: AsyncClient, db_session
+) -> None:
+    """spec v3.1 §10.3: 'Recálculo a cada submissão de report' grava
+    em Project.health_score_cached."""
+    project = await _seed_project(db_session, gp_email="gp-cache@x.com")
+    # antes: cache None
+    assert project.health_score_cached is None
+
+    report = await _seed_full_report(
+        db_session,
+        project=project,
+        rag_p="G", rag_e="G", rag_q="G",
+        deliverables_done=4, total_deliv=4,
+    )
+    breakdown = await health_score.compute_for_project(db_session, project.id)
+    await health_score.cache_to_report(db_session, report, breakdown.score)
+    await db_session.refresh(project)
+    assert project.health_score_cached is not None
+    assert abs(project.health_score_cached - breakdown.score) < 0.01
 
 
 @pytest.mark.asyncio
@@ -208,20 +382,100 @@ async def test_update_portfolio_config_so_pmo(client: AsyncClient) -> None:
     pmo = await _login(client, role="PMO", email="pmo2@x.com")
     op = await _login(client, role="OPERATOR", email="op1@x.com")
 
+    valid_payload = {
+        "health_score_weights": {
+            "rag_avg": 0.35,
+            "spi": 0.25,
+            "risk_inverse": 0.20,
+            "resolution_rate": 0.10,
+            "stability": 0.10,
+        }
+    }
+    # OPERATOR não pode editar
     r = await client.put(
         "/portfolio/config",
         headers={"Authorization": f"Bearer {op}"},
-        json={"weight_progress": 0.5, "weight_risks": 0.2, "weight_pendings": 0.1, "weight_schedule": 0.2},
+        json=valid_payload,
     )
     assert r.status_code == 403
 
+    # PMO pode editar
     r2 = await client.put(
         "/portfolio/config",
         headers={"Authorization": f"Bearer {pmo}"},
-        json={"weight_progress": 0.5, "weight_risks": 0.2, "weight_pendings": 0.1, "weight_schedule": 0.2},
+        json=valid_payload,
     )
-    assert r2.status_code == 200
-    assert r2.json()["weight_progress"] == 0.5
+    assert r2.status_code == 200, r2.text
+    weights = r2.json()["health_score_weights"]
+    assert weights["rag_avg"] == 0.35
+    assert weights["stability"] == 0.10
+
+    # Soma fora de 1.00 ± 0.01 é rejeitada (validação no schema Pydantic)
+    bad_payload = {
+        "health_score_weights": {
+            "rag_avg": 0.5,
+            "spi": 0.5,
+            "risk_inverse": 0.5,
+            "resolution_rate": 0.5,
+            "stability": 0.5,
+        }
+    }
+    r3 = await client.put(
+        "/portfolio/config",
+        headers={"Authorization": f"Bearer {pmo}"},
+        json=bad_payload,
+    )
+    assert r3.status_code == 422  # Pydantic validation error
+    assert "1.00" in r3.text or "soma" in r3.text.lower()
+
+
+@pytest.mark.asyncio
+async def test_patch_portfolio_config_alias_do_put(client: AsyncClient) -> None:
+    """spec v3.1 §10.3 lista PATCH como verbo do update — alias do PUT."""
+    pmo = await _login(client, role="PMO", email="pmo-patch@x.com")
+    payload = {
+        "health_score_weights": {
+            "rag_avg": 0.40,
+            "spi": 0.20,
+            "risk_inverse": 0.20,
+            "resolution_rate": 0.10,
+            "stability": 0.10,
+        }
+    }
+    r = await client.patch(
+        "/portfolio/config",
+        headers={"Authorization": f"Bearer {pmo}"},
+        json=payload,
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["health_score_weights"]["rag_avg"] == 0.40
+
+
+@pytest.mark.asyncio
+async def test_health_score_breakdown_endpoint(
+    client: AsyncClient, db_session
+) -> None:
+    """spec v3.1 §10.3: GET /projects/{id}/health-score-breakdown retorna
+    componentes individuais para tooltip do gauge."""
+    project = await _seed_project(db_session, gp_email="gp-bd@x.com")
+    await _seed_full_report(
+        db_session,
+        project=project,
+        rag_p="G", rag_e="A", rag_q="G",
+    )
+    pmo = await _login(client, role="PMO", email="pmo-bd@x.com")
+    r = await client.get(
+        f"/projects/{project.id}/health-score-breakdown",
+        headers={"Authorization": f"Bearer {pmo}"},
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert "score" in body
+    assert "band" in body
+    assert set(body["components"].keys()) == {
+        "rag_avg", "spi", "risk_inverse", "resolution_rate", "stability"
+    }
+    assert "weights_applied" in body
 
 
 # ---------- Aprovação 3 estágios ----------
@@ -553,17 +807,27 @@ async def test_notifications_unread_count_e_mark_read(
 
 @pytest.mark.asyncio
 async def test_portfolio_config_normaliza_quando_pesos_nao_somam_1(db_session) -> None:
-    """Pesos 2/2/2/2 → soma 8; backend normaliza para 0.25 cada e calcula corretamente."""
+    """Pesos 2/2/2/2/2 → soma 10; serviço normaliza para 0.2 cada e calcula corretamente.
+
+    Defensivo: PortfolioConfig pode chegar com soma fora de 1.00 (migration de
+    dados antigos, edição direta no DB). O serviço normaliza no momento do cálculo.
+    """
     cfg = PortfolioConfig(
         id=1,
-        weight_progress=2.0,
-        weight_risks=2.0,
-        weight_pendings=2.0,
-        weight_schedule=2.0,
+        health_score_weights={
+            "rag_avg": 2.0,
+            "spi": 2.0,
+            "risk_inverse": 2.0,
+            "resolution_rate": 2.0,
+            "stability": 2.0,
+        },
     )
     db_session.add(cfg)
     await db_session.commit()
     project = await _seed_project(db_session, gp_email="gp-cfg@x.com")
     breakdown = await health_score.compute_for_project(db_session, project.id)
-    # Sem report → score = 0.25 * 50 + 0.25 * 100 + 0.25 * 100 + 0.25 * 100 = 87.5
-    assert abs(breakdown.score - 87.5) < 0.5
+    # Sem report → rag_avg=50, spi=100, risk_inv=100, res_rate=100, stab=50
+    # Com pesos normalizados 0.2 cada: 0.2*(50+100+100+100+50) = 0.2*400 = 80
+    assert abs(breakdown.score - 80.0) < 0.5
+    # Pesos retornados pelo breakdown estão normalizados
+    assert all(abs(w - 0.2) < 0.01 for w in breakdown.weights_applied.values())

@@ -62,6 +62,33 @@ Decisões tomadas durante a construção que merecem registro. Convenção: cabe
 
 **Consequência:** `/health` e `/health-check` end-to-end ainda não foram observados rodando localmente. Esse smoke fica como item explícito de "validar antes de F1.S0", quando o Docker da máquina worker for o mesmo onde o agent-runner vai rodar.
 
+## 2026-05-11 — F4 / AJUSTE B / Health Score reescrito para 5 componentes (spec v3.1 §10.3)
+
+**Contexto:** auditoria contra a v3.1 mostrou que a implementação original tinha 4 componentes (progress / risks / pendings / schedule) com fórmulas que não correspondiam às prescrições da spec — em particular `progress` (% concluído bruto) era usado em vez de "Status RAG médio", `schedule` (% sem deviation_flag) em vez de SPI real÷planejado, e Estabilidade do status RAG não era computada. Pesos defaults eram 40/20/20/20, divergentes do 35/25/20/10/10 ancorado na spec.
+
+**Decisão:**
+1. `PortfolioConfig` migra de 4 colunas (`weight_progress/risks/pendings/schedule`) para coluna única JSONB `health_score_weights` com 5 chaves (`rag_avg`, `spi`, `risk_inverse`, `resolution_rate`, `stability`). Migrations 0007 (add JSONB) + 0008 (drop colunas antigas) separadas para seguir regra de deploy seguro (add → migrate consumers → remove). Em piloto sem dados de produção, ambas aplicam de uma vez; em produção real seriam dois deploys.
+2. **Pesos antigos NÃO migram numericamente** para o novo JSONB. Os componentes mudaram semanticamente (3 dos 5), então um peso 0.40 em `weight_progress` não tem correspondência em `rag_avg`. Defaults da spec (35/25/20/10/10) ancoram a configuração; PMO reajusta na UI se necessário.
+3. Adiciona `Project.health_score_cached` (Float nullable) para listagens rápidas; `cache_to_report` atualiza tanto `Report.health_score` quanto `Project.health_score_cached` no submit.
+4. Validação Pydantic exige soma = 1.00 ± 0.01 no PUT/PATCH `/portfolio/config`. Defensivo: o serviço também normaliza no momento do cálculo.
+5. Novo endpoint `GET /projects/{id}/health-score-breakdown` retorna os 5 componentes individuais para tooltip do gauge.
+
+**Heurística da componente Estabilidade:** a spec v3.1 §10.3 prescreve "5+ reports no mesmo Verde = 100; 5+ no mesmo Vermelho = 0; oscilação = 50" e Christopher confirmou abertura para refinar matematicamente. Implementação:
+
+| Condição (últimos 5 reports submetidos) | Valor |
+|---|---|
+| ≥5 reports e TODOS no mesmo rag (worst-of-3) | 100 se Verde, 50 se Amarelo, 0 se Vermelho |
+| ≥3 reports e TODOS no mesmo rag | 60 (estabilidade mediana, ainda não maturidade plena) |
+| Qualquer oscilação ou < 3 reports | 30 (instável ou histórico curto) |
+| Sem reports | 50 (neutro — não há base) |
+
+Refinável após piloto com PMO real. O valor "50 para amarelo estável" foi mantido conforme spec mesmo parecendo contraintuitivo (estabilidade alta deveria ser positiva): a interpretação é que "estar consistentemente em alerta é diferente de estar consistentemente saudável". Score puxa para baixo só em consistente vermelho, sobe em consistente verde — alinhado com o produto.
+
+**Consequência:**
+- Cards do dashboard PMO mostram os 5 componentes (`RAG · SPI · Risco⁻¹ · Resol. · Estab.`) em vez dos 4 antigos. Tooltip no gauge tem breakdown completo.
+- Tela `/pmo/portfolio/config` tem 5 sliders + botão "Restaurar defaults (35/25/20/10/10)".
+- Scores recalculados podem mudar — esperado e correto. Os valores antigos eram errados por definição.
+
 ## 2026-05-08 — Governança / Spec consolidada v3.1 vira fonte única, deprecando v2.0, v2.1 e v3.0
 
 **Contexto:** auditoria do F4 revelou que a v3.0 (escrita como delta da v2.1) omitiu prescrições funcionais que a equipe assumia válidas (3 estágios de aprovação do PMO, fórmula Health Score com 5 componentes, retrospectiva, versionamento de escopo, modo assistido). A v2.1 nunca existiu como arquivo standalone — era delta da v2.0 mantido só na conversa. Implementação prosseguiu sem fonte única, e a tela de revisão do PMO acabou com 2 ações (não 3) e Health Score com 4 dimensões (não 5) sem registro deliberado dessa redução.

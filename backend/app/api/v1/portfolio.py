@@ -1,4 +1,7 @@
-"""Endpoints do portfólio PMO: dashboard com Health Score + config de pesos."""
+"""Endpoints do portfólio PMO: dashboard com Health Score + config de pesos.
+
+Health Score segue spec v3.1 §10.3 — 5 componentes ponderados.
+"""
 from __future__ import annotations
 
 import uuid
@@ -31,6 +34,18 @@ from app.services import health_score
 router = APIRouter(prefix="/portfolio", tags=["portfolio"])
 
 
+def _components_from_breakdown(
+    b: health_score.HealthScoreBreakdown,
+) -> HealthScoreComponents:
+    return HealthScoreComponents(
+        rag_avg=b.rag_avg,
+        spi=b.spi,
+        risk_inverse=b.risk_inverse,
+        resolution_rate=b.resolution_rate,
+        stability=b.stability,
+    )
+
+
 @router.get("", response_model=PortfolioOverview)
 async def portfolio_overview(
     _user: User = Depends(require_any_role(Role.PMO, Role.OPERATOR)),
@@ -38,7 +53,6 @@ async def portfolio_overview(
 ) -> PortfolioOverview:
     cfg = await health_score.get_config(db)
 
-    # Carrega todos os projetos + nome do GP em uma query
     rows = (
         await db.execute(
             select(Project, User.name)
@@ -49,17 +63,12 @@ async def portfolio_overview(
     cards: list[PortfolioProjectCard] = []
     for project, gp_name in rows:
         breakdown = await health_score.compute_for_project(db, project.id, cfg=cfg)
-        components = HealthScoreComponents(
-            progress=breakdown.progress,
-            risks=breakdown.risks,
-            pendings=breakdown.pendings,
-            schedule=breakdown.schedule,
-        )
         h = HealthScorePublic(
             project_id=project.id,
             score=breakdown.score,
             band=breakdown.band,
-            components=components,
+            components=_components_from_breakdown(breakdown),
+            weights_applied=breakdown.weights_applied,
             last_report_id=breakdown.last_report_id,
             last_report_period_end=breakdown.last_report_period_end,
         )
@@ -153,21 +162,24 @@ async def update_portfolio_config(
     user: User = Depends(require_any_role(Role.PMO)),
     db: AsyncSession = Depends(get_db),
 ) -> PortfolioConfigPublic:
-    total = (
-        payload.weight_progress
-        + payload.weight_risks
-        + payload.weight_pendings
-        + payload.weight_schedule
+    weights = payload.health_score_weights.model_dump()
+    cfg = await health_score.update_weights(
+        db, weights=weights, updated_by_id=user.id
     )
-    if total <= 0:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "soma dos pesos deve ser > 0")
-    cfg = await health_score.update_config(
-        db,
-        weight_progress=payload.weight_progress,
-        weight_risks=payload.weight_risks,
-        weight_pendings=payload.weight_pendings,
-        weight_schedule=payload.weight_schedule,
-        updated_by_id=user.id,
+    return PortfolioConfigPublic.model_validate(cfg, from_attributes=True)
+
+
+# Alias PATCH conforme spec v3.1 §10.3 — semanticamente um update parcial,
+# mas a Pydantic já valida o body completo (HealthScoreWeights requer os 5 pesos).
+@router.patch("/config", response_model=PortfolioConfigPublic)
+async def patch_portfolio_config(
+    payload: PortfolioConfigUpdate,
+    user: User = Depends(require_any_role(Role.PMO)),
+    db: AsyncSession = Depends(get_db),
+) -> PortfolioConfigPublic:
+    weights = payload.health_score_weights.model_dump()
+    cfg = await health_score.update_weights(
+        db, weights=weights, updated_by_id=user.id
     )
     return PortfolioConfigPublic.model_validate(cfg, from_attributes=True)
 
@@ -186,12 +198,8 @@ async def project_health(
         project_id=breakdown.project_id,
         score=breakdown.score,
         band=breakdown.band,
-        components=HealthScoreComponents(
-            progress=breakdown.progress,
-            risks=breakdown.risks,
-            pendings=breakdown.pendings,
-            schedule=breakdown.schedule,
-        ),
+        components=_components_from_breakdown(breakdown),
+        weights_applied=breakdown.weights_applied,
         last_report_id=breakdown.last_report_id,
         last_report_period_end=breakdown.last_report_period_end,
     )

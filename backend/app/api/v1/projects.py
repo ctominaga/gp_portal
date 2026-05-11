@@ -86,6 +86,30 @@ async def get_project(
     return project
 
 
+@router.get("/projects/{project_id}/health-score-breakdown")
+async def get_health_score_breakdown(
+    project_id: uuid.UUID,
+    user: User = Depends(require_any_role(*_INTERNAL_ROLES, Role.CLIENT)),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Breakdown dos 5 componentes do Health Score (spec v3.1 §10.3).
+
+    Usado pelo tooltip do gauge no dashboard PMO e por debug pelo PMO.
+    """
+    from app.services import health_score as _hs
+
+    project = await db.get(Project, project_id)
+    if not project:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "projeto não encontrado")
+    if user.role == Role.CLIENT and project.client_user_id != user.id:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "cliente não tem acesso a esse projeto")
+    if user.role == Role.GP and project.gp_user_id != user.id:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "GP não é dono desse projeto")
+
+    breakdown = await _hs.compute_for_project(db, project_id)
+    return breakdown.as_dict()
+
+
 @router.post(
     "/projects/{project_id}/proposals",
     response_model=ProposalPublic,

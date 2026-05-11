@@ -44,6 +44,10 @@ const REPORT_ID = "55555555-5555-5555-5555-555555555555";
 const BASELINE_V1_ID = "66666666-6666-6666-6666-666666666666";
 const BASELINE_V2_ID = "77777777-7777-7777-7777-777777777777";
 
+// Componentes da v3.1 §10.3 — escolhidos para refletir o cenário de cada projeto:
+//   Bradesco (G): RAG bom, SPI bom, risco controlado, pendências resolvendo, estável
+//   Itaú (A): RAG amarelo, SPI mediano, risco médio, pendências em atraso
+//   Caixa (R): RAG vermelho, SPI baixo, risco crítico, baixa resolução, instável
 const portfolioOverview = {
   projects: [
     {
@@ -54,9 +58,19 @@ const portfolioOverview = {
       gp_name: "Mariana Costa",
       health: {
         project_id: PROJECT_BRADESCO_ID,
-        score: 78,
+        score: 81.8,
         band: "green",
-        components: { progress: 82, risks: 90, pendings: 70, schedule: 70 },
+        components: {
+          rag_avg: 83,
+          spi: 82,
+          risk_inverse: 75,
+          resolution_rate: 80,
+          stability: 70,
+        },
+        weights_applied: {
+          rag_avg: 0.35, spi: 0.25, risk_inverse: 0.20,
+          resolution_rate: 0.10, stability: 0.10,
+        },
         last_report_id: REPORT_ID,
         last_report_period_end: "2026-05-05",
       },
@@ -73,9 +87,19 @@ const portfolioOverview = {
       gp_name: "Lucas Andrade",
       health: {
         project_id: PROJECT_AMARELO_ID,
-        score: 55,
+        score: 53.5,
         band: "amber",
-        components: { progress: 60, risks: 70, pendings: 40, schedule: 50 },
+        components: {
+          rag_avg: 50,
+          spi: 60,
+          risk_inverse: 55,
+          resolution_rate: 50,
+          stability: 50,
+        },
+        weights_applied: {
+          rag_avg: 0.35, spi: 0.25, risk_inverse: 0.20,
+          resolution_rate: 0.10, stability: 0.10,
+        },
         last_report_id: null,
         last_report_period_end: "2026-04-28",
       },
@@ -92,9 +116,19 @@ const portfolioOverview = {
       gp_name: "Rafael Pereira",
       health: {
         project_id: PROJECT_VERMELHO_ID,
-        score: 32,
+        score: 27.8,
         band: "red",
-        components: { progress: 40, risks: 25, pendings: 30, schedule: 35 },
+        components: {
+          rag_avg: 20,
+          spi: 35,
+          risk_inverse: 25,
+          resolution_rate: 40,
+          stability: 30,
+        },
+        weights_applied: {
+          rag_avg: 0.35, spi: 0.25, risk_inverse: 0.20,
+          resolution_rate: 0.10, stability: 0.10,
+        },
         last_report_id: null,
         last_report_period_end: "2026-04-21",
       },
@@ -105,15 +139,18 @@ const portfolioOverview = {
     },
   ],
   total_projects: 3,
-  avg_health_score: 55,
+  avg_health_score: 54.4,
   counts_by_band: { green: 1, amber: 1, red: 1 },
 };
 
 const portfolioConfig = {
-  weight_progress: 30,
-  weight_risks: 25,
-  weight_pendings: 20,
-  weight_schedule: 25,
+  health_score_weights: {
+    rag_avg: 0.35,
+    spi: 0.25,
+    risk_inverse: 0.20,
+    resolution_rate: 0.10,
+    stability: 0.10,
+  },
   updated_at: "2026-05-01T10:00:00Z",
   updated_by_id: "u-pmo-1",
 };

@@ -216,10 +216,11 @@ export interface AIInsight {
 export type HealthBand = "green" | "amber" | "red";
 
 export interface HealthScoreComponents {
-  progress: number;
-  risks: number;
-  pendings: number;
-  schedule: number;
+  rag_avg: number;
+  spi: number;
+  risk_inverse: number;
+  resolution_rate: number;
+  stability: number;
 }
 
 export interface HealthScore {
@@ -227,6 +228,7 @@ export interface HealthScore {
   score: number;
   band: HealthBand;
   components: HealthScoreComponents;
+  weights_applied?: Record<string, number> | null;
   last_report_id: string | null;
   last_report_period_end: string | null;
 }
@@ -251,11 +253,17 @@ export interface PortfolioOverview {
   counts_by_band: Record<HealthBand, number>;
 }
 
+export type HealthScoreWeightKey =
+  | "rag_avg"
+  | "spi"
+  | "risk_inverse"
+  | "resolution_rate"
+  | "stability";
+
+export type HealthScoreWeights = Record<HealthScoreWeightKey, number>;
+
 export interface PortfolioConfig {
-  weight_progress: number;
-  weight_risks: number;
-  weight_pendings: number;
-  weight_schedule: number;
+  health_score_weights: HealthScoreWeights;
   updated_at: string;
   updated_by_id: string | null;
 }
