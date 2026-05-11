@@ -62,6 +62,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import (
+    OPEN_RISK_STATUSES,
     Baseline,
     BaselineStatus,
     Deliverable,
@@ -74,7 +75,6 @@ from app.models import (
     Report,
     ReportStatus,
     Risk,
-    RiskStatus,
 )
 
 # Pesos default da spec v3.1 §10.3
@@ -315,12 +315,14 @@ async def compute_risk_inverse(
     """
     if last_report is None:
         return 100.0
+    # OPEN_RISK_STATUSES = (IDENTIFIED, MONITORING) — MITIGATED já foi tratado
+    # e MATERIALIZED virou problema; nenhum dos dois conta como "risco vivo".
     rows = list(
         (
             await db.execute(
                 select(Risk).where(
                     Risk.report_id == last_report.id,
-                    Risk.status == RiskStatus.OPEN,
+                    Risk.status.in_(OPEN_RISK_STATUSES),
                 )
             )
         ).scalars().all()
@@ -330,7 +332,8 @@ async def compute_risk_inverse(
     weighted_sum = 0.0
     total_weight = 0.0
     for r in rows:
-        val = _RISK_LEVEL_VALUE.get(r.severity.value, 50.0)
+        # `r.level` é property derivada de (probability × impact) — spec §4.2.3
+        val = _RISK_LEVEL_VALUE.get(r.level.value, 50.0)
         # peso = valor (self-weighted)
         weighted_sum += val * val
         total_weight += val

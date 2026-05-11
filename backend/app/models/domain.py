@@ -94,17 +94,88 @@ class ProgressStatus(str, enum.Enum):
     BLOCKED = "blocked"
 
 
-class Severity(str, enum.Enum):
+class RiskLevel(str, enum.Enum):
+    """Nível agregado de risco — derivado de (probability × impact).
+
+    Mantém os valores low/medium/high/critical para preservar consistência
+    com `_RISK_LEVEL_VALUE` em `health_score.py` (spec v3.1 §10.3 — Risco
+    geral inverso). Esse enum **substitui** o antigo `Severity` (renomeado;
+    valores idênticos).
+    """
+
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
     CRITICAL = "critical"
 
 
+class RiskProbability(str, enum.Enum):
+    """Eixo P da matriz de risco (spec v3.1 §4.2.3)."""
+
+    ALTA = "alta"
+    MEDIA = "media"
+    BAIXA = "baixa"
+
+
+class RiskImpact(str, enum.Enum):
+    """Eixo I da matriz de risco (spec v3.1 §4.2.3)."""
+
+    ALTO = "alto"
+    MEDIO = "medio"
+    BAIXO = "baixo"
+
+
 class RiskStatus(str, enum.Enum):
-    OPEN = "open"
+    """Ciclo de vida do risco (spec v3.1 §4.2.3).
+
+    - IDENTIFIED: recém-detectado, sem ação registrada
+    - MONITORING: já está sendo acompanhado/mitigado
+    - MITIGATED: ação reduziu a exposição
+    - MATERIALIZED: risco se realizou, virou problema (entra na retrospectiva
+      como `materialized_risks`, spec v3.1 §10.4). NÃO é "aberto" — conta
+      em outro lugar (destaque negativo, plano de ação, pendência).
+    """
+
+    IDENTIFIED = "identified"
+    MONITORING = "monitoring"
     MITIGATED = "mitigated"
-    CLOSED = "closed"
+    MATERIALIZED = "materialized"
+
+
+# Conjunto canônico de status "aberto" — risco que ainda preocupa o projeto.
+# MATERIALIZED NÃO entra: já virou problema, conta em outro lugar.
+# Usado por filtros de Health Score, dashboard PMO, portal cliente, etc.
+OPEN_RISK_STATUSES: tuple[RiskStatus, ...] = (
+    RiskStatus.IDENTIFIED,
+    RiskStatus.MONITORING,
+)
+
+
+# Matriz padrão de risk assessment 3x3 — spec v3.1 §4.2.3.
+#
+# |              | Impact: Alto | Médio  | Baixo  |
+# |--------------|--------------|--------|--------|
+# | Prob: Alta   | Critical     | High   | Medium |
+# | Prob: Média  | High         | Medium | Low    |
+# | Prob: Baixa  | Medium       | Low    | Low    |
+_RISK_LEVEL_MATRIX: dict[tuple[RiskProbability, RiskImpact], RiskLevel] = {
+    (RiskProbability.ALTA, RiskImpact.ALTO):  RiskLevel.CRITICAL,
+    (RiskProbability.ALTA, RiskImpact.MEDIO): RiskLevel.HIGH,
+    (RiskProbability.ALTA, RiskImpact.BAIXO): RiskLevel.MEDIUM,
+    (RiskProbability.MEDIA, RiskImpact.ALTO):  RiskLevel.HIGH,
+    (RiskProbability.MEDIA, RiskImpact.MEDIO): RiskLevel.MEDIUM,
+    (RiskProbability.MEDIA, RiskImpact.BAIXO): RiskLevel.LOW,
+    (RiskProbability.BAIXA, RiskImpact.ALTO):  RiskLevel.MEDIUM,
+    (RiskProbability.BAIXA, RiskImpact.MEDIO): RiskLevel.LOW,
+    (RiskProbability.BAIXA, RiskImpact.BAIXO): RiskLevel.LOW,
+}
+
+
+def compute_risk_level(
+    probability: RiskProbability, impact: RiskImpact
+) -> RiskLevel:
+    """Derivação determinística do nível de risco (spec v3.1 §4.2.3)."""
+    return _RISK_LEVEL_MATRIX[(probability, impact)]
 
 
 class ActionPlanStatus(str, enum.Enum):
@@ -384,24 +455,45 @@ class DeliveryProgress(Base):
 
 
 class Risk(Base):
+    """Risco do projeto (spec v3.1 §4.2.3).
+
+    `level` é derivado de (probability × impact) — não persistido. Spec dita
+    a matriz determinística em `compute_risk_level`. Para filtrar riscos
+    "abertos" use `OPEN_RISK_STATUSES`.
+    """
+
     __tablename__ = "risks"
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=_new_uuid)
     report_id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), ForeignKey("reports.id"))
     description: Mapped[str] = mapped_column(Text, nullable=False)
-    severity: Mapped[Severity] = mapped_column(
-        SAEnum(Severity, name="severity", native_enum=False), nullable=False
+
+    # Eixos da matriz de risco (spec v3.1 §4.2.3) — substituem `severity` único.
+    probability: Mapped[RiskProbability] = mapped_column(
+        SAEnum(RiskProbability, name="risk_probability", native_enum=False),
+        nullable=False,
     )
+    impact: Mapped[RiskImpact] = mapped_column(
+        SAEnum(RiskImpact, name="risk_impact", native_enum=False),
+        nullable=False,
+    )
+    mitigation_plan: Mapped[str | None] = mapped_column(Text, nullable=True)
+
     owner_id: Mapped[uuid.UUID | None] = mapped_column(
         Uuid(as_uuid=True), ForeignKey("users.id"), nullable=True
     )
     due_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     status: Mapped[RiskStatus] = mapped_column(
         SAEnum(RiskStatus, name="risk_status", native_enum=False),
-        default=RiskStatus.OPEN,
+        default=RiskStatus.IDENTIFIED,
         nullable=False,
     )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, nullable=False)
+
+    @property
+    def level(self) -> RiskLevel:
+        """Nível agregado derivado de probability × impact (spec v3.1 §4.2.3)."""
+        return compute_risk_level(self.probability, self.impact)
 
 
 class ActionPlan(Base):

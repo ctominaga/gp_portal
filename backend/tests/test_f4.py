@@ -24,11 +24,14 @@ from app.models import (
     Report,
     ReportStatus,
     Risk,
+    RiskImpact,
+    RiskLevel,
+    RiskProbability,
     RiskStatus,
     Role,
-    Severity,
     User,
 )
+from app.models.domain import OPEN_RISK_STATUSES, compute_risk_level
 from app.services import health_score
 
 
@@ -125,9 +128,20 @@ async def _seed_full_report(
                 percent_complete=0,
             )
         )
-    sevs = ["critical"] * criticals + ["high"] * (risks - criticals)
-    for s in sevs:
-        db.add(Risk(report_id=report.id, description="r", severity=Severity(s), status=RiskStatus.OPEN))
+    # Seed de riscos: cada `criticals` vira Alta×Alto → level=CRITICAL;
+    # demais (risks - criticals) viram Alta×Medio → level=HIGH.
+    for _ in range(criticals):
+        db.add(Risk(
+            report_id=report.id, description="r-crit",
+            probability=RiskProbability.ALTA, impact=RiskImpact.ALTO,
+            status=RiskStatus.IDENTIFIED,
+        ))
+    for _ in range(risks - criticals):
+        db.add(Risk(
+            report_id=report.id, description="r-high",
+            probability=RiskProbability.ALTA, impact=RiskImpact.MEDIO,
+            status=RiskStatus.IDENTIFIED,
+        ))
     for _ in range(pending_client):
         db.add(
             PendingItem(
@@ -204,6 +218,96 @@ async def test_compute_risk_inverse_e_componente_independente(db_session) -> Non
     report2 = await _seed_full_report(db_session, project=project2, risks=0)
     val2 = await health_score.compute_risk_inverse(db_session, report2)
     assert val2 == 100.0
+
+
+def test_compute_risk_level_matrix_3x3() -> None:
+    """spec v3.1 §4.2.3: 9 combinações de (probability × impact) → RiskLevel."""
+    cases = [
+        # (probability, impact, expected_level)
+        (RiskProbability.ALTA,  RiskImpact.ALTO,  RiskLevel.CRITICAL),
+        (RiskProbability.ALTA,  RiskImpact.MEDIO, RiskLevel.HIGH),
+        (RiskProbability.ALTA,  RiskImpact.BAIXO, RiskLevel.MEDIUM),
+        (RiskProbability.MEDIA, RiskImpact.ALTO,  RiskLevel.HIGH),
+        (RiskProbability.MEDIA, RiskImpact.MEDIO, RiskLevel.MEDIUM),
+        (RiskProbability.MEDIA, RiskImpact.BAIXO, RiskLevel.LOW),
+        (RiskProbability.BAIXA, RiskImpact.ALTO,  RiskLevel.MEDIUM),
+        (RiskProbability.BAIXA, RiskImpact.MEDIO, RiskLevel.LOW),
+        (RiskProbability.BAIXA, RiskImpact.BAIXO, RiskLevel.LOW),
+    ]
+    for prob, imp, expected in cases:
+        assert compute_risk_level(prob, imp) == expected, f"{prob}×{imp}"
+
+
+def test_risk_level_property_via_orm() -> None:
+    """Risk.level usa compute_risk_level direto da property."""
+    r = Risk(
+        description="x",
+        probability=RiskProbability.MEDIA,
+        impact=RiskImpact.ALTO,
+        status=RiskStatus.IDENTIFIED,
+    )
+    assert r.level == RiskLevel.HIGH
+
+
+@pytest.mark.asyncio
+async def test_compute_risk_inverse_ignora_materialized_e_mitigated(db_session) -> None:
+    """spec v3.1: risco MATERIALIZED virou problema (conta em outro lugar);
+    MITIGATED já foi resolvido. Nenhum dos dois entra em compute_risk_inverse."""
+    project = await _seed_project(db_session, gp_email="gp-rinv-mat@x.com")
+    report = await _seed_full_report(db_session, project=project, risks=0)
+
+    # Adiciona riscos manualmente em estados diversos
+    db_session.add_all([
+        Risk(  # entra
+            report_id=report.id, description="ainda preocupa",
+            probability=RiskProbability.ALTA, impact=RiskImpact.ALTO,
+            status=RiskStatus.IDENTIFIED,
+        ),
+        Risk(  # NÃO entra — materializou
+            report_id=report.id, description="virou problema",
+            probability=RiskProbability.ALTA, impact=RiskImpact.ALTO,
+            status=RiskStatus.MATERIALIZED,
+        ),
+        Risk(  # NÃO entra — já mitigado
+            report_id=report.id, description="resolvido",
+            probability=RiskProbability.ALTA, impact=RiskImpact.ALTO,
+            status=RiskStatus.MITIGATED,
+        ),
+    ])
+    await db_session.commit()
+
+    val = await health_score.compute_risk_inverse(db_session, report)
+    # Só o risco IDENTIFIED entra → mesmo cálculo de 1 critical aberto = 0
+    assert val == 0.0
+
+
+@pytest.mark.asyncio
+async def test_compute_risk_inverse_inclui_identified_e_monitoring(db_session) -> None:
+    """Ambos IDENTIFIED e MONITORING contam como 'risco aberto' (OPEN_RISK_STATUSES)."""
+    project = await _seed_project(db_session, gp_email="gp-rinv-mon@x.com")
+    report = await _seed_full_report(db_session, project=project, risks=0)
+
+    db_session.add_all([
+        Risk(
+            report_id=report.id, description="recém detectado",
+            probability=RiskProbability.MEDIA, impact=RiskImpact.MEDIO,  # MEDIUM
+            status=RiskStatus.IDENTIFIED,
+        ),
+        Risk(
+            report_id=report.id, description="sendo acompanhado",
+            probability=RiskProbability.BAIXA, impact=RiskImpact.BAIXO,  # LOW
+            status=RiskStatus.MONITORING,
+        ),
+    ])
+    await db_session.commit()
+
+    val = await health_score.compute_risk_inverse(db_session, report)
+    # Cálculo: levels = MEDIUM(50), LOW(25). Self-weighted:
+    # weighted_avg = (50*50 + 25*25) / (50+25) = (2500+625)/75 = 41.67
+    # inverse = 100 - 41.67 ≈ 58.3
+    assert abs(val - 58.33) < 0.5
+
+    assert set(OPEN_RISK_STATUSES) == {RiskStatus.IDENTIFIED, RiskStatus.MONITORING}
 
 
 @pytest.mark.asyncio
@@ -441,10 +545,12 @@ async def test_health_score_bradesco_scenario_documental(
                 status=st, percent_complete=pct,
             )
         )
-    # 1 risco crítico aberto + 5 pendências (4 resolved + 1 open)
+    # 1 risco crítico aberto + 5 pendências (4 resolved + 1 open).
+    # Alta×Alto → level=CRITICAL.
     db_session.add(Risk(
         report_id=last_report.id, description="Bug regulatório IRRBB",
-        severity=Severity("critical"), status=RiskStatus.OPEN,
+        probability=RiskProbability.ALTA, impact=RiskImpact.ALTO,
+        status=RiskStatus.IDENTIFIED,
     ))
     for i in range(4):
         db_session.add(PendingItem(

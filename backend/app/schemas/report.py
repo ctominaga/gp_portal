@@ -13,8 +13,10 @@ from app.models import (
     ProgressStatus,
     RAGStatus,
     ReportStatus,
+    RiskImpact,
+    RiskLevel,
+    RiskProbability,
     RiskStatus,
-    Severity,
 )
 
 # ---- linhas filhas ----
@@ -39,14 +41,20 @@ class DeliveryProgressPublic(DeliveryProgressIn):
 
 class RiskIn(BaseModel):
     description: str = Field(min_length=1)
-    severity: Severity
+    probability: RiskProbability
+    impact: RiskImpact
+    mitigation_plan: str | None = None
     owner_id: uuid.UUID | None = None
     due_date: date | None = None
-    status: RiskStatus = RiskStatus.OPEN
+    status: RiskStatus = RiskStatus.IDENTIFIED
 
 
 class RiskPublic(RiskIn):
     id: uuid.UUID
+    # level é derivado de probability × impact (spec v3.1 §4.2.3); incluído
+    # no payload de saída para o frontend exibir sem recomputar.
+    # Pydantic com from_attributes=True resolve via property `Risk.level`.
+    level: RiskLevel
     model_config = {"from_attributes": True}
 
 

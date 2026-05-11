@@ -1,4 +1,5 @@
 from .domain import (
+    OPEN_RISK_STATUSES,
     ActionPlan,
     ActionPlanStatus,
     AgentRunLog,
@@ -30,12 +31,15 @@ from .domain import (
     ReportApproval,
     ReportStatus,
     Risk,
+    RiskImpact,
+    RiskLevel,
+    RiskProbability,
     RiskStatus,
     ScopeChange,
     ScopeChangeStatus,
-    Severity,
     TaskType,
     WorkerHeartbeat,
+    compute_risk_level,
 )
 from .user import Role, User
 
@@ -57,6 +61,7 @@ __all__ = [
     "DeliveryProgress",
     "InAppNotification",
     "InsightScope",
+    "OPEN_RISK_STATUSES",
     "PendingItem",
     "PendingItemStatus",
     "PortfolioConfig",
@@ -71,12 +76,15 @@ __all__ = [
     "ReportApproval",
     "ReportStatus",
     "Risk",
+    "RiskImpact",
+    "RiskLevel",
+    "RiskProbability",
     "RiskStatus",
     "Role",
     "ScopeChange",
     "ScopeChangeStatus",
-    "Severity",
     "TaskType",
     "User",
     "WorkerHeartbeat",
+    "compute_risk_level",
 ]

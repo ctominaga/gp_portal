@@ -222,8 +222,10 @@ async def test_create_e_patch_report_idempotente(
         headers={"Authorization": f"Bearer {tok}"},
         json={
             "risks": [
-                {"description": "atraso na rotina A", "severity": "medium"},
-                {"description": "bloqueio de acesso ao DB", "severity": "high"},
+                {"description": "atraso na rotina A",
+                 "probability": "media", "impact": "medio"},
+                {"description": "bloqueio de acesso ao DB",
+                 "probability": "alta", "impact": "medio"},
             ],
             "action_plans": [
                 {"description": "agendar reunião com Bradesco"},
@@ -243,7 +245,8 @@ async def test_create_e_patch_report_idempotente(
     r5 = await client.patch(
         f"/reports/{rid}",
         headers={"Authorization": f"Bearer {tok}"},
-        json={"risks": [{"description": "bloqueio de acesso ao DB", "severity": "high"}]},
+        json={"risks": [{"description": "bloqueio de acesso ao DB",
+                         "probability": "alta", "impact": "medio"}]},
     )
     assert r5.status_code == 200
     assert len(r5.json()["risks"]) == 1

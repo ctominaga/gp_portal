@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db, require_any_role
 from app.models import (
+    OPEN_RISK_STATUSES,
     Baseline,
     BaselineStatus,
     PendingItem,
@@ -19,7 +20,6 @@ from app.models import (
     ReportApproval,
     ReportStatus,
     Risk,
-    RiskStatus,
     Role,
     User,
 )
@@ -151,7 +151,7 @@ async def _build_view(project: Project, db: AsyncSession) -> ClientProjectView:
                     await db.execute(
                         select(Risk).where(
                             Risk.report_id == r.id,
-                            Risk.status == RiskStatus.OPEN,
+                            Risk.status.in_(OPEN_RISK_STATUSES),
                         )
                     )
                 ).scalars().all()

@@ -188,10 +188,14 @@ const reportSubmitted = {
   risks: [
     {
       description: "Bug regulatório IRRBB sem solução há 12 dias",
-      severity: "critical",
+      // spec v3.1 §4.2.3 — Alta×Alto → level=critical (derivado)
+      probability: "alta",
+      impact: "alto",
+      level: "critical",
+      mitigation_plan: null,
       owner_id: null,
       due_date: "2026-05-12",
-      status: "open",
+      status: "identified",
     },
   ],
   action_plans: [],

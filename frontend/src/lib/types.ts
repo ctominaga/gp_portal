@@ -100,8 +100,17 @@ export type ReportStatus =
   | "needs_revision";
 
 export type ProgressStatus = "planned" | "in_progress" | "done" | "blocked";
+
+// Severity continua existindo para AIInsight.payload.severity (info/medium/high/critical).
+// Para Risk usar RiskLevel (derivado de probability × impact) e enums dedicados.
 export type Severity = "low" | "medium" | "high" | "critical";
-export type RiskStatus = "open" | "mitigated" | "closed";
+
+// spec v3.1 §4.2.3 — eixos da matriz de risco
+export type RiskProbability = "alta" | "media" | "baixa";
+export type RiskImpact = "alto" | "medio" | "baixo";
+export type RiskLevel = "low" | "medium" | "high" | "critical";
+export type RiskStatus = "identified" | "monitoring" | "mitigated" | "materialized";
+
 export type ActionPlanStatus = "open" | "in_progress" | "done";
 export type PendingItemStatus = "open" | "in_progress" | "resolved";
 
@@ -121,7 +130,12 @@ export interface DeliveryProgress {
 export interface Risk {
   id?: string;
   description: string;
-  severity: Severity;
+  // spec v3.1 §4.2.3 — substitui `severity` único:
+  probability: RiskProbability;
+  impact: RiskImpact;
+  // `level` é derivado no backend (Risk.level property). Frontend exibe read-only.
+  level?: RiskLevel;
+  mitigation_plan: string | null;
   owner_id: string | null;
   due_date: string | null;
   status: RiskStatus;

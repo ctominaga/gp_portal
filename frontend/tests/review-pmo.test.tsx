@@ -56,7 +56,12 @@ const fakeReport: Report = {
   approved_at: null,
   progresses: [],
   risks: [
-    { description: "Bug crítico no conector", severity: "critical", owner_id: null, due_date: null, status: "open" },
+    {
+      description: "Bug crítico no conector",
+      probability: "alta", impact: "alto", level: "critical",
+      mitigation_plan: null,
+      owner_id: null, due_date: null, status: "identified",
+    },
   ],
   action_plans: [],
   pending_items: [

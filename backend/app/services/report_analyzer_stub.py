@@ -19,6 +19,7 @@ from sqlalchemy import select
 from app.core.logging import get_logger
 from app.db.session import SessionLocal
 from app.models import (
+    OPEN_RISK_STATUSES,
     AIInsight,
     DeliveryProgress,
     InsightScope,
@@ -27,7 +28,7 @@ from app.models import (
     Project,
     Report,
     Risk,
-    RiskStatus,
+    RiskLevel,
 )
 from app.notifications.sse import emit_to_user
 
@@ -76,17 +77,19 @@ async def _process(report_id: uuid.UUID) -> None:
                 ),
                 "evidence": {"deviations": deviations, "total": len(progresses)},
             })
-        critical_risks = list(
+        # OPEN_RISK_STATUSES = IDENTIFIED+MONITORING; filtramos level=CRITICAL
+        # em Python porque level é property derivada (probability × impact).
+        open_risks = list(
             (
                 await db.execute(
                     select(Risk).where(
                         Risk.report_id == report.id,
-                        Risk.status == RiskStatus.OPEN,
-                        Risk.severity == "critical",
+                        Risk.status.in_(OPEN_RISK_STATUSES),
                     )
                 )
             ).scalars().all()
         )
+        critical_risks = [r for r in open_risks if r.level == RiskLevel.CRITICAL]
         if critical_risks:
             insights.append({
                 "kind": "critical_risk_alert",

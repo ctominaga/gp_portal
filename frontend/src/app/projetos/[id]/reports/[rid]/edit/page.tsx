@@ -152,7 +152,9 @@ export default function ReportEditPage() {
         })),
         risks: d.risks.map((r) => ({
           description: r.description,
-          severity: r.severity,
+          probability: r.probability,
+          impact: r.impact,
+          mitigation_plan: r.mitigation_plan,
           owner_id: r.owner_id,
           due_date: r.due_date,
           status: r.status,
@@ -573,35 +575,86 @@ export default function ReportEditPage() {
           <ListEditor<Risk>
             title="Riscos"
             items={draft.risks}
-            empty={{ description: "", severity: "medium", owner_id: null, due_date: null, status: "open" }}
+            empty={{
+              description: "",
+              probability: "media",
+              impact: "medio",
+              mitigation_plan: null,
+              owner_id: null,
+              due_date: null,
+              status: "identified",
+            }}
             onChange={(risks) => setDraft({ ...draft, risks })}
             disabled={isReadonly}
-            renderItem={(r, set) => (
-              <div className="grid gap-2 sm:grid-cols-[1fr_140px_120px]">
-                <Textarea
-                  rows={2}
-                  placeholder="descrição"
-                  value={r.description}
-                  onChange={(e) => set({ ...r, description: e.target.value })}
-                />
-                <Select value={r.severity} onValueChange={(v) => set({ ...r, severity: v as Risk["severity"] })}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="low">low</SelectItem>
-                    <SelectItem value="medium">medium</SelectItem>
-                    <SelectItem value="high">high</SelectItem>
-                    <SelectItem value="critical">critical</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Input
-                  type="date"
-                  value={r.due_date ?? ""}
-                  onChange={(e) => set({ ...r, due_date: e.target.value || null })}
-                />
-              </div>
-            )}
+            renderItem={(r, set) => {
+              // spec v3.1 §4.2.3 — level derivado da matriz Prob×Impact.
+              // Replica a matriz do backend (compute_risk_level) — visual only.
+              const levelOf = (p: Risk["probability"], i: Risk["impact"]): Risk["level"] => {
+                const m: Record<string, Risk["level"]> = {
+                  "alta-alto": "critical", "alta-medio": "high", "alta-baixo": "medium",
+                  "media-alto": "high", "media-medio": "medium", "media-baixo": "low",
+                  "baixa-alto": "medium", "baixa-medio": "low", "baixa-baixo": "low",
+                };
+                return m[`${p}-${i}`];
+              };
+              const lvl = levelOf(r.probability, r.impact);
+              const lvlVariant = lvl === "critical" || lvl === "high" ? "red" : lvl === "medium" ? "amber" : "outline";
+              return (
+                <div className="grid gap-2 sm:grid-cols-[1fr_120px_120px_120px]">
+                  <Textarea
+                    rows={2}
+                    placeholder="descrição do risco"
+                    value={r.description}
+                    onChange={(e) => set({ ...r, description: e.target.value })}
+                  />
+                  <div className="space-y-1">
+                    <Label className="text-xs">Probabilidade</Label>
+                    <Select
+                      value={r.probability}
+                      onValueChange={(v) => set({ ...r, probability: v as Risk["probability"] })}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="alta">Alta</SelectItem>
+                        <SelectItem value="media">Média</SelectItem>
+                        <SelectItem value="baixa">Baixa</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Impacto</Label>
+                    <Select
+                      value={r.impact}
+                      onValueChange={(v) => set({ ...r, impact: v as Risk["impact"] })}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="alto">Alto</SelectItem>
+                        <SelectItem value="medio">Médio</SelectItem>
+                        <SelectItem value="baixo">Baixo</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Nível (derivado)</Label>
+                    <div className="pt-1">
+                      <Badge variant={lvlVariant}>{lvl}</Badge>
+                    </div>
+                  </div>
+                  <div className="sm:col-span-4">
+                    <Label className="text-xs">Plano de mitigação</Label>
+                    <Textarea
+                      rows={2}
+                      placeholder="o que será feito para evitar/reduzir"
+                      value={r.mitigation_plan ?? ""}
+                      onChange={(e) =>
+                        set({ ...r, mitigation_plan: e.target.value || null })
+                      }
+                    />
+                  </div>
+                </div>
+              );
+            }}
           />
         </TabsContent>
 

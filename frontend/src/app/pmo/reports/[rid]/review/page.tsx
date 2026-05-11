@@ -242,14 +242,22 @@ export default function ReviewReportPage() {
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
             {report.risks.length === 0 && <p className="text-muted-foreground">—</p>}
-            {report.risks.map((r, i) => (
-              <div key={i} className="flex items-start gap-2">
-                <Badge variant={r.severity === "critical" || r.severity === "high" ? "red" : "amber"}>
-                  {r.severity}
-                </Badge>
-                <span>{r.description}</span>
-              </div>
-            ))}
+            {report.risks.map((r, i) => {
+              const lvl = r.level ?? "medium";
+              const variant = lvl === "critical" || lvl === "high" ? "red"
+                : lvl === "medium" ? "amber" : "outline";
+              return (
+                <div key={i} className="flex items-start gap-2">
+                  <Badge variant={variant}>{lvl}</Badge>
+                  <span className="flex-1">
+                    {r.description}
+                    <span className="ml-1 text-xs text-muted-foreground">
+                      (P:{r.probability}/I:{r.impact})
+                    </span>
+                  </span>
+                </div>
+              );
+            })}
           </CardContent>
         </Card>
         <Card>

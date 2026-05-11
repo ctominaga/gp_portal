@@ -12,12 +12,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db, require_any_role
 from app.models import (
+    OPEN_RISK_STATUSES,
     PendingItem,
     PendingItemStatus,
     Project,
     Report,
     Risk,
-    RiskStatus,
+    RiskLevel,
     Role,
     User,
 )
@@ -82,29 +83,22 @@ async def portfolio_overview(
             last_report = await db.get(Report, breakdown.last_report_id)
             if last_report:
                 last_rag = last_report.rag_status
-            open_risks = len(
-                list(
-                    (
-                        await db.execute(
-                            select(Risk).where(
-                                Risk.report_id == breakdown.last_report_id,
-                                Risk.status == RiskStatus.OPEN,
-                            )
+            # OPEN_RISK_STATUSES = IDENTIFIED+MONITORING (MATERIALIZED conta noutro lugar)
+            open_risk_rows = list(
+                (
+                    await db.execute(
+                        select(Risk).where(
+                            Risk.report_id == breakdown.last_report_id,
+                            Risk.status.in_(OPEN_RISK_STATUSES),
                         )
-                    ).scalars().all()
-                )
-            )
-            open_critical = (
-                await db.execute(
-                    select(func.count())
-                    .select_from(Risk)
-                    .where(
-                        Risk.report_id == breakdown.last_report_id,
-                        Risk.severity == "critical",
-                        Risk.status == RiskStatus.OPEN,
                     )
-                )
-            ).scalar_one()
+                ).scalars().all()
+            )
+            open_risks = len(open_risk_rows)
+            # `level` é property derivada — filtra em Python (volume baixo no piloto).
+            open_critical = sum(
+                1 for r in open_risk_rows if r.level == RiskLevel.CRITICAL
+            )
             pending_client = (
                 await db.execute(
                     select(func.count())
