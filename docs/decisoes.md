@@ -77,6 +77,14 @@ Setup atual também não atende à spec do `jump-agent-runner`, que assume `clau
 
 **Risco residual aceito:** a aposta arquitetural do agente leitor já foi validada em F1 com smokes triviais. A qualidade da extração real contra proposta complexa do Bradesco ficará conhecida na primeira semana de piloto. Se a precisão for baixa, decisão de subir para modo automático fica adiada — não há perda operacional irreversível.
 
+**Adendo 2026-05-11 (continuação)** — enums do schema `ProposalExtraction` alinhados ao prompt `proposal_reader_v1.md` que é fonte:
+
+- `DeliverableType`: 9 valores (`code_migration / documentation / knowledge_transfer / stabilization / deliverable_software / assessment / model / infrastructure / other`). A v3.1 §6.4.1 listava `Documento/Software/Serviço/Treinamento` (delta esquecido no rascunho da spec). O prompt vence porque é o que o agente realmente produz; a v3.1 §6.4.1 será atualizada na próxima edição da spec (**v3.2** — débito L).
+- `DeliverableCategory`: 5 valores incluindo `negocio` e `governanca` que faltavam.
+- `DeliverableComplexity`: 5 níveis incluindo `media` (não só baixa/baixa-media/media-alta/alta).
+- `ProposalExtraction` ganha campos top-level `confidence_score: int [0..100]` e `confidence_notes: list[str]`, com validator que exige `confidence_notes` não-vazia quando `confidence_score < 80` (prompt §5).
+- Sem migration de banco: `Baseline.payload` é JSONB, validação acontece em runtime na entrada (DTO) e na saída (publicação ao backend).
+
 ## 2026-05-11 — F4 / AJUSTE B / Health Score reescrito para 5 componentes (spec v3.1 §10.3)
 
 **Contexto:** auditoria contra a v3.1 mostrou que a implementação original tinha 4 componentes (progress / risks / pendings / schedule) com fórmulas que não correspondiam às prescrições da spec — em particular `progress` (% concluído bruto) era usado em vez de "Status RAG médio", `schedule` (% sem deviation_flag) em vez de SPI real÷planejado, e Estabilidade do status RAG não era computada. Pesos defaults eram 40/20/20/20, divergentes do 35/25/20/10/10 ancorado na spec.

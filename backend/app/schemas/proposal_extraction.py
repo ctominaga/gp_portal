@@ -40,34 +40,42 @@ SOURCE_EXCERPT_MAX = 500
 
 
 class DeliverableType(str, enum.Enum):
-    """Tipos de entregável. Valores observados no expected.json do Bradesco
-    + tipos da spec v3.1 §6.4.1 (Documento/Software/Serviço/Treinamento)."""
+    """Tipos de entregável. Fonte: prompt `proposal_reader_v1.md` §3 (item type).
 
-    # Vocabulário Bradesco (piloto)
+    A spec v3.1 §6.4.1 diverge deste enum (Documento/Software/Serviço/
+    Treinamento) e será atualizada na próxima edição da spec (v3.2). O prompt
+    é fonte porque é o que o agente realmente produz.
+    """
+
     CODE_MIGRATION = "code_migration"
     DOCUMENTATION = "documentation"
     KNOWLEDGE_TRANSFER = "knowledge_transfer"
     STABILIZATION = "stabilization"
-    # Vocabulário da spec v3.1 §6.4.1
-    DOCUMENT = "document"
-    SOFTWARE = "software"
-    SERVICE = "service"
-    TRAINING = "training"
+    DELIVERABLE_SOFTWARE = "deliverable_software"
+    ASSESSMENT = "assessment"
+    MODEL = "model"
+    INFRASTRUCTURE = "infrastructure"
+    OTHER = "other"
 
 
 class DeliverableCategory(str, enum.Enum):
-    """Eixos transversais que classificam o entregável (observados no Bradesco)."""
+    """Categorias de natureza do entregável. Fonte: prompt
+    `proposal_reader_v1.md` §3 (item category)."""
 
     TECHNICAL = "tecnico"
     TECHNICAL_REGULATORY = "tecnico-regulatorio"
+    BUSINESS = "negocio"
     TRANSVERSAL = "transversal"
+    GOVERNANCE = "governanca"
 
 
 class DeliverableComplexity(str, enum.Enum):
-    """Faixa de complexidade — termos PT-BR observados no expected.json."""
+    """Faixa de complexidade. Fonte: prompt `proposal_reader_v1.md` §3
+    (item complexity) — escala 5 níveis em PT-BR."""
 
     LOW = "baixa"
     LOW_MEDIUM = "baixa-media"
+    MEDIUM = "media"
     MEDIUM_HIGH = "media-alta"
     HIGH = "alta"
 
@@ -109,10 +117,12 @@ class ExtractedProject(BaseModel):
 
 
 class ProposalExtraction(BaseModel):
-    """Resultado canônico do agente leitor (spec v3.1 §6.4.1).
+    """Resultado canônico do agente leitor (prompt `proposal_reader_v1.md`).
 
-    Cross-field validators garantem coerência interna do extração:
+    Cross-field validators garantem coerência interna da extração:
     referências de phase válidas, contagem por fase coerente, ids únicos.
+    Validador adicional exige `confidence_notes` não-vazia quando
+    `confidence_score < 80` (prompt §5).
     """
 
     project: ExtractedProject
@@ -120,6 +130,21 @@ class ProposalExtraction(BaseModel):
     deliverables: Annotated[list[ExtractedDeliverable], Field(min_length=1)]
     out_of_scope: list[str] = Field(default_factory=list)
     key_premises: list[str] = Field(default_factory=list)
+    # Auto-avaliação de confiança da extração (prompt §5)
+    confidence_score: Annotated[int, Field(ge=0, le=100)]
+    confidence_notes: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def _check_confidence_notes_when_low(self) -> "ProposalExtraction":
+        # Prompt §5: "Baixe quando... Estado deve ser explicado em confidence_notes
+        # (especialmente quando < 80)". Tornamos isso obrigatório: score baixo
+        # sem notas é sinal de extração desatenta.
+        if self.confidence_score < 80 and not self.confidence_notes:
+            raise ValueError(
+                f"confidence_score={self.confidence_score} < 80 exige pelo "
+                f"menos uma entrada em confidence_notes explicando a baixa"
+            )
+        return self
 
     @model_validator(mode="after")
     def _check_phase_refs(self) -> "ProposalExtraction":
