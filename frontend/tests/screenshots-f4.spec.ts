@@ -58,7 +58,8 @@ const portfolioOverview = {
       gp_name: "Mariana Costa",
       health: {
         project_id: PROJECT_BRADESCO_ID,
-        score: 81.8,
+        // 83*0.35 + 82*0.25 + 75*0.20 + 80*0.10 + 70*0.10 = 79.6
+        score: 79.6,
         band: "green",
         components: {
           rag_avg: 83,
@@ -139,7 +140,8 @@ const portfolioOverview = {
     },
   ],
   total_projects: 3,
-  avg_health_score: 54.4,
+  // Média de (79.6 + 53.5 + 27.8) / 3 = 53.6
+  avg_health_score: 53.6,
   counts_by_band: { green: 1, amber: 1, red: 1 },
 };
 
