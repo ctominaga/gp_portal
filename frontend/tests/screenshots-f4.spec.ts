@@ -573,30 +573,64 @@ test.describe("Screenshots F4", () => {
     });
   });
 
-  test("F4-5: Comparação de propostas v1 vs v2", async ({ page }) => {
+  test("F4-5: Comparação de propostas v1 vs v2 (atualizado em F5.2: role=PMO + faixa de transição)", async ({ page }) => {
+    // Contexto pós-F5.2: PMO está revisando a transição v1→v2. Há ScopeChanges
+    // PROPOSED apontando para o baseline_to, então a faixa amarela com os
+    // botões "Aprovar transição" / "Rejeitar transição" deve aparecer no topo.
     await page.route(`${API}/projects/${PROJECT_BRADESCO_ID}/baselines`, async (r) => {
       await r.fulfill({ json: baselinesList });
     });
     await page.route(`${API}/client/diff/${BASELINE_V1_ID}/${BASELINE_V2_ID}`, async (r) => {
       await r.fulfill({ json: baselineDiff });
     });
-    // Use GP user para ter permissão no diff
-    await page.route(`${API}/auth/me`, async (route) => {
-      await route.fulfill({
-        json: {
-          id: "u-gp-1",
-          name: "Mariana Costa",
-          email: "mariana@jumplabel.com.br",
-          role: "GP",
-          created_at: new Date().toISOString(),
-        },
-      });
-    });
+    // ScopeChanges PROPOSED para baseline_to=BASELINE_V2_ID → dispara faixa PMO.
+    await page.route(
+      new RegExp(`${API}/projects/${PROJECT_BRADESCO_ID}/scope-changes.*`),
+      async (r) => {
+        await r.fulfill({
+          json: [
+            {
+              id: "sc-d-007", project_id: PROJECT_BRADESCO_ID,
+              description: "Adicionado: d-007 · Migração rotina TFS-X",
+              baseline_from_id: BASELINE_V1_ID, baseline_to_id: BASELINE_V2_ID,
+              change_type: "added", deliverable_code: "d-007", status: "proposed",
+              requested_at: "2026-05-09T10:00:00Z",
+              decided_at: null, approved_by_id: null,
+            },
+            {
+              id: "sc-d-008", project_id: PROJECT_BRADESCO_ID,
+              description: "Adicionado: d-008 · Dashboard de capital regulatório",
+              baseline_from_id: BASELINE_V1_ID, baseline_to_id: BASELINE_V2_ID,
+              change_type: "added", deliverable_code: "d-008", status: "proposed",
+              requested_at: "2026-05-09T10:00:00Z",
+              decided_at: null, approved_by_id: null,
+            },
+            {
+              id: "sc-d-005", project_id: PROJECT_BRADESCO_ID,
+              description: "Removido: d-005 · Conector legado SAS",
+              baseline_from_id: BASELINE_V1_ID, baseline_to_id: BASELINE_V2_ID,
+              change_type: "removed", deliverable_code: "d-005", status: "proposed",
+              requested_at: "2026-05-09T10:00:00Z",
+              decided_at: null, approved_by_id: null,
+            },
+            {
+              id: "sc-d-003", project_id: PROJECT_BRADESCO_ID,
+              description: "Modificado: d-003 (complexity: media → alta)",
+              baseline_from_id: BASELINE_V1_ID, baseline_to_id: BASELINE_V2_ID,
+              change_type: "modified", deliverable_code: "d-003", status: "proposed",
+              requested_at: "2026-05-09T10:00:00Z",
+              decided_at: null, approved_by_id: null,
+            },
+          ],
+        });
+      },
+    );
 
-    await page.goto(`/projetos/${PROJECT_BRADESCO_ID}/diff`, {
+    await page.goto(`/projetos/${PROJECT_BRADESCO_ID}/diff?new=${BASELINE_V2_ID}&base=${BASELINE_V1_ID}`, {
       waitUntil: "domcontentloaded",
     });
     await page.waitForSelector("text=Comparar baselines");
+    await page.waitForSelector("text=Aprovar transição");
     await page.waitForSelector("text=Migração rotina TFS-X");
     await page.waitForTimeout(400);
     await assertReactUiRendered(page);

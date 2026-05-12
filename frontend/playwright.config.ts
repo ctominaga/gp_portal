@@ -6,6 +6,7 @@ export default defineConfig({
     "**/e2e/**/*.spec.ts",
     "**/screenshots.spec.ts",
     "**/screenshots-f4.spec.ts",
+    "**/screenshots-f52.spec.ts",
   ],
   fullyParallel: true,
   forbidOnly: !!process.env.CI,

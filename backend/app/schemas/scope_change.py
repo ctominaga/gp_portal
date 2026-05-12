@@ -13,7 +13,7 @@ import uuid
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 
 from app.models import ScopeChangeStatus, ScopeChangeType
 
@@ -43,10 +43,30 @@ class TransitionDecisionPayload(BaseModel):
     Aprovação é em **batch**: todos os ScopeChanges PROPOSED com
     `baseline_to_id = {id}` mudam de status juntos. Não há aprovação
     item-a-item (vide spec v3.1 §10.5 + decisão Q1 do plano F5.2).
+
+    Validação F5.2 commit 5 (ADR em `docs/decisoes.md`):
+      - `decision == "reject"` exige `comment` não-vazio (após strip).
+        GP precisa saber por que ressubmeter; sem justificativa, a
+        rejeição é uma caixa-preta. Pydantic levanta ValidationError
+        (FastAPI converte em 422).
+      - `decision == "approve"` aceita `comment` vazio ou ausente —
+        aprovação tácita é caso de uso legítimo (PMO acompanhou
+        a evolução em reunião).
     """
 
     decision: Literal["approve", "reject"]
     comment: str | None = None
+
+    @model_validator(mode="after")
+    def _require_reject_comment(self) -> "TransitionDecisionPayload":
+        if self.decision == "reject":
+            if not self.comment or not self.comment.strip():
+                raise ValueError(
+                    "comment é obrigatório (não-vazio após strip) quando "
+                    "decision='reject' — GP precisa da justificativa para "
+                    "ressubmeter."
+                )
+        return self
 
 
 class TransitionResult(BaseModel):

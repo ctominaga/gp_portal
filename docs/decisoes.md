@@ -133,3 +133,19 @@ Refinável após piloto com PMO real. O valor "50 para amarelo estável" foi man
 **Decisão:** todo `page.route()` em specs Playwright deve usar URL absoluta com escopo do API server (constante `API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"`), não glob amplo `**/...`. Aplicado preventivamente também em `screenshots.spec.ts` (F3.5), que estava OK por sorte de naming (frontend usa `/projetos`, backend `/projects`) mas era frágil.
 
 **Consequência:** mocks deixam de competir com o roteamento do Next. Adicionado helper `assertReactUiRendered(page)` no spec F4 (verifica >=1 `<h1>`) chamado antes de cada `page.screenshot()`, com teste negativo que injeta o bug e confirma que o helper rejeita. Próximos specs Playwright que usem `page.route()` devem seguir essa convenção.
+
+## 2026-05-12 — F5.2 / Comment obrigatório em reject de transição: validação Pydantic
+
+**Contexto:** `POST /baselines/{id}/transition` com `decision="reject"` aceitava `comment=null` ou `comment=""`. Sem justificativa, a rejeição é uma caixa-preta para o GP — ele recebe a notificação "PMO rejeitou", mas não sabe o quê ajustar. UI já fazia validação client-side (botão Confirmar desabilitado sem texto), mas chamada direta à API contornava.
+
+**Decisão:** validação em `TransitionDecisionPayload` via `@model_validator(mode="after")`. `decision == "reject"` exige `comment` não-vazio (após strip). `decision == "approve"` mantém `comment` opcional — aprovação tácita é caso de uso legítimo (PMO acompanhou em reunião e libera sem nota interna). FastAPI converte `ValidationError` em 422 automaticamente.
+
+**Consequência:** UI continua validando client-side (UX imediato), backend reforça (defesa em profundidade). Testes: `test_reject_empty_comment_returns_422`, `test_reject_whitespace_only_comment_returns_422`, `test_reject_with_valid_comment_returns_200`, `test_approve_without_comment_returns_200`. Não há migração — escrita histórica seguia o caminho da UI, então não há dados malformados a corrigir.
+
+## 2026-05-12 — F5.2 / Convenção SAEnum: persistência usa e.name, não e.value
+
+**Contexto:** durante a migration 0014 (F5.2 commit 1), backfill inseriu `change_type='added'` (lowercase, igual ao `e.value` definido em Python). ORM falhava ao ler com `LookupError`. Inspeção empírica de `SAEnum._object_lookup` revelou que sem `values_callable`, SAEnum persiste e lê o **name** do membro (`'ADDED'`, UPPERCASE). Vale para todos os enums do projeto que herdam de `(str, enum.Enum)`.
+
+**Decisão:** documentar convenção em `docs/dev_notes.md` (criado nesta sessão). Todo SQL literal em migration que mexe em coluna de enum deve usar o `e.name` (UPPERCASE). Reescrita por meio do ORM segue funcionando direto com membros do enum Python. Não introduzir `values_callable` retroativamente — quebraria todos os dados existentes.
+
+**Consequência:** débito P3 `F5.2.a` registrado em `conformidade-v3.1.md`. Migrations futuras que mexam em enum devem consultar `dev_notes.md` antes. Server_defaults em SQL atuais (`server_default="active"`, etc.) são inconsistentes com essa convenção mas não causam bug porque o ORM sempre passa o membro Python explicitamente — server_default só dispara em insert sem valor, que não ocorre em código atual.

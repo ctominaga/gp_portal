@@ -1,8 +1,8 @@
 # Fase 5 — Progresso
 
-**Status atual:** F5.1 fechada. F5.2 a F5.9 pendentes. Pronto para retomada.
+**Status atual:** F5.1 e F5.2 fechadas. F5.3 a F5.9 pendentes. Pronto para retomada.
 
-**Última atualização:** 2026-05-11
+**Última atualização:** 2026-05-12
 
 ---
 
@@ -36,13 +36,73 @@ Alinhamento dos 4 modelos (Risk, ActionPlan, Deliverable, PendingItem) à spec v
 
 ---
 
-## F5.2 a F5.9 — Pendentes
+## F5.2 — Versionamento de escopo ✅ FECHADA
+
+Fluxo end-to-end de mudança formal de escopo entre versões de proposta
+(v(N) → v(N+1)): GP faz upload v2 → worker importa + cria baseline DRAFT +
+ScopeChanges PROPOSED via `diff_baselines` → PMO revisa em `/pmo/scope-changes`
+ou `/projetos/[id]/diff` e aprova/rejeita a transição inteira (batch).
+
+### Commits
+
+| # | Commit | Conteúdo |
+|---|---|---|
+| 1 | `cd8fc45` | Modelo ScopeChange refatorado (+baseline_from_id, +baseline_to_id, +change_type, +approved_by_id) + BaselineStatus.REJECTED + migration `0014_scope_change_refactor` com backfill |
+| 2 | `1b85e09` | `POST /baselines/{id}/transition` (PMO, batch approve/reject) + gate em activate_baseline para v2+ (GP → 403) + notify_transition_decision + GETs por projeto e detalhe |
+| 3 | `886b74c` | `diff_baselines` cobre MODIFIED (added/removed/modified) + idempotência tripla `(baseline_to_id, change_type, deliverable_code)` + migration `0015_scope_change_deliverable_code` |
+| 4 | `c92b076` | Frontend: rota `/pmo/scope-changes`, faixa PMO + modais em `/diff`, badge no portfolio, GET portfólio-wide, `pending_transitions_count`, types TS, vitest |
+| 5 | (este commit) | Testes pytest dos endpoints de commit 4 + validação Pydantic do reject + Playwright + dev_notes + conformidade |
+
+### Métricas (evolução durante F5.2)
+
+| Métrica | Início F5.2 | Commit 1 | Commit 2 | Commit 3 | Commit 4 | **Commit 5 (final)** |
+|---|---|---|---|---|---|---|
+| pytest backend | 119 | 121 | 129 | 138 | 138 | **150** |
+| Cobertura backend total | 72.76% | 73% | 72% | 72% | 72% | **72%** |
+| vitest frontend | 76 | 76 | 76 | 76 | 84 | **84** |
+
+### Decisões respondidas (Q1-Q5 do início da sub-fase)
+
+| # | Pergunta | Resposta |
+|---|---|---|
+| **Q1** | Granularidade da aprovação | Por transição (batch) — todos os ScopeChanges com `baseline_to_id=this` mudam juntos. Aprovação 1-a-1 cria estado parcial absurdo. |
+| **Q2** | Quando PMO rejeita, o que acontece com o baseline novo? | Adicionar `BaselineStatus.REJECTED` (preserva rastreabilidade). |
+| **Q3** | Estender `diff_baselines` para `changed`? | Sim — fecha gap §10.5 literal ("adicionado/removido/**alterado**"). |
+| **Q4** | Bloquear GP de `activate_baseline` em v2+? | Sim, 403 com mensagem orientando `POST /baselines/{id}/transition` (role PMO). v1 continua livre para GP. |
+| **Q5** | UI PMO — rota dedicada + botões em `/diff` ou só um? | Ambos. `/pmo/scope-changes` lista portfólio-wide; `/diff` tem botões inline para revisão; badge no `/pmo/portfolio` atalha direto. |
+
+### Decisões internas adicionais (durante construção)
+
+- **APPROVED é skip:** approve faz transição direta `PROPOSED → IMPLEMENTED`, pulando o estado `APPROVED` do enum (commit 2). Atomicidade da decisão+implementação no MVP. Enum mantém `APPROVED` reservado para futuro caso desacoplado.
+- **Description estruturada do MODIFIED** em formato single-line `"Modificado: {code} (field1: old → new, field2: old → new)"` (commit 3). Renderiza bem em telas-lista; UI rica consome `changed_fields` separadamente.
+- **UX pós-decisão = navegação para `/pmo/portfolio`** em vez de refresh in-place (commit 4). PMO geralmente processa fila; toast carrega o feedback.
+- **`pending_transitions_count` via 1 query agregada** `GROUP BY project_id` em vez de N+1 (commit 4).
+- **Comment obrigatório em reject** validado em duas camadas: client-side (commit 4, disabled no botão) e Pydantic server-side (commit 5, via `model_validator`). ADR em `decisoes.md`.
+
+### Conformidade — itens marcados em `docs/conformidade-v3.1.md`
+
+- ~~E. ScopeChange: faltam baseline_from_id/to_id/change_type/approved_by~~ → endereçado em F5.2 commits 1-5
+- Linha "Versionamento de escopo" §10.5 da tabela principal: ⚠️ → ✅
+
+### Débitos menores P3 do F5.2
+
+Todos em `docs/conformidade-v3.1.md` seção "Débitos menores de F5.2 (P3)":
+
+| ID | Item | Onde |
+|---|---|---|
+| **F5.2.a** | Convenção SAEnum sem `values_callable` persiste `e.name` UPPERCASE | Aplica a todos os enums; documentado em `dev_notes.md` |
+| **F5.2.b** | Testes de migration usam `importlib` (SQLite), não `alembic upgrade` real | `tests/test_migration_0014_*` e `test_migration_0015_*` |
+| **F5.2.c** | Remover coluna `impact_baseline_id` legacy | `ScopeChange.impact_baseline_id`; migration de remoção em F6 |
+| **F5.2.d** | `pytest-cov` subreporta cobertura de funções async | `portfolio.py` e `scope_changes.py` em 47%/50% apesar de exercício explícito; total 72% OK |
+
+---
+
+## F5.3 a F5.9 — Pendentes
 
 Conforme plano em `docs/fase-5-plano.md`. Ordem recomendada (conservadora: schemas estáveis antes de LGPD/deploy):
 
 | # | Sub-fase | Estimativa | Bloqueia / é bloqueada por |
 |---|---|---|---|
-| F5.2 | Versionamento de escopo (ScopeChange + fluxo aprovação PMO) | ~25k | livre — caminho crítico para deploy completo |
 | F5.3 | Retrospectiva (`POST /projects/{id}/close` + 4 campos + UI) | ~30k | bloqueia F5.5 (agente portfólio usa retrospectivas) |
 | F5.4 | Modo de Report Assistido por IA | ~25k | livre |
 | F5.5 | Agente de Inteligência Cruzada (heurística inicial + flag) | ~30k | depende de F5.3 |
@@ -116,4 +176,4 @@ bc32d04 fix(backend): alinhar SOURCE_EXCERPT_MAX ao prompt v1 R4
 
 ---
 
-*Documento atualizado ao fim de cada sub-fase de F5 fechada. Próximo update: ao fim de F5.2.*
+*Documento atualizado ao fim de cada sub-fase de F5 fechada. Próximo update: ao fim de F5.3.*
