@@ -197,6 +197,51 @@ async def _build_view(project: Project, db: AsyncSession) -> ClientProjectView:
 # ---------- diff de propostas / baselines ----------
 
 
+# Campos do Deliverable considerados "relevantes" para sinalizar mudança de
+# escopo entre baselines (F5.2 commit 3 — fecha gap §10.5 "alterado"). Cada
+# divergência num desses campos gera um ScopeChange MODIFIED. Campos como
+# `description`, `source_excerpt` e `order_index` são propositalmente
+# ignorados (texto livre / re-extração / re-ordenação ≠ mudança de escopo).
+_MODIFIED_TRACKED_FIELDS: tuple[str, ...] = (
+    "title",
+    "phase",
+    "type",
+    "category",
+    "complexity",
+    "due_date",
+    "acceptance_criteria",
+    "dependencies",
+)
+
+
+def _fmt_field_value(v: object) -> str:
+    """Renderização canônica para a description estruturada do MODIFIED."""
+    if v is None:
+        return "—"
+    if hasattr(v, "value"):  # enum (DeliverableComplexity, etc.)
+        return str(v.value)
+    if isinstance(v, list):
+        return "[" + ", ".join(str(x) for x in v) + "]"
+    return str(v)
+
+
+def _compute_modified_fields(d_old, d_new) -> list[dict[str, str | None]]:
+    """Lista os campos relevantes que divergem entre dois Deliverables.
+
+    Retorno: [{"field": "complexity", "old": "media", "new": "alta"}, ...].
+    Lista vazia significa "nada relevante mudou" — não criar ScopeChange.
+    """
+    out: list[dict[str, str | None]] = []
+    for f in _MODIFIED_TRACKED_FIELDS:
+        old = getattr(d_old, f)
+        new = getattr(d_new, f)
+        if old != new:
+            out.append(
+                {"field": f, "old": _fmt_field_value(old), "new": _fmt_field_value(new)}
+            )
+    return out
+
+
 async def compute_baseline_diff(
     db: AsyncSession,
     *,
@@ -207,6 +252,10 @@ async def compute_baseline_diff(
 
     Não cria ScopeChange. Use `diff_baselines` para criar ScopeChange (chamado
     pelo worker quando uma nova baseline é gerada).
+
+    Cada item de `changed` ganha um campo `changed_fields` listando o que
+    divergiu — usado pela description estruturada do MODIFIED e disponível
+    para a UI exibir o detalhe quando o PMO está revisando a transição.
     """
     from app.models import Deliverable
 
@@ -246,11 +295,8 @@ async def compute_baseline_diff(
             })
         else:
             d_old = by_code_old[code]
-            if (
-                d_old.title != d_new.title
-                or d_old.phase != d_new.phase
-                or d_old.complexity != d_new.complexity
-            ):
+            mod_fields = _compute_modified_fields(d_old, d_new)
+            if mod_fields:
                 changed.append({
                     "kind": "changed",
                     "code": code,
@@ -260,6 +306,7 @@ async def compute_baseline_diff(
                     "phase_new": d_new.phase,
                     "complexity_old": d_old.complexity.value if d_old.complexity else None,
                     "complexity_new": d_new.complexity.value if d_new.complexity else None,
+                    "changed_fields": mod_fields,
                 })
 
     for code, d_old in by_code_old.items():
@@ -284,6 +331,16 @@ async def compute_baseline_diff(
     }
 
 
+def _format_modified_description(code: str, fields: list[dict[str, str | None]]) -> str:
+    """Description estruturada do MODIFIED — listada para auditoria humana
+    e mostrada como fallback quando a UI ainda não consome `changed_fields`.
+
+    Ex.: 'Modificado: d-003 (complexity: media → alta, due_date: 2026-03-15 → 2026-04-20)'
+    """
+    parts = [f"{f['field']}: {f['old']} → {f['new']}" for f in fields]
+    return f"Modificado: {code} ({', '.join(parts)})"
+
+
 async def diff_baselines(
     db: AsyncSession,
     *,
@@ -291,56 +348,97 @@ async def diff_baselines(
     base_baseline: Baseline,
     new_baseline: Baseline,
 ) -> dict:
-    """Compara dois baselines e cria um ScopeChange por added/removed.
+    """Compara dois baselines e cria 1 ScopeChange por entregável afetado.
 
-    Idempotente: só cria ScopeChange para itens que ainda não têm registro
-    correspondente para `new_baseline.id`. Chamado pelo worker quando uma v2+
-    é gerada e (com idempotência garantida) pode ser chamado por endpoints.
+    F5.2 commit 3 fecha gap §10.5:
+      - Cobre os 3 change_types: ADDED, REMOVED, MODIFIED (antes só ADDED/REMOVED)
+      - Preenche baseline_from_id/baseline_to_id/change_type/deliverable_code
+        (campos novos do commit 1; impact_baseline_id legacy permanece NULL
+        nos registros criados aqui)
+      - Idempotência por tripla (baseline_to_id, change_type, deliverable_code)
+        em vez de description literal — robusto a mudanças de formato textual.
+
+    Chamado pelo worker quando proposta v2+ é importada (worker_stub.py).
     """
-    from app.models import ScopeChange
+    from app.models import ScopeChange, ScopeChangeStatus, ScopeChangeType
 
     diff = await compute_baseline_diff(
         db, base_baseline=base_baseline, new_baseline=new_baseline
     )
-    existing_descriptions: set[str] = set(
+
+    existing_keys: set[tuple[str, str | None]] = set(
         (
             await db.execute(
-                select(ScopeChange.description).where(
-                    ScopeChange.impact_baseline_id == new_baseline.id
+                select(ScopeChange.change_type, ScopeChange.deliverable_code).where(
+                    ScopeChange.baseline_to_id == new_baseline.id
                 )
             )
-        ).scalars().all()
+        ).all()
     )
 
-    scope_changes_created = 0
-    for entry in diff["added"]:
-        desc = f"Adicionado: {entry['code']} · {entry['title_new']}"
-        if desc in existing_descriptions:
-            continue
-        db.add(
-            ScopeChange(
-                project_id=project_id,
-                description=desc,
-                impact_baseline_id=new_baseline.id,
-            )
-        )
-        scope_changes_created += 1
-    for entry in diff["removed"]:
-        desc = f"Removido: {entry['code']} · {entry['title_old']}"
-        if desc in existing_descriptions:
-            continue
-        db.add(
-            ScopeChange(
-                project_id=project_id,
-                description=desc,
-                impact_baseline_id=new_baseline.id,
-            )
-        )
-        scope_changes_created += 1
+    def _seen(change_type: ScopeChangeType, code: str | None) -> bool:
+        # SAEnum persiste e.name (vide migration 0014 + dev_notes); comparar
+        # contra a tupla bruta lida do banco passa pelo SAEnum process_result
+        # — então enum_value já vem como o membro Python. Comparação direta.
+        return (change_type, code) in existing_keys
 
-    if scope_changes_created:
+    created = 0
+    for entry in diff["added"]:
+        code = entry["code"]
+        if _seen(ScopeChangeType.ADDED, code):
+            continue
+        db.add(
+            ScopeChange(
+                project_id=project_id,
+                description=f"Adicionado: {code} · {entry['title_new']}",
+                change_type=ScopeChangeType.ADDED,
+                deliverable_code=code,
+                baseline_from_id=base_baseline.id,
+                baseline_to_id=new_baseline.id,
+                status=ScopeChangeStatus.PROPOSED,
+            )
+        )
+        created += 1
+
+    for entry in diff["removed"]:
+        code = entry["code"]
+        if _seen(ScopeChangeType.REMOVED, code):
+            continue
+        db.add(
+            ScopeChange(
+                project_id=project_id,
+                description=f"Removido: {code} · {entry['title_old']}",
+                change_type=ScopeChangeType.REMOVED,
+                deliverable_code=code,
+                baseline_from_id=base_baseline.id,
+                baseline_to_id=new_baseline.id,
+                status=ScopeChangeStatus.PROPOSED,
+            )
+        )
+        created += 1
+
+    for entry in diff["changed"]:
+        code = entry["code"]
+        if _seen(ScopeChangeType.MODIFIED, code):
+            continue
+        db.add(
+            ScopeChange(
+                project_id=project_id,
+                description=_format_modified_description(
+                    code, entry["changed_fields"]
+                ),
+                change_type=ScopeChangeType.MODIFIED,
+                deliverable_code=code,
+                baseline_from_id=base_baseline.id,
+                baseline_to_id=new_baseline.id,
+                status=ScopeChangeStatus.PROPOSED,
+            )
+        )
+        created += 1
+
+    if created:
         await db.commit()
-    return {**diff, "scope_changes_created": scope_changes_created}
+    return {**diff, "scope_changes_created": created}
 
 
 @router.get("/diff/{base_baseline_id}/{new_baseline_id}")

@@ -26,6 +26,7 @@ class ScopeChangePublic(BaseModel):
     project_id: uuid.UUID
     description: str
     change_type: ScopeChangeType | None
+    deliverable_code: str | None
     baseline_from_id: uuid.UUID | None
     baseline_to_id: uuid.UUID | None
     status: ScopeChangeStatus

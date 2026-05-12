@@ -748,6 +748,12 @@ class ScopeChange(Base):
         nullable=False,
     )
 
+    # `deliverable_code` identifica o item afetado (ex: 'd-001'). Usado na
+    # idempotência tripla de `diff_baselines` (commit 3): chave única lógica
+    # = (baseline_to_id, change_type, deliverable_code). Nullable para suportar
+    # ScopeChange legacy ou cenários onde o entregável não tem `code`.
+    deliverable_code: Mapped[str | None] = mapped_column(String(50), nullable=True)
+
     # DEPRECATED — substituído por `baseline_to_id`. Migração 0014 fez backfill.
     # Mantido para não quebrar leituras eventuais até remoção em commit futuro.
     impact_baseline_id: Mapped[uuid.UUID | None] = mapped_column(

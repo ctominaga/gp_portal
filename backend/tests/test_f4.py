@@ -1676,7 +1676,10 @@ async def test_diff_de_baselines_detecta_added_removed_changed(
     # (ou via chamada explícita a `diff_baselines`).
     assert "scope_changes_created" not in body
 
-    # Idempotência: chamar diff_baselines duas vezes não duplica ScopeChanges
+    # Idempotência: chamar diff_baselines duas vezes não duplica ScopeChanges.
+    # F5.2 commit 3: diff_baselines passou a cobrir MODIFIED (changed), então
+    # neste cenário cria 3 ScopeChanges (1 added + 1 removed + 1 modified)
+    # e usa baseline_to_id como chave de leitura (impact_baseline_id é legacy).
     from app.api.v1.client_portal import diff_baselines
     from app.models import ScopeChange
     from sqlalchemy import select as _select
@@ -1684,17 +1687,17 @@ async def test_diff_de_baselines_detecta_added_removed_changed(
     first = await diff_baselines(
         db_session, project_id=project.id, base_baseline=b1, new_baseline=b2
     )
-    assert first["scope_changes_created"] == 2
+    assert first["scope_changes_created"] == 3
     second = await diff_baselines(
         db_session, project_id=project.id, base_baseline=b1, new_baseline=b2
     )
     assert second["scope_changes_created"] == 0  # idempotente
     rows = (
         await db_session.execute(
-            _select(ScopeChange).where(ScopeChange.impact_baseline_id == b2.id)
+            _select(ScopeChange).where(ScopeChange.baseline_to_id == b2.id)
         )
     ).scalars().all()
-    assert len(rows) == 2
+    assert len(rows) == 3
 
 
 # ---------- Notificações ----------
