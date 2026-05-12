@@ -61,9 +61,20 @@ class ProposalStatus(str, enum.Enum):
 
 
 class BaselineStatus(str, enum.Enum):
+    """Ciclo de vida do baseline (spec v3.1 §10.5).
+
+    DRAFT       : recém-extraído pelo worker; GP edita entregáveis
+    ACTIVE      : baseline vigente (apenas 1 por projeto)
+    SUPERSEDED  : já foi ACTIVE, substituído por uma versão posterior aprovada
+    REJECTED    : v2+ rejeitado pelo PMO na transição (spec v3.1 §10.5);
+                  preserva rastreabilidade da tentativa de mudança. GP pode
+                  fazer upload de uma v3 a partir daqui.
+    """
+
     DRAFT = "draft"
     ACTIVE = "active"
     SUPERSEDED = "superseded"
+    REJECTED = "rejected"
 
 
 class DeliverableComplexity(str, enum.Enum):
@@ -261,6 +272,20 @@ class ScopeChangeStatus(str, enum.Enum):
     APPROVED = "approved"
     REJECTED = "rejected"
     IMPLEMENTED = "implemented"
+
+
+class ScopeChangeType(str, enum.Enum):
+    """Natureza da mudança entre baselines (spec v3.1 §10.5).
+
+    Derivado da comparação por `Deliverable.code` em `compute_baseline_diff`:
+      ADDED    — entregável presente em baseline_to e ausente em baseline_from
+      REMOVED  — entregável presente em baseline_from e ausente em baseline_to
+      MODIFIED — mesma `code` em ambos, mas title/phase/complexity/etc. mudaram
+    """
+
+    ADDED = "added"
+    REMOVED = "removed"
+    MODIFIED = "modified"
 
 
 class TaskType(str, enum.Enum):
@@ -679,18 +704,52 @@ class AIInsight(Base):
 
 
 class ScopeChange(Base):
+    """Registro de mudança de escopo entre versões de baseline (spec v3.1 §9.5 + §10.5).
+
+    Granularidade: 1 ScopeChange por entregável afetado (added/removed/modified).
+    Criados pelo worker via `diff_baselines` quando uma proposta v2+ é importada.
+    Aprovação é em **batch** por transição (`POST /baselines/{id}/transition`),
+    nunca item-a-item — todos os ScopeChanges com mesmo `baseline_to_id` viram
+    APPROVED+IMPLEMENTED (ou REJECTED) juntos.
+
+    Legacy: `impact_baseline_id` é o nome antigo de `baseline_to_id` (criado
+    em F4.3 antes do refactor). Mantido como deprecated em F5.2 commit 1
+    para não quebrar dados existentes — backfill copia o valor. Não é mais
+    escrito por código novo. Remoção planejada quando confirmado zero uso.
+    """
+
     __tablename__ = "scope_changes"
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=_new_uuid)
     project_id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), ForeignKey("projects.id"))
     description: Mapped[str] = mapped_column(Text, nullable=False)
+
+    # Par from/to identifica a transição. Nullable porque registros legacy
+    # podem ter só `impact_baseline_id` preenchido até o backfill rodar.
+    baseline_from_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("baselines.id"), nullable=True
+    )
+    baseline_to_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("baselines.id"), nullable=True
+    )
+    change_type: Mapped[ScopeChangeType | None] = mapped_column(
+        SAEnum(ScopeChangeType, name="scope_change_type", native_enum=False),
+        nullable=True,
+    )
+
     requested_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, nullable=False)
     decided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    approved_by_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("users.id"), nullable=True
+    )
     status: Mapped[ScopeChangeStatus] = mapped_column(
         SAEnum(ScopeChangeStatus, name="scope_change_status", native_enum=False),
         default=ScopeChangeStatus.PROPOSED,
         nullable=False,
     )
+
+    # DEPRECATED — substituído por `baseline_to_id`. Migração 0014 fez backfill.
+    # Mantido para não quebrar leituras eventuais até remoção em commit futuro.
     impact_baseline_id: Mapped[uuid.UUID | None] = mapped_column(
         Uuid(as_uuid=True), ForeignKey("baselines.id"), nullable=True
     )
