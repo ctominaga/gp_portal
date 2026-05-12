@@ -1,4 +1,5 @@
-"""Endpoints de Baseline + Deliverable usados pela revisão (F3.4)."""
+"""Endpoints de Baseline + Deliverable usados pela revisão (F3.4) e fluxo
+de transição de escopo do PMO (F5.2 — v3.1 §10.5)."""
 from __future__ import annotations
 
 import uuid
@@ -14,7 +15,10 @@ from app.models import (
     BaselineStatus,
     Deliverable,
     Project,
+    Proposal,
     Role,
+    ScopeChange,
+    ScopeChangeStatus,
     User,
 )
 from app.schemas.baseline import (
@@ -23,6 +27,7 @@ from app.schemas.baseline import (
     DeliverablePublic,
     DeliverableUpdate,
 )
+from app.schemas.scope_change import TransitionDecisionPayload, TransitionResult
 
 router = APIRouter(tags=["baselines"])
 
@@ -180,6 +185,19 @@ async def activate_baseline(
             f"baseline em {baseline.status.value} não pode ser ativada",
         )
 
+    # F5.2 gate (v3.1 §10.5): v1 segue caminho rápido para o GP; v2+ exige
+    # aprovação formal do PMO via /baselines/{id}/transition. Bloqueia GP
+    # antes de qualquer write para não deixar inconsistência.
+    proposal = await db.get(Proposal, baseline.proposal_id)
+    if proposal and proposal.version > 1:
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            (
+                "Mudanças de escopo (v2 em diante) exigem aprovação do PMO. "
+                "Use POST /baselines/{id}/transition (role PMO)."
+            ),
+        )
+
     # Marca os outros baselines do projeto como superseded
     await db.execute(
         update(Baseline)
@@ -199,6 +217,125 @@ async def activate_baseline(
 
     deliverables = await _load_deliverables(baseline.id, db)
     return BaselinePublic.model_validate(_serialize_baseline(baseline, deliverables))
+
+
+@router.post(
+    "/baselines/{baseline_id}/transition",
+    response_model=TransitionResult,
+)
+async def decide_baseline_transition(
+    baseline_id: uuid.UUID,
+    payload: TransitionDecisionPayload,
+    user: User = Depends(require_any_role(Role.PMO)),
+    db: AsyncSession = Depends(get_db),
+) -> TransitionResult:
+    """PMO aprova/rejeita a transição de escopo v(N) → v(N+1) (v3.1 §10.5).
+
+    Granularidade: batch. Todos os ScopeChanges PROPOSED com
+    `baseline_to_id = baseline_id` mudam de status juntos. Não há
+    aprovação item-a-item.
+
+    Approve:
+      ScopeChanges PROPOSED → IMPLEMENTED  (pula APPROVED — a transição
+        é atômica; o estado APPROVED só faria sentido se aprovação e
+        implementação fossem desacoplados, o que não é o caso aqui)
+      baseline DRAFT → ACTIVE  (com activated_at/by)
+      baseline anterior ACTIVE → SUPERSEDED
+      preenche scope_change.approved_by_id + decided_at
+
+    Reject:
+      ScopeChanges PROPOSED → REJECTED
+      baseline DRAFT → REJECTED  (preserva ScopeChanges para auditoria)
+      baseline anterior permanece ACTIVE
+      preenche scope_change.approved_by_id + decided_at
+
+    Idempotência: baseline já decidido (ACTIVE/SUPERSEDED/REJECTED) → 409.
+    """
+    baseline = await db.get(Baseline, baseline_id)
+    if not baseline:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "baseline não encontrada")
+    project = await db.get(Project, baseline.project_id)
+    if not project:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "projeto não encontrado")
+
+    if baseline.status != BaselineStatus.DRAFT:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            f"transição já decidida — baseline está em {baseline.status.value}",
+        )
+
+    rows = list(
+        (
+            await db.execute(
+                select(ScopeChange).where(
+                    ScopeChange.baseline_to_id == baseline_id,
+                    ScopeChange.status == ScopeChangeStatus.PROPOSED,
+                )
+            )
+        ).scalars().all()
+    )
+    if not rows:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            "nenhum ScopeChange PROPOSED para esta transição",
+        )
+
+    now = datetime.now(UTC)
+    if payload.decision == "approve":
+        new_sc_status = ScopeChangeStatus.IMPLEMENTED
+        new_baseline_status = BaselineStatus.ACTIVE
+    else:
+        new_sc_status = ScopeChangeStatus.REJECTED
+        new_baseline_status = BaselineStatus.REJECTED
+
+    for sc in rows:
+        sc.status = new_sc_status
+        sc.approved_by_id = user.id
+        sc.decided_at = now
+
+    if payload.decision == "approve":
+        # Demote baseline anterior antes de promover o novo (preserva
+        # invariante "no máximo 1 ACTIVE por projeto" durante o commit).
+        await db.execute(
+            update(Baseline)
+            .where(
+                Baseline.project_id == baseline.project_id,
+                Baseline.id != baseline.id,
+                Baseline.status == BaselineStatus.ACTIVE,
+            )
+            .values(status=BaselineStatus.SUPERSEDED)
+        )
+        baseline.activated_at = now
+        baseline.activated_by_id = user.id
+
+    baseline.status = new_baseline_status
+
+    await db.commit()
+    await db.refresh(baseline)
+
+    # Notificação ao GP (best-effort; falha não desfaz a transição).
+    try:
+        from app.services.notifications import notify_transition_decision
+
+        await notify_transition_decision(
+            db,
+            project=project,
+            baseline=baseline,
+            decision=payload.decision,
+            scope_changes_count=len(rows),
+            comment=payload.comment,
+        )
+    except Exception:  # noqa: BLE001
+        pass
+
+    return TransitionResult(
+        baseline_id=baseline.id,
+        baseline_status=baseline.status.value,
+        decision=payload.decision,
+        scope_changes_count=len(rows),
+        decided_at=now,
+        approved_by=user.id,
+    )
 
 
 @router.get(

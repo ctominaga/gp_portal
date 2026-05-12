@@ -17,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import get_logger
 from app.models import (
+    Baseline,
     InAppNotification,
     Project,
     Report,
@@ -181,6 +182,51 @@ async def notify_approval_decision(
     await db.commit()
 
 
+async def notify_transition_decision(
+    db: AsyncSession,
+    *,
+    project: Project,
+    baseline: Baseline,
+    decision: str,  # "approve" | "reject"
+    scope_changes_count: int,
+    comment: str | None,
+) -> None:
+    """PMO decidiu uma transição de escopo (F5.2 — v3.1 §10.5). Notifica GP.
+
+    Replica o pattern de `notify_approval_decision`: in-app + e-mail (Resend
+    em dry-run quando RESEND_API_KEY ausente). Falha não bloqueia a transição
+    no endpoint chamador.
+    """
+    gp = await db.get(User, project.gp_user_id)
+    if not gp:
+        return
+
+    if decision == "approve":
+        kind = "scope_transition_approved"
+        title = f"PMO aprovou mudança de escopo: {project.name}"
+        body = (
+            f"{scope_changes_count} alteração(ões) aprovada(s). "
+            f"Novo baseline está ativo."
+        )
+    else:
+        kind = "scope_transition_rejected"
+        title = f"PMO rejeitou mudança de escopo: {project.name}"
+        suffix = (
+            f' Motivo: "{comment.strip()}"' if comment and comment.strip() else ""
+        )
+        body = (
+            f"{scope_changes_count} alteração(ões) rejeitada(s)."
+            f"{suffix} Ajuste a proposta e suba uma nova versão."
+        )
+
+    link = f"/projetos/{project.id}/diff?new={baseline.id}"
+    await _create_inapp(
+        db, user_id=gp.id, kind=kind, title=title, body=body, link=link
+    )
+    _send_email(to=gp.email, subject=title, body=body + f" Acesse: {link}")
+    await db.commit()
+
+
 # -- Endpoints in-app (lista, marcar como lida) --
 
 
@@ -232,6 +278,7 @@ __all__ = [
     "mark_read",
     "notify_approval_decision",
     "notify_report_submitted",
+    "notify_transition_decision",
 ]
 
 

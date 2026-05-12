@@ -21,6 +21,7 @@ from app.api.v1.operator import router as operator_router
 from app.api.v1.portfolio import router as portfolio_router
 from app.api.v1.projects import router as projects_router
 from app.api.v1.reports import router as reports_router
+from app.api.v1.scope_changes import router as scope_changes_router
 from app.core.config import get_settings
 from app.core.logging import configure_logging, get_logger, new_request_id, request_id_ctx
 from app.db.session import engine
@@ -110,6 +111,7 @@ app.include_router(projects_router)
 app.include_router(baselines_router)
 app.include_router(reports_router)
 app.include_router(approvals_router)
+app.include_router(scope_changes_router)
 app.include_router(client_router)
 app.include_router(portfolio_router)
 app.include_router(notifications_router)

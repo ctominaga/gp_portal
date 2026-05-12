@@ -131,13 +131,18 @@ async def test_create_e_delete_deliverable(
 
 
 @pytest.mark.asyncio
-async def test_activate_baseline_marca_outros_como_superseded(
+async def test_activate_baseline_v1_funciona_v2_bloqueada_para_gp(
     client: AsyncClient, db_session
 ) -> None:
+    """F5.2 — Caminho rápido para v1 (sem baseline anterior pra comparar),
+    gate para v2+ (mudança de escopo exige aprovação do PMO via /transition).
+
+    A propriedade "ativar baseline marca outros como superseded" foi movida
+    para o fluxo /baselines/{id}/transition; coberta em test_f52_transition.py.
+    """
     project, baseline = await _seed_project_with_baseline(db_session, gp_email="gp-4@x.com")
     tok = await _login_as(client, role="GP", email="gp-4@x.com")
 
-    # Cria segundo baseline (também draft)
     proposal2 = Proposal(
         project_id=project.id, version=2, file_url="proposals/y.pdf",
         file_sha256="b" * 64, original_filename="p2.pdf", size_bytes=1,
@@ -152,7 +157,7 @@ async def test_activate_baseline_marca_outros_como_superseded(
     db_session.add(baseline2)
     await db_session.commit()
 
-    # Ativa o primeiro
+    # v1: GP ativa direto.
     r = await client.post(
         f"/baselines/{baseline.id}/activate",
         headers={"Authorization": f"Bearer {tok}"},
@@ -160,18 +165,18 @@ async def test_activate_baseline_marca_outros_como_superseded(
     assert r.status_code == 200
     assert r.json()["status"] == "active"
 
-    # Ativa o segundo — primeiro vira superseded
+    # v2: gate F5.2 — GP recebe 403 com instrução para usar /transition (PMO).
     r2 = await client.post(
         f"/baselines/{baseline2.id}/activate",
         headers={"Authorization": f"Bearer {tok}"},
     )
-    assert r2.status_code == 200
-    assert r2.json()["status"] == "active"
-
+    assert r2.status_code == 403
+    assert "transition" in r2.json()["detail"].lower()
+    # v1 permanece ACTIVE — gate falhou antes de qualquer write.
     r3 = await client.get(
         f"/baselines/{baseline.id}", headers={"Authorization": f"Bearer {tok}"}
     )
-    assert r3.json()["status"] == "superseded"
+    assert r3.json()["status"] == "active"
 
 
 # --------- Report autosave ---------
