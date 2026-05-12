@@ -149,3 +149,19 @@ Refinável após piloto com PMO real. O valor "50 para amarelo estável" foi man
 **Decisão:** documentar convenção em `docs/dev_notes.md` (criado nesta sessão). Todo SQL literal em migration que mexe em coluna de enum deve usar o `e.name` (UPPERCASE). Reescrita por meio do ORM segue funcionando direto com membros do enum Python. Não introduzir `values_callable` retroativamente — quebraria todos os dados existentes.
 
 **Consequência:** débito P3 `F5.2.a` registrado em `conformidade-v3.1.md`. Migrations futuras que mexam em enum devem consultar `dev_notes.md` antes. Server_defaults em SQL atuais (`server_default="active"`, etc.) são inconsistentes com essa convenção mas não causam bug porque o ORM sempre passa o membro Python explicitamente — server_default só dispara em insert sem valor, que não ocorre em código atual.
+
+## 2026-05-12 — F5.3 / Encerramento bloqueia reports em NEEDS_REVISION (desvio da spec literal)
+
+**Contexto:** spec v3.1 §10.4 implica que reports "em fluxo" bloqueiam o encerramento de projeto. A lista canônica de "em fluxo" do projeto era DRAFT/SUBMITTED/PMO_APPROVED — workflow de aprovação 3 estágios da §10.1. NEEDS_REVISION foi adicionado em F4 como retorno explícito do PMO ao GP ("ajuste e re-submeta"), mas a spec §10.4 não atualizou a lista para incluí-lo.
+
+**Decisão:** incluir `NEEDS_REVISION` em `_REPORT_BLOCKING_STATUSES` (`app/api/v1/projects.py`). Permitir encerrar projeto com report em NEEDS_REVISION cria órfão semântico — PMO pediu correção, GP simplesmente fecha o projeto sem responder; o registro fica "preso" naquele estado intermediário sem nunca ter sido revisitado. Comentário inline na constante referencia este ADR.
+
+**Consequência:** terceiro caso de governança de desvio em F5 (junto com v3.1 §6.4.1 desatualizada vs prompt v1, e enums realinhados de F5.1 Deliverable). Padrão saudável: spec é fonte, desvios são documentados. v3.2 (consolidada futura) deve atualizar §10.4 para listar os 4 status. Sem migração de dados — é uma regra de validação, não schema.
+
+## 2026-05-12 — F5.3 / `auth/register` normaliza email no SELECT (case-sensitive bug)
+
+**Contexto:** descoberto em F5.3 commit 2 durante setup de teste. Handler `POST /auth/register` (commitado na F2) tinha inconsistência: SELECT de unicidade usava `payload.email` cru, mas INSERT usava `payload.email.lower()`. Em produção, clients reais (frontend, scripts) sempre mandam lowercase, então o bug nunca foi acionado. No teste, `_seed_project_for_close` criou User com `"gp-A422@x.com"` (case misto) e `_login` reenviou para `/auth/register` — SELECT não bateu (banco tem `"gp-a422@x.com"`), INSERT tentou gravar lowercase, UNIQUE constraint disparou `500 IntegrityError` em vez do `409` esperado.
+
+**Decisão:** normalizar `payload.email.lower()` antes do exists-check no register. 3 linhas alteradas. Sem mudança de contrato externo — clients que já mandam lowercase continuam idênticos. Fix isolado em commit dedicado (`fix(backend): auth/register normaliza email no SELECT`).
+
+**Consequência:** 500 vira 409 para edge case de case-misto. Sintoma é menos feio em logs / Sentry. Bug dormente desde F2, eliminado sem regressão (suite cheia 171 pass).
