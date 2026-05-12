@@ -1,8 +1,8 @@
 "use client";
 
-import { ArrowLeftRight, MinusCircle, PencilLine, PlusCircle } from "lucide-react";
+import { ArrowLeftRight, CheckCircle2, MinusCircle, PencilLine, PlusCircle, XCircle } from "lucide-react";
 import Link from "next/link";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -11,6 +11,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -18,9 +26,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
+import { useAuth } from "@/lib/auth-context";
 import { api, asApiError } from "@/lib/api";
 import { formatDate } from "@/lib/format";
-import type { BaselineDiff } from "@/lib/types";
+import type { BaselineDiff, ScopeChange, TransitionResult } from "@/lib/types";
 
 interface BaselineRow {
   id: string;
@@ -36,11 +46,19 @@ interface BaselineRow {
 export default function ProjectDiffPage() {
   const { id: projectId } = useParams<{ id: string }>();
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const { user } = useAuth();
   const [baselines, setBaselines] = useState<BaselineRow[] | null>(null);
   const [baseId, setBaseId] = useState<string>("");
   const [newId, setNewId] = useState<string>("");
   const [diff, setDiff] = useState<BaselineDiff | null>(null);
   const [loadingDiff, setLoadingDiff] = useState(false);
+  // F5.2 — ScopeChanges PROPOSED do baseline_to selecionado. PMO usa para
+  // saber se há transição revisável; GP/Cliente vê só badge informativo.
+  const [pendingScs, setPendingScs] = useState<ScopeChange[]>([]);
+  const [dialogMode, setDialogMode] = useState<"approve" | "reject" | null>(null);
+  const [commentInput, setCommentInput] = useState("");
+  const [submittingDecision, setSubmittingDecision] = useState(false);
 
   useEffect(() => {
     if (!projectId) return;
@@ -86,6 +104,62 @@ export default function ProjectDiffPage() {
     })();
   }, [baseId, newId]);
 
+  // F5.2 — carrega ScopeChanges PROPOSED apontando para o `newId`. Tanto PMO
+  // (decide) quanto GP (vê badge "aguardando PMO") usam.
+  useEffect(() => {
+    if (!projectId || !newId) {
+      setPendingScs([]);
+      return;
+    }
+    void (async () => {
+      try {
+        const r = await api.get<ScopeChange[]>(
+          `/projects/${projectId}/scope-changes?status=proposed&baseline_to_id=${newId}`,
+        );
+        setPendingScs(r.data);
+      } catch {
+        // não-fatal: sem PROPOSED a tela do diff segue funcionando read-only
+        setPendingScs([]);
+      }
+    })();
+  }, [projectId, newId]);
+
+  async function handleTransitionSubmit() {
+    if (!dialogMode || !newId) return;
+    if (dialogMode === "reject" && !commentInput.trim()) {
+      toast.error("Justificativa obrigatória para rejeitar a transição.");
+      return;
+    }
+    setSubmittingDecision(true);
+    try {
+      const r = await api.post<TransitionResult>(
+        `/baselines/${newId}/transition`,
+        {
+          decision: dialogMode,
+          comment: commentInput.trim() || null,
+        },
+      );
+      const verb = dialogMode === "approve" ? "aprovada" : "rejeitada";
+      toast.success(
+        `Transição ${verb} — ${r.data.scope_changes_count} alteração(ões) processada(s)`,
+      );
+      // UX pós-decisão: leva para o portfólio PMO (lista atualizada) em vez
+      // de ficar na tela do diff, agora obsoleta para este baseline_to.
+      router.push("/pmo/portfolio");
+    } catch (e) {
+      toast.error(asApiError(e).message);
+    } finally {
+      setSubmittingDecision(false);
+      setDialogMode(null);
+      setCommentInput("");
+    }
+  }
+
+  const isPMO = user?.role === "PMO";
+  const hasPendingTransition = pendingScs.length > 0;
+  const newBaseline = baselines?.find((b) => b.id === newId);
+  const baseBaseline = baselines?.find((b) => b.id === baseId);
+
   const labelOf = useMemo(
     () => (id: string) => {
       const b = baselines?.find((x) => x.id === id);
@@ -119,11 +193,59 @@ export default function ProjectDiffPage() {
           Comparar baselines
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Cada item adicionado ou removido entre versões gera um <strong>ScopeChange</strong>{" "}
-          quando o worker importa a nova proposta. Aqui você visualiza a comparação para
-          discutir com o cliente.
+          Cada item adicionado, removido ou alterado entre versões gera um{" "}
+          <strong>ScopeChange</strong> quando o worker importa a nova proposta.
         </p>
       </div>
+
+      {hasPendingTransition && (
+        <Card className="mb-6 border-amber-300 bg-amber-50/40">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">
+              {isPMO
+                ? "Transição aguardando sua decisão"
+                : "Transição aguardando aprovação do PMO"}
+            </CardTitle>
+            <CardDescription>
+              {pendingScs.length} alteração(ões) propostas pelo GP em{" "}
+              {newBaseline?.source_proposal_version
+                ? `v${newBaseline.source_proposal_version}`
+                : "v?"}
+              {baseBaseline?.source_proposal_version
+                ? ` (vs v${baseBaseline.source_proposal_version})`
+                : ""}
+              . {isPMO ? "Revise abaixo e aprove/rejeite a transição." : "GP não pode ativar v2+ sem aprovação."}
+            </CardDescription>
+          </CardHeader>
+          {isPMO && (
+            <CardContent className="flex flex-wrap gap-2">
+              <Button
+                onClick={() => {
+                  setDialogMode("approve");
+                  setCommentInput("");
+                }}
+                disabled={submittingDecision}
+                data-testid="btn-approve-transition"
+              >
+                <CheckCircle2 className="mr-2 h-4 w-4" />
+                Aprovar transição
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  setDialogMode("reject");
+                  setCommentInput("");
+                }}
+                disabled={submittingDecision}
+                data-testid="btn-reject-transition"
+              >
+                <XCircle className="mr-2 h-4 w-4" />
+                Rejeitar transição
+              </Button>
+            </CardContent>
+          )}
+        </Card>
+      )}
 
       <Card className="mb-6">
         <CardHeader>
@@ -170,6 +292,100 @@ export default function ProjectDiffPage() {
           </div>
         </CardContent>
       </Card>
+
+      <Dialog
+        open={dialogMode !== null}
+        onOpenChange={(o) => {
+          if (!submittingDecision && !o) setDialogMode(null);
+        }}
+      >
+        <DialogContent>
+          {dialogMode === "approve" && (
+            <>
+              <DialogHeader>
+                <DialogTitle>Aprovar transição</DialogTitle>
+                <DialogDescription>
+                  Esta ação vai aprovar <strong>{pendingScs.length}</strong>{" "}
+                  alteração(ões) de escopo e tornar o baseline{" "}
+                  <strong>v{newBaseline?.source_proposal_version ?? "?"}</strong>{" "}
+                  o ativo do projeto. O baseline anterior será marcado como
+                  histórico (SUPERSEDED). <strong>Ação irreversível.</strong>
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-1">
+                <label className="text-xs uppercase tracking-wide text-muted-foreground">
+                  Comentário (opcional)
+                </label>
+                <Textarea
+                  value={commentInput}
+                  onChange={(e) => setCommentInput(e.target.value)}
+                  placeholder="Ex.: aprovado conforme alinhamento em reunião 12/05"
+                  rows={3}
+                />
+              </div>
+              <DialogFooter>
+                <Button
+                  variant="ghost"
+                  onClick={() => setDialogMode(null)}
+                  disabled={submittingDecision}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={handleTransitionSubmit}
+                  disabled={submittingDecision}
+                  data-testid="confirm-approve"
+                >
+                  {submittingDecision ? "Aprovando…" : "Confirmar aprovação"}
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+          {dialogMode === "reject" && (
+            <>
+              <DialogHeader>
+                <DialogTitle>Rejeitar transição</DialogTitle>
+                <DialogDescription>
+                  Esta ação vai rejeitar <strong>{pendingScs.length}</strong>{" "}
+                  alteração(ões) de escopo e marcar o baseline{" "}
+                  <strong>v{newBaseline?.source_proposal_version ?? "?"}</strong>{" "}
+                  como rejeitado. O baseline anterior permanece ativo. GP
+                  precisa ressubmeter uma nova versão para tentar nova mudança.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-1">
+                <label className="text-xs uppercase tracking-wide text-muted-foreground">
+                  Justificativa (obrigatória — será enviada ao GP)
+                </label>
+                <Textarea
+                  value={commentInput}
+                  onChange={(e) => setCommentInput(e.target.value)}
+                  placeholder="Ex.: faltou detalhamento do critério de aceite no d-007"
+                  rows={3}
+                  required
+                />
+              </div>
+              <DialogFooter>
+                <Button
+                  variant="ghost"
+                  onClick={() => setDialogMode(null)}
+                  disabled={submittingDecision}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={handleTransitionSubmit}
+                  disabled={submittingDecision || !commentInput.trim()}
+                  data-testid="confirm-reject"
+                >
+                  {submittingDecision ? "Rejeitando…" : "Confirmar rejeição"}
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {sameBaseline ? (
         <Card>

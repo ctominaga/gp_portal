@@ -63,6 +63,30 @@ async def list_project_scope_changes(
     return list((await db.execute(stmt)).scalars().all())
 
 
+@router.get("/scope-changes", response_model=list[ScopeChangePublic])
+async def list_portfolio_scope_changes(
+    status_filter: ScopeChangeStatus = Query(
+        default=ScopeChangeStatus.PROPOSED, alias="status"
+    ),
+    _user: User = Depends(require_any_role(Role.PMO, Role.OPERATOR)),
+    db: AsyncSession = Depends(get_db),
+) -> list[ScopeChange]:
+    """Lista ScopeChanges do portfólio inteiro — visão PMO (F5.2 commit 4).
+
+    Filtro default = PROPOSED, que é o caso de uso primário: PMO abre a
+    rota /pmo/scope-changes e vê todas as transições aguardando decisão.
+    GP não acessa — usa o endpoint por projeto (`/projects/{id}/scope-changes`).
+    """
+    rows = (
+        await db.execute(
+            select(ScopeChange)
+            .where(ScopeChange.status == status_filter)
+            .order_by(ScopeChange.requested_at.desc())
+        )
+    ).scalars().all()
+    return list(rows)
+
+
 @router.get("/scope-changes/{scope_change_id}", response_model=ScopeChangePublic)
 async def get_scope_change(
     scope_change_id: uuid.UUID,

@@ -313,6 +313,8 @@ export interface PortfolioCard {
   open_risks_count: number;
   open_critical_alerts: number;
   pending_client_items: number;
+  /** F5.2 — total de ScopeChanges PROPOSED do projeto (badge no card). */
+  pending_transitions_count: number;
 }
 
 export interface PortfolioOverview {
@@ -367,6 +369,12 @@ export interface ClientProjectView {
   reports: ClientReport[];
 }
 
+export interface ChangedField {
+  field: string;
+  old: string | null;
+  new: string | null;
+}
+
 export interface BaselineDiffEntry {
   kind: "added" | "removed" | "changed";
   code: string | null;
@@ -376,6 +384,8 @@ export interface BaselineDiffEntry {
   phase_new: string | null;
   complexity_old: string | null;
   complexity_new: string | null;
+  /** F5.2 commit 3 — presente em itens `changed`, lista campos divergentes. */
+  changed_fields?: ChangedField[];
 }
 
 export interface BaselineDiff {
@@ -386,6 +396,34 @@ export interface BaselineDiff {
   changed: BaselineDiffEntry[];
   /** Apenas presente na resposta do worker (após criar ScopeChanges); GET é somente leitura. */
   scope_changes_created?: number;
+}
+
+// F5.2 — versionamento de escopo (v3.1 §10.5)
+
+export type ScopeChangeType = "added" | "removed" | "modified";
+export type ScopeChangeStatus = "proposed" | "approved" | "rejected" | "implemented";
+
+export interface ScopeChange {
+  id: string;
+  project_id: string;
+  description: string;
+  baseline_from_id: string | null;
+  baseline_to_id: string | null;
+  change_type: ScopeChangeType | null;
+  deliverable_code: string | null;
+  status: ScopeChangeStatus;
+  requested_at: string;
+  decided_at: string | null;
+  approved_by_id: string | null;
+}
+
+export interface TransitionResult {
+  baseline_id: string;
+  baseline_status: string;
+  decision: "approve" | "reject";
+  scope_changes_count: number;
+  decided_at: string;
+  approved_by: string;
 }
 
 export interface InAppNotification {

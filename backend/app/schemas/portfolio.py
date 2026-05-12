@@ -83,6 +83,9 @@ class PortfolioProjectCard(BaseModel):
     open_risks_count: int
     open_critical_alerts: int
     pending_client_items: int
+    # F5.2 — quantidade de ScopeChanges PROPOSED. > 0 dispara o badge
+    # "N transições pendentes" no card do dashboard PMO.
+    pending_transitions_count: int = 0
 
 
 class PortfolioOverview(BaseModel):

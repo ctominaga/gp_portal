@@ -20,6 +20,8 @@ from app.models import (
     Risk,
     RiskLevel,
     Role,
+    ScopeChange,
+    ScopeChangeStatus,
     User,
 )
 from app.schemas.portfolio import (
@@ -60,6 +62,18 @@ async def portfolio_overview(
             .join(User, User.id == Project.gp_user_id, isouter=True)
         )
     ).all()
+
+    # F5.2 — count de ScopeChanges PROPOSED agregado por projeto (1 query
+    # única em vez de N). Alimenta o badge "N transições pendentes" no card.
+    pending_by_project: dict[uuid.UUID, int] = dict(
+        (
+            await db.execute(
+                select(ScopeChange.project_id, func.count(ScopeChange.id))
+                .where(ScopeChange.status == ScopeChangeStatus.PROPOSED)
+                .group_by(ScopeChange.project_id)
+            )
+        ).all()
+    )
 
     cards: list[PortfolioProjectCard] = []
     for project, gp_name in rows:
@@ -123,6 +137,7 @@ async def portfolio_overview(
                 open_risks_count=open_risks,
                 open_critical_alerts=int(open_critical or 0),
                 pending_client_items=int(pending_client or 0),
+                pending_transitions_count=int(pending_by_project.get(project.id, 0)),
             )
         )
 

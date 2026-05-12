@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, GitPullRequest } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -103,12 +103,28 @@ export default function PortfolioPage() {
               data-testid={`portfolio-card-${p.project_id}`}
             >
               <CardHeader className="pb-3">
-                <CardDescription>{p.client_name}</CardDescription>
-                <CardTitle className="text-base">
-                  <Link href={`/projetos/${p.project_id}`} className="hover:underline">
-                    {p.project_name}
-                  </Link>
-                </CardTitle>
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <CardDescription>{p.client_name}</CardDescription>
+                    <CardTitle className="text-base">
+                      <Link href={`/projetos/${p.project_id}`} className="hover:underline">
+                        {p.project_name}
+                      </Link>
+                    </CardTitle>
+                  </div>
+                  {p.pending_transitions_count > 0 && (
+                    <Link
+                      href={`/projetos/${p.project_id}/diff`}
+                      title="Abrir diff e decidir a transição pendente"
+                      data-testid={`pending-transitions-${p.project_id}`}
+                    >
+                      <Badge variant="amber" className="gap-1">
+                        <GitPullRequest className="h-3 w-3" />
+                        {p.pending_transitions_count} transição(ões) pendente(s)
+                      </Badge>
+                    </Link>
+                  )}
+                </div>
                 <p className="text-xs text-muted-foreground">
                   GP: {p.gp_name ?? "—"}
                 </p>

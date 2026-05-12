@@ -30,6 +30,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       return [
         { href: "/pmo/portfolio", label: "Portfólio" },
         { href: "/projetos", label: "Projetos" },
+        { href: "/pmo/scope-changes", label: "Transições" },
       ];
     }
     if (user.role === "CLIENT") {

@@ -34,6 +34,17 @@ vi.mock("sonner", () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
 
+// F5.2 — ProjectDiffPage agora usa useAuth para decidir mostrar botões PMO.
+// Default mock = GP (sem botões); testes específicos podem sobrescrever.
+vi.mock("@/lib/auth-context", () => ({
+  useAuth: () => ({
+    user: { id: "u-gp", name: "GP", email: "gp@x.com", role: "GP", created_at: "" },
+    loading: false,
+    login: vi.fn(),
+    logout: vi.fn(),
+  }),
+}));
+
 import ProjectDiffPage from "@/app/projetos/[id]/diff/page";
 
 const baselines = [
