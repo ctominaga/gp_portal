@@ -18,14 +18,20 @@ _settings = get_settings()
 @router.post("/register", response_model=UserPublic, status_code=status.HTTP_201_CREATED)
 async def register(payload: RegisterRequest, db: AsyncSession = Depends(get_db)) -> User:
     """Seed-only em F2: usado pelo seeder. Em prod ficará atrás de auth."""
+    # Normalizar email para lowercase no exists-check também — armazenamos
+    # com lower() e login filtra por lower(). Sem essa normalização, payload
+    # com case misto (ex: "GP-A@x.com") passa pelo SELECT, segue para INSERT
+    # com lowercase, e dispara IntegrityError em vez de 409 explícito.
+    # Descoberto em F5.3 commit 2.
+    normalized_email = payload.email.lower()
     exists = (
-        await db.execute(select(User).where(User.email == payload.email))
+        await db.execute(select(User).where(User.email == normalized_email))
     ).scalar_one_or_none()
     if exists:
         raise HTTPException(status.HTTP_409_CONFLICT, "email já registrado")
     user = User(
         name=payload.name,
-        email=payload.email.lower(),
+        email=normalized_email,
         password_hash=hash_password(payload.password),
         role=payload.role,
     )
