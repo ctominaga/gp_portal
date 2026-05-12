@@ -840,14 +840,56 @@ class ReportApproval(Base):
 
 
 class ProjectRetrospective(Base):
+    """Retrospectiva estruturada do encerramento do projeto (spec v3.1 §10.4).
+
+    Criada via `POST /projects/{id}/close` (F5.3). UNIQUE em `project_id`
+    garante 1 retrospectiva por projeto — tentativa de re-fechar pega o
+    409 explícito no endpoint (vide cascade de validações) antes da
+    UNIQUE constraint disparar.
+
+    Campos:
+      - `delivered_vs_proposed` — texto livre, "Entregue vs. Proposto".
+        Comparativo do escopo realizado contra o baseline original.
+      - `would_do_differently` — texto livre, "O que faria diferente".
+        Aprendizados acionáveis para projetos futuros.
+      - `client_feedback` — texto livre. Captura curada da conversa
+        final com o cliente.
+      - `materialized_risks` — JSON `[{risk_id: UUID, comment: str|null}]`.
+        Quais Risks viraram realidade e como foram tratados. Pré-populado
+        no endpoint com `Risk.status==MATERIALIZED` do projeto (Q1
+        híbrida); GP edita/adiciona/remove.
+
+    Sobre o `closed_at` listado na spec v3.1 §9.5:
+      Cumprido semanticamente por `created_at` (timestamp do registro).
+      Não duplicamos coluna — registro só existe quando o projeto é
+      encerrado, então created_at == closed_at por construção. Decisão
+      F5.3 commit 1.
+
+    `Project.ended_at` (Date) é preenchido pelo endpoint no mesmo POST,
+    com a data lógica do encerramento. Trabalham em conjunto:
+    `Project.ended_at` é o "calendar end date" exibido para o cliente;
+    `ProjectRetrospective.created_at` é o timestamp de auditoria do registro.
+    """
+
     __tablename__ = "project_retrospectives"
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=_new_uuid)
     project_id: Mapped[uuid.UUID] = mapped_column(
         Uuid(as_uuid=True), ForeignKey("projects.id"), unique=True
     )
-    lessons_learned: Mapped[str | None] = mapped_column(Text, nullable=True)
-    kpis: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+
+    delivered_vs_proposed: Mapped[str] = mapped_column(Text, nullable=False)
+    would_do_differently: Mapped[str] = mapped_column(Text, nullable=False)
+    client_feedback: Mapped[str] = mapped_column(Text, nullable=False)
+
+    # JSON: lista de {risk_id, comment}. Lista vazia é estado válido
+    # (cenário ideal: nenhum risco materializou). Validação de FK feita
+    # em camada Pydantic (schemas/retrospective.py), não no banco — JSON
+    # não suporta FK constraint nativa.
+    materialized_risks: Mapped[list] = mapped_column(
+        JSON, default=list, nullable=False
+    )
+
     created_by_id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), ForeignKey("users.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, nullable=False)
 

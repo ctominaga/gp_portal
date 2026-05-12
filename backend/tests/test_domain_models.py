@@ -262,13 +262,24 @@ async def test_project_retrospective_one_per_project(db_session: AsyncSession) -
     db_session.add(project)
     await db_session.flush()
 
+    # F5.3 — schema atualizado para spec v3.1 §10.4 (4 campos NOT NULL +
+    # materialized_risks JSON). UNIQUE em project_id continua garantindo
+    # 1 retrospectiva por projeto.
     db_session.add(
-        ProjectRetrospective(project_id=project.id, created_by_id=gp.id, lessons_learned="ok")
+        ProjectRetrospective(
+            project_id=project.id, created_by_id=gp.id,
+            delivered_vs_proposed="ok", would_do_differently="—",
+            client_feedback="—", materialized_risks=[],
+        )
     )
     await db_session.commit()
 
     db_session.add(
-        ProjectRetrospective(project_id=project.id, created_by_id=gp.id, lessons_learned="dup")
+        ProjectRetrospective(
+            project_id=project.id, created_by_id=gp.id,
+            delivered_vs_proposed="dup", would_do_differently="—",
+            client_feedback="—", materialized_risks=[],
+        )
     )
     with pytest.raises((IntegrityError, FlushError, InvalidRequestError)):
         await db_session.commit()

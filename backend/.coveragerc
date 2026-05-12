@@ -1,0 +1,25 @@
+# Configuração de coverage.py para pytest-cov (débito F5.2.d).
+#
+# Sem `concurrency = thread,greenlet`, funções async sob pytest-asyncio +
+# aiosqlite/asyncpg ficam subreportadas: linhas dentro de `async def`
+# aparecem como "missing" mesmo quando o endpoint é exercitado por testes
+# verdes. Diagnóstico em F5.2 commit 5 (vide ADR `2026-05-12 — Convenção
+# SAEnum` e `docs/dev_notes.md`).
+#
+# Criado em F5.3 commit 1 (junto da migration 0016) para resolver o débito.
+
+[run]
+concurrency = thread,greenlet
+source = app
+omit =
+    */tests/*
+    */alembic/*
+    */__init__.py
+
+[report]
+# Pula linhas TYPE_CHECKING e raise NotImplementedError em report final.
+exclude_lines =
+    pragma: no cover
+    raise NotImplementedError
+    if TYPE_CHECKING:
+    \.\.\.
