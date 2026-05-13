@@ -98,6 +98,42 @@ await client.post(...)
 fresh = await db_session.get(Baseline, b.id)  # cache stale
 ```
 
+## Como rodar o worker em dev (F5.6a)
+
+Pré-requisitos:
+
+1. `setup-windows.ps1` rodou sem falhas (ver relatório colorido no fim da execução).
+2. `claude /login` e `codex login` feitos dentro dos `tmux project-claude` / `project-codex`. Verificar com `wsl -d Ubuntu-22.04 -- bash -lc "[ -f ~/.claude/.credentials.json ] && echo OK"`.
+3. Redis local rodando. `docker-compose up redis -d` na raiz do `jump-report/` resolve.
+4. Backend rodando (FastAPI em `:8000`) — o worker faz callback HMAC para `POST /internal/agent-results/{run_id}` e `POST /internal/worker-heartbeat`.
+
+Boot do worker (disponível após Commit 3 do F5.6a):
+
+```powershell
+# Na raiz jump-report/
+cd worker
+.\scripts\start-worker.ps1
+# Primeira execução: cria .venv, instala jump_agent_runner editable + worker editable, dispara jump-worker.
+# Execuções subsequentes: só dispara jump-worker.exe direto.
+```
+
+O processo `jump-worker` fica em foreground consumindo `jobs.agent` do Redis via BRPOP. `Ctrl+C` encerra com SIGINT (drena job atual, fecha graceful).
+
+Para validar que o setup completo funciona sem precisar enfileirar via UI:
+
+```powershell
+# Smoke trivial — invoca claude direto via jump_agent_runner CLI, sem passar por worker/Redis:
+.\.venv\Scripts\jump-runner.exe smoke
+```
+
+Logs:
+
+- `~/.jump-runner/logs/{YYYY-MM-DD}.jsonl` (Linux) — eventos estruturados do `Observer` (cada run produz uma linha JSON por evento).
+- `stderr` do `jump-worker` — eventos do próprio worker (BRPOP, callback, heartbeat).
+- Tabela `worker_heartbeats` no Postgres — última batida + jobs do dia. Útil para health check operacional.
+
+Variáveis de ambiente do worker ficam em `worker/.env` (copiar de `worker/.env.example`). Reaproveitam `WORKER_SHARED_SECRET` e `WORKER_HMAC_KEY` do `.env` da raiz — o backend valida com a MESMA chave, então tem que bater.
+
 ## Mocks Playwright usam URL absoluta do API server
 
 Vide ADR `2026-05-08 — F4 / Mocks Playwright`. Resumo: `page.route()` com

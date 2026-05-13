@@ -1,74 +1,298 @@
-# setup-windows.ps1 — provisiona a maquina worker da Jump
+# setup-windows.ps1 - provisiona a maquina worker da Jump
 #
-# Uso (PowerShell elevado):
+# Idempotente: reexecutar e seguro. Cada passo verifica antes de modificar.
+# Detalhes e troubleshooting em docs/runbooks/setup-worker-wsl.md.
+#
+# Uso:
+#   Primeira execucao (precisa instalar WSL2): PowerShell elevado.
 #     powershell -ExecutionPolicy Bypass -File setup-windows.ps1
-#
-# Pre-requisitos:
-#   - Windows 10/11
-#   - Conta com privilegio de administrador
-#   - Acesso a internet
-#
-# Apos rodar:
-#   1. Rebote a maquina se WSL2 foi instalado.
-#   2. Em PowerShell normal: 'wsl -d Ubuntu-22.04 --' para entrar no Linux
-#      e completar `claude /login` e `codex login`.
-#   3. Inicie o jump-worker conforme worker/scripts/start-worker.ps1.
+#   Reexecucoes (WSL2 ja instalado): PowerShell normal e suficiente.
 
 $ErrorActionPreference = "Stop"
 
-Write-Host "==> Verificando WSL2..."
-$wslStatus = wsl --status 2>&1
+# Contadores para relatorio final
+$script:Done    = New-Object System.Collections.ArrayList
+$script:Skipped = New-Object System.Collections.ArrayList
+$script:Failed  = New-Object System.Collections.ArrayList
+
+function Mark-Done($step)    { [void]$script:Done.Add($step) }
+function Mark-Skipped($step) { [void]$script:Skipped.Add($step) }
+function Mark-Failed($step)  { [void]$script:Failed.Add($step) }
+
+# ---- 1. WSL2 instalado ----
+Write-Host "==> [1/4] WSL2..." -ForegroundColor Cyan
+wsl --status 2>&1 | Out-Null
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "WSL nao instalado. Instalando WSL2 + Ubuntu-22.04..."
+    Write-Host "WSL2 ausente. Instalando..." -ForegroundColor Yellow
     wsl --install -d Ubuntu-22.04
-    Write-Host "Reboot necessario apos instalacao do WSL2. Rode este script novamente apos o reboot."
+    Mark-Done "1. WSL2 + Ubuntu-22.04 instalados (REBOOT necessario)"
+    Write-Host ""
+    Write-Host "REBOOT necessario. Reexecute este script apos reboot." -ForegroundColor Yellow
     exit 0
 }
+Mark-Skipped "1. WSL2 ja instalado"
 
-Write-Host "==> Garantindo distro Ubuntu-22.04..."
+# ---- 2. Distro Ubuntu-22.04 + default ----
+Write-Host "==> [2/4] Distro Ubuntu-22.04..." -ForegroundColor Cyan
 $distros = wsl -l -q
 if ($distros -notmatch "Ubuntu-22\.04") {
+    Write-Host "Ubuntu-22.04 ausente. Instalando..." -ForegroundColor Yellow
     wsl --install -d Ubuntu-22.04
+    wsl --set-default Ubuntu-22.04
+    Mark-Done "2. Ubuntu-22.04 instalado e definido como default"
+} else {
+    wsl --set-default Ubuntu-22.04 2>&1 | Out-Null
+    Mark-Skipped "2. Ubuntu-22.04 ja presente"
 }
+wsl --update 2>&1 | Out-Null
 
-Write-Host "==> Atualizando WSL e definindo Ubuntu-22.04 como default..."
-wsl --update
-wsl --set-default Ubuntu-22.04
+# ---- 3. Setup do ambiente Linux (idempotente bloco unico) ----
+Write-Host "==> [3/4] Provisionando ambiente Linux (apt, Node 20, claude, codex, tmux)..." -ForegroundColor Cyan
 
-Write-Host "==> Instalando dependencias dentro da Ubuntu-22.04..."
-wsl -d Ubuntu-22.04 -- bash -c @'
-set -e
-sudo apt-get update -y
-sudo apt-get install -y tmux curl jq python3 python3-pip nodejs npm
-# Claude Code via npm (oficial)
-if ! command -v claude > /dev/null; then
-  sudo npm install -g @anthropic-ai/claude-code
+$linuxSetup = @'
+set -eu
+set -o pipefail
+
+ACTIONS_FILE=/tmp/jump-setup-actions.txt
+: > "$ACTIONS_FILE"
+
+note_done()    { echo "done|$1"    >> "$ACTIONS_FILE"; }
+note_skipped() { echo "skipped|$1" >> "$ACTIONS_FILE"; }
+
+# 3.1 systemd em /etc/wsl.conf
+if ! grep -q "^systemd=true" /etc/wsl.conf 2>/dev/null; then
+    sudo tee -a /etc/wsl.conf >/dev/null <<EOF
+
+[boot]
+systemd=true
+EOF
+    note_done "3.1 /etc/wsl.conf: systemd=true escrito (requer wsl --shutdown)"
+else
+    note_skipped "3.1 systemd ja habilitado no /etc/wsl.conf"
 fi
-# Codex CLI via instalador oficial
-if ! command -v codex > /dev/null; then
-  curl -fsSL https://codex.openai.com/install.sh | sh
-  if ! grep -q '.codex/bin' ~/.bashrc; then
-    echo 'export PATH=$HOME/.codex/bin:$PATH' >> ~/.bashrc
-  fi
+
+# 3.2 Pacotes do sistema (instalar apenas os ausentes)
+sudo apt-get update -y >/dev/null
+NEED_APT=""
+for pkg in tmux curl jq python3 python3-pip ca-certificates; do
+    if ! dpkg -s "$pkg" >/dev/null 2>&1; then
+        NEED_APT="$NEED_APT $pkg"
+    fi
+done
+if [ -n "$NEED_APT" ]; then
+    sudo apt-get install -y $NEED_APT >/dev/null
+    note_done "3.2 apt instalou:$NEED_APT"
+else
+    note_skipped "3.2 pacotes apt ja presentes (tmux/curl/jq/python3/...)"
 fi
-echo "Versao tmux: $(tmux -V)"
-echo "Versao node: $(node --version)"
-echo "Versao claude: $(claude --version 2>/dev/null || echo 'NAO INSTALADO')"
-echo "Versao codex: $(codex --version 2>/dev/null || echo 'NAO INSTALADO')"
+
+# 3.3 Node 20 LTS via NodeSource (substitui Node 12 do apt do Ubuntu-22.04)
+NODE_RAW=$(node --version 2>/dev/null || echo "")
+NODE_MAJOR=$(echo "$NODE_RAW" | sed -E "s/^v([0-9]+).*/\\1/" | grep -E "^[0-9]+$" || echo 0)
+if [ "$NODE_MAJOR" -lt 18 ]; then
+    curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - >/dev/null 2>&1
+    sudo apt-get install -y nodejs >/dev/null
+    if [ -z "$NODE_RAW" ]; then
+        note_done "3.3 Node 20 LTS instalado via NodeSource (era ausente)"
+    else
+        note_done "3.3 Node 20 LTS instalado via NodeSource (era $NODE_RAW)"
+    fi
+else
+    note_skipped "3.3 Node $NODE_RAW ja >= 18"
+fi
+
+# 3.4 npm prefix em ~/.npm-global (globais sem sudo)
+mkdir -p "$HOME/.npm-global"
+CURRENT_PREFIX=$(npm config get prefix 2>/dev/null || echo "")
+if [ "$CURRENT_PREFIX" != "$HOME/.npm-global" ]; then
+    npm config set prefix "$HOME/.npm-global"
+    note_done "3.4 npm prefix definido para ~/.npm-global (era $CURRENT_PREFIX)"
+else
+    note_skipped "3.4 npm prefix ja em ~/.npm-global"
+fi
+
+# 3.5 PATH em ~/.bashrc - ~/.npm-global/bin precede /mnt/c/.../npm
+PATH_LINE='export PATH="$HOME/.npm-global/bin:$PATH"'
+if ! grep -qxF "$PATH_LINE" ~/.bashrc; then
+    echo "$PATH_LINE" >> ~/.bashrc
+    note_done "3.5 PATH ~/.npm-global/bin adicionado ao ~/.bashrc"
+else
+    note_skipped "3.5 PATH ~/.npm-global/bin ja no ~/.bashrc"
+fi
+
+# Garante PATH na sessao atual (proximas etapas dependem disso)
+export PATH="$HOME/.npm-global/bin:$PATH"
+
+# 3.6 Claude Code CLI nativo no Linux
+if [ ! -f "$HOME/.npm-global/bin/claude" ]; then
+    npm install -g @anthropic-ai/claude-code >/dev/null 2>&1
+    hash -r 2>/dev/null || true
+    note_done "3.6 claude instalado nativamente em ~/.npm-global/bin/claude"
+else
+    note_skipped "3.6 claude nativo ja presente em ~/.npm-global/bin/"
+fi
+
+# 3.7 Codex CLI via installer oficial
+if [ ! -f "$HOME/.codex/bin/codex" ]; then
+    if curl -fsSL https://codex.openai.com/install.sh | sh >/dev/null 2>&1; then
+        note_done "3.7 codex instalado via installer oficial OpenAI"
+    else
+        note_done "3.7 ERRO: codex installer falhou (URL pode ter mudado; ver runbook 'Solucao de problemas')"
+    fi
+else
+    note_skipped "3.7 codex ja presente em ~/.codex/bin/"
+fi
+
+# 3.8 PATH ~/.codex/bin em ~/.bashrc
+CODEX_PATH_LINE='export PATH="$HOME/.codex/bin:$PATH"'
+if ! grep -qxF "$CODEX_PATH_LINE" ~/.bashrc; then
+    echo "$CODEX_PATH_LINE" >> ~/.bashrc
+    note_done "3.8 PATH ~/.codex/bin adicionado ao ~/.bashrc"
+else
+    note_skipped "3.8 PATH ~/.codex/bin ja no ~/.bashrc"
+fi
+export PATH="$HOME/.codex/bin:$PATH"
+
+# 3.9 tmux sessions PERSISTENTES - NUNCA mata sessao existente (login pode estar la)
+if ! tmux has-session -t project-claude 2>/dev/null; then
+    tmux new-session -d -s project-claude
+    note_done "3.9 tmux session project-claude criada"
+else
+    note_skipped "3.9 tmux project-claude ja existe (preservada)"
+fi
+if ! tmux has-session -t project-codex 2>/dev/null; then
+    tmux new-session -d -s project-codex
+    note_done "3.10 tmux session project-codex criada"
+else
+    note_skipped "3.10 tmux project-codex ja existe (preservada)"
+fi
+
+# 3.11 Estado dos componentes (para reporte final no PowerShell)
+{
+  echo "VERSIONS_START"
+  echo "tmux=$(tmux -V 2>/dev/null | head -1)"
+  echo "node=$(node --version 2>/dev/null || echo ausente)"
+  echo "npm=$(npm --version 2>/dev/null || echo ausente)"
+  echo "claude=$(claude --version 2>/dev/null | head -1 || echo ausente)"
+  echo "codex=$(codex --version 2>/dev/null | head -1 || echo ausente)"
+  echo "which_claude=$(which claude 2>/dev/null || echo ausente)"
+  echo "which_codex=$(which codex 2>/dev/null || echo ausente)"
+  echo "claude_login=$([ -f $HOME/.claude/.credentials.json ] && echo presente || echo ausente)"
+  echo "codex_login=$([ -d $HOME/.codex ] && echo presente || echo ausente)"
+  echo "VERSIONS_END"
+} >> "$ACTIONS_FILE"
+
+cat "$ACTIONS_FILE"
+rm -f "$ACTIONS_FILE"
 '@
 
-Write-Host "==> Criando sessoes tmux iniciais (project-claude e project-codex)..."
-wsl -d Ubuntu-22.04 -- tmux kill-session -t project-claude 2>$null
-wsl -d Ubuntu-22.04 -- tmux kill-session -t project-codex 2>$null
-wsl -d Ubuntu-22.04 -- tmux new-session -d -s project-claude
-wsl -d Ubuntu-22.04 -- tmux new-session -d -s project-codex
+$linuxOutput = wsl -d Ubuntu-22.04 -- bash -c $linuxSetup
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Falha no setup Linux. Output completo:" -ForegroundColor Red
+    Write-Host $linuxOutput
+    Mark-Failed "3. Bloco Linux abortou (exit code $LASTEXITCODE)"
+}
 
-Write-Host "==> OK. Proximos passos:"
-Write-Host "  1. wsl -d Ubuntu-22.04 -- tmux attach -t project-claude"
-Write-Host "     dentro da sessao: claude /login (segue o fluxo no browser)"
-Write-Host "     desanexe com Ctrl+B D"
-Write-Host "  2. wsl -d Ubuntu-22.04 -- tmux attach -t project-codex"
-Write-Host "     dentro da sessao: codex login (segue o fluxo no browser)"
-Write-Host "     desanexe com Ctrl+B D"
-Write-Host "  3. python -m pip install -e <caminho>/jump_agent_runner"
-Write-Host "  4. jump-runner smoke"
+# Parser do output: classifica em done/skipped/versions
+$inVersions = $false
+$versions = @{}
+foreach ($rawLine in ($linuxOutput -split "`n")) {
+    $line = $rawLine.Trim()
+    if ([string]::IsNullOrEmpty($line)) { continue }
+    if ($line -eq "VERSIONS_START") { $inVersions = $true; continue }
+    if ($line -eq "VERSIONS_END")   { $inVersions = $false; continue }
+    if ($inVersions) {
+        if ($line -match "^([^=]+)=(.+)$") {
+            $versions[$Matches[1]] = $Matches[2]
+        }
+        continue
+    }
+    if ($line -match "^done\|(.+)$")          { Mark-Done    $Matches[1] }
+    elseif ($line -match "^skipped\|(.+)$")   { Mark-Skipped $Matches[1] }
+}
+
+# ---- 4. wsl --shutdown necessario? ----
+$systemdChanged = @($script:Done | Where-Object { $_ -match "systemd=true escrito" }).Count -gt 0
+if ($systemdChanged) {
+    Mark-Done "4. systemd PENDENTE de wsl --shutdown (manual - ver proximos passos)"
+} else {
+    Mark-Skipped "4. systemd ja estava aplicado"
+}
+
+# ---- 5. Relatorio final colorido ----
+Write-Host ""
+Write-Host "===== Relatorio do setup =====" -ForegroundColor Cyan
+Write-Host ""
+Write-Host ("Acoes executadas nesta rodada ({0}):" -f $script:Done.Count) -ForegroundColor Green
+if ($script:Done.Count -eq 0) {
+    Write-Host "  (nenhuma - ambiente ja estava 100% provisionado)" -ForegroundColor DarkGray
+} else {
+    foreach ($it in $script:Done) { Write-Host "  [OK]   $it" -ForegroundColor Green }
+}
+Write-Host ""
+Write-Host ("Itens ja conformes - pulados ({0}):" -f $script:Skipped.Count) -ForegroundColor DarkGray
+foreach ($it in $script:Skipped) { Write-Host "  [SKIP] $it" -ForegroundColor DarkGray }
+
+if ($script:Failed.Count -gt 0) {
+    Write-Host ""
+    Write-Host ("Falhas ({0}):" -f $script:Failed.Count) -ForegroundColor Red
+    foreach ($it in $script:Failed) { Write-Host "  [FAIL] $it" -ForegroundColor Red }
+}
+
+Write-Host ""
+Write-Host "===== Estado final dos componentes =====" -ForegroundColor Cyan
+function Show-State($label, $value, $okPattern) {
+    if ([string]::IsNullOrEmpty($value)) { $value = "(sem valor)" }
+    $isOk = $value -match $okPattern
+    $glyph = if ($isOk) { "[OK]" } else { "[!!]" }
+    $color = if ($isOk) { "Green" } else { "Red" }
+    Write-Host ("  {0,-6} {1,-14} {2}" -f $glyph, $label, $value) -ForegroundColor $color
+}
+
+Show-State "tmux"         $versions["tmux"]         '^tmux'
+Show-State "node"         $versions["node"]         '^v[0-9]+'
+Show-State "npm"          $versions["npm"]          '^[0-9]+'
+Show-State "claude"       $versions["claude"]       '^[0-9]'
+Show-State "codex"        $versions["codex"]        '.'
+Show-State "which claude" $versions["which_claude"] '^/home/'
+Show-State "which codex"  $versions["which_codex"]  '^/home/'
+Show-State "claude login" $versions["claude_login"] '^presente$'
+Show-State "codex login"  $versions["codex_login"]  '^presente$'
+
+$loginPending = ($versions["claude_login"] -ne "presente") -or ($versions["codex_login"] -ne "presente")
+
+# ---- 6. Proximos passos manuais ----
+Write-Host ""
+Write-Host "===== Proximos passos =====" -ForegroundColor Cyan
+
+if ($systemdChanged) {
+    Write-Host "  1. wsl --shutdown                       (encerra todas as distros)" -ForegroundColor Yellow
+    Write-Host "  2. wsl -d Ubuntu-22.04                  (reabre - systemd ativo)" -ForegroundColor Yellow
+    Write-Host ""
+}
+
+if ($versions["claude_login"] -ne "presente") {
+    Write-Host "  Login Claude (executar depois do wsl --shutdown se aplicavel):" -ForegroundColor Yellow
+    Write-Host "    wsl -d Ubuntu-22.04 -- tmux attach -t project-claude" -ForegroundColor White
+    Write-Host "    [dentro do tmux] claude /login                  (browser abre via WSLg)" -ForegroundColor White
+    Write-Host "    [dentro do tmux] Ctrl+B  D                      (desanexa, sessao continua)" -ForegroundColor White
+    Write-Host ""
+}
+
+if ($versions["codex_login"] -ne "presente") {
+    Write-Host "  Login Codex:" -ForegroundColor Yellow
+    Write-Host "    wsl -d Ubuntu-22.04 -- tmux attach -t project-codex" -ForegroundColor White
+    Write-Host "    [dentro do tmux] codex login" -ForegroundColor White
+    Write-Host "    [dentro do tmux] Ctrl+B  D" -ForegroundColor White
+    Write-Host ""
+}
+
+if (-not $loginPending -and -not $systemdChanged -and $script:Failed.Count -eq 0) {
+    Write-Host "  Ambiente esta pronto. Validacao end-to-end:" -ForegroundColor Green
+    Write-Host "    .\scripts\start-worker.ps1               (cria venv se ausente + boot)" -ForegroundColor White
+    Write-Host "  Smoke isolado do agent-runner (sem worker):" -ForegroundColor Green
+    Write-Host "    .\.venv\Scripts\jump-runner.exe smoke" -ForegroundColor White
+}
+
+Write-Host ""
+Write-Host "Runbook detalhado: docs/runbooks/setup-worker-wsl.md" -ForegroundColor DarkGray
