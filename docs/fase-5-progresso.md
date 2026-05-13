@@ -228,17 +228,83 @@ Todos em `docs/conformidade-v3.1.md` seção "Débitos menores de F5.4 (P3)":
 
 ---
 
-## F5.5 a F5.9 — Pendentes
+## F5.6a — Setup limpo do WSL + worker básico ✅ FECHADA (parcial — smoke F2.8 em F5.6b)
 
-Conforme plano em `docs/fase-5-plano.md`. Ordem recomendada (conservadora: schemas estáveis antes de LGPD/deploy):
+Constrói o processo `jump-worker` real (consumidor da fila Redis `jobs.agent`)
+e atualiza o setup do ambiente WSL para suportar `claude`/`codex` nativos no
+Linux. Endereça **parcialmente** o débito K: F2.6 (worker real) cumprido com
+pipeline `BRPOP → AgentRunner → callback HMAC + heartbeat`; F2.8 (smoke real
+contra `bradesco_sas_databricks.expected.json`) fica para F5.6b.
+
+### Commits
+
+| # | Hash | Tipo | Conteúdo |
+|---|---|---|---|
+| 1 | `0cb9ff9` | docs | Runbook `setup-worker-wsl.md` (12 passos idempotentes + 6 troubleshootings) + ADR worker real (decisões B-α/β/γ agrupadas) |
+| 2 | `365e0d7` | chore | `setup-windows.ps1` reescrito idempotente (systemd, Node 20 LTS via NodeSource, PATH `~/.npm-global` precede mount Windows, relatório colorido final por componente) + seção "Como rodar o worker em dev" em `dev_notes.md` |
+| 3 | `797785f` | feat(worker) | `worker/worker/{config,hmac_signer,http_client,heartbeat,prompt_builder,main}.py` — pipeline completo Redis→Runner→callback com retry tenacity + dead-letter |
+| 4 | `(este)` | test+docs | 27 testes pytest (worker 82% cobertura) + `.env.example` + `.coveragerc` + atualização `conformidade-v3.1.md` + ADR fechamento |
+
+### Métricas
+
+| Métrica | Início F5.6a | **Final F5.6a** |
+|---|---|---|
+| pytest backend | 195 | **195** (sem alteração — F5.6a é puro worker/docs/script) |
+| pytest worker | 0 | **27** (novo pacote) |
+| vitest frontend | 104 | **104** (sem alteração) |
+| Cobertura worker total | n/a | **82%** (gate ≥70% folgado) |
+| Cobertura backend total | 88% | 88% |
+
+### Decisões respondidas (B-α/β/γ)
+
+| # | Pergunta | Resposta |
+|---|---|---|
+| **B-α** | Status `RUNNING` intermediário no callback? | **(a) Não muda nada.** Heartbeat já dá observability suficiente. Reabrir quando alguém pedir granularidade do estado entre QUEUED e DONE. |
+| **B-β** | Construção do prompt em F5.6a — stub ou real? | **(a) Stub mínimo.** Templates curtos hardcoded por `task_type` (`proposal_extraction` / `report_analysis` / `portfolio_pattern`). Prompt versionado real entra em F5.6b junto com o smoke. |
+| **B-γ** | Download de `input_files` do R2 em F5.6a? | **(a) Pula.** F5.6a roda jobs sintéticos para validar transporte. Download via boto3 (lib já em deps) é trabalho de F5.6b. |
+
+### Decisões internas adicionais
+
+- **`worker_stub.py` preservado, não substituído.** Inventário inicial revelou que o stub é asyncio in-process (sem Redis), controlado por `STUB_WORKER_ENABLED` — fallback de dev. O worker real é processo separado em `worker/worker/main.py`. Briefing original previa substituição; ADR registra o desvio.
+- **Worker NÃO usa `concurrency=greenlet` no `.coveragerc`** (diferente do backend). Worker é puro asyncio sem ORM async (sqlalchemy[asyncio]/asyncpg/aiosqlite). Adicionar greenlet sem a lib estar nas deps quebra com `ConfigError: Couldn't trace with concurrency=greenlet, the module isn't installed`. Documentado na nota do `worker/.coveragerc`.
+- **HMAC client-side em `worker/hmac_signer.py` espelhado de `backend/app/core/worker_auth.py`** sem importar do backend (worker é pacote independente). Teste `test_signature_replicates_backend_verify_signature` garante que os dois cálculos produzem o mesmo hex — falhar lá significa HMAC quebra em prod.
+- **`tmux NUNCA mata sessão existente`** no `setup-windows.ps1` novo. Versão antiga fazia `tmux kill-session` antes de recriar, descartando login válido entre rodadas. Novo script usa `tmux has-session` antes; sessões persistentes preservam credenciais.
+- **Validação `[System.Management.Automation.Language.Parser]::ParseFile` antes do commit do `.ps1`** pegou bug do em-dash `—` em string PowerShell em ambiente Windows-PT (CP1252 vs UTF-8). Substituído por `-`. Lição vai pra `dev_notes.md` em ciclo futuro.
+- **Plano B do Codex como operacionalmente aceitável.** Se URL `https://codex.openai.com/install.sh` mudar, runbook documenta 3 alternativas + opção de rodar **só com Claude** (CodexProvider reporta `BROKER_UNAVAILABLE` cedo, AgentRunner cai pra primary apenas).
+
+### Aprendizados marcantes da sub-fase
+
+- **Inventário ativo antes de codar evita refactor enorme.** Briefing pedia "substituir `worker_stub` por `worker_real`". Inventário revelou que (1) o stub é asyncio in-process — não substituível; (2) `jump_agent_runner` já tinha 80% pronto desde F1 (AgentRunner com fallback, providers, brokers, routes, validator, observer); (3) `worker/worker/main.py` é o que faltava; (4) endpoint `POST /internal/agent-results/{run_id}` com HMAC + `WorkerHeartbeat` model já existiam no backend desde F2. F5.6a virou enxuto porque não houve reimplementação de máquina pronta.
+- **Cobertura `concurrency=greenlet` é armadilha sutil ao espelhar configs.** Backend depende de greenlet por sqlalchemy[asyncio]→asyncpg; worker não tem ORM. Espelhar `.coveragerc` direto causou `ConfigError` em runtime. Vale validar `concurrency=...` contra deps reais antes de copiar config.
+
+### Conformidade — itens marcados em `docs/conformidade-v3.1.md`
+
+- **K. F2.8 — smoke real do agente leitor** → marcado como **parcial** (F5.6a entregou worker real; F5.6b fecha smoke).
+
+### Débitos menores P3 do F5.6a
+
+Todos em `docs/conformidade-v3.1.md` seção "Débitos menores de F5.6a (P3)":
+
+| ID | Item | Status |
+|---|---|---|
+| **F5.6a.X** | `curl -I` preventivo na URL do codex installer antes do `curl | sh` | aberto, refactor em F5.6b ou F6 |
+| **F5.6a.Y** | Onde o `jump-worker` roda (Windows host vs WSL Linux) — decisão arquitetural | aberto, F5.6b força a escolha pelo smoke |
+
+---
+
+## F5.5, F5.6b, F5.7 a F5.9 — Pendentes
+
+Conforme plano em `docs/fase-5-plano.md`. F5.6 foi dividida em F5.6a (fechada
+acima) e F5.6b (smoke F2.8) após a sessão de inventário. Ordem recomendada
+(conservadora: schemas estáveis antes de LGPD/deploy):
 
 | # | Sub-fase | Estimativa | Bloqueia / é bloqueada por |
 |---|---|---|---|
-| F5.5 | Agente de Inteligência Cruzada (heurística inicial + flag) | ~30k | depende de F5.3 |
-| F5.6 | WSL clean + F2.6 worker real + F2.8 smoke | ~50k (teto) | depende de runbook + execução manual sua |
-| F5.7 | LGPD: `lgpd.md` + `/me/data-export` + `/me/data-deletion-request` | ~45k | depende de F5.1 estabilizado (✅) + F5.3 (idealmente) |
+| F5.5 | Agente de Inteligência Cruzada (heurística inicial + flag) | ~30k | depende de F5.3 (✅); worker real (F5.6a ✅) já suficiente |
+| F5.6b | Smoke F2.8 real contra `bradesco_sas_databricks.expected.json` + decisão F5.6a.Y (onde o worker roda) | ~25k | depende de F5.6a (✅) + login interativo do Chris no `tmux project-claude` |
+| F5.7 | LGPD: `lgpd.md` + `/me/data-export` + `/me/data-deletion-request` | ~45k | depende de F5.1 estabilizado (✅) + F5.3 (✅) |
 | F5.8 | Exportação PDF/PPTX | ~50k (teto) | livre |
-| F5.9 | Deploy Railway + v3.2 consolidada | ~40k | depende de F5.6 (worker real para piloto) + F5.7 (LGPD assinado) |
+| F5.9 | Deploy Railway + v3.2 consolidada | ~40k | depende de F5.6b (smoke validado pro piloto) + F5.7 (LGPD assinado) |
 
 ---
 
