@@ -5,7 +5,7 @@ import hashlib
 import uuid
 from datetime import UTC, date, datetime
 
-from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
 from jump_storage.factory import get_storage
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -21,6 +21,7 @@ from app.models import (
     Report,
     ReportStatus,
     Risk,
+    RiskStatus,
     Role,
     ScopeChange,
     ScopeChangeStatus,
@@ -30,6 +31,7 @@ from app.models import (
 from app.models.domain import Project
 from app.queue.publisher import enqueue_agent_job
 from app.schemas.project import ProjectCreate, ProjectPublic, ProposalPublic
+from app.schemas.report import RiskPublic
 from app.schemas.retrospective import (
     MaterializedRiskItem,
     ProjectCloseResult,
@@ -235,6 +237,46 @@ async def get_proposal(
     if not prop:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "proposta não encontrada")
     return prop
+
+
+# ---------- F5.3 — Risks agregados do projeto (suporte ao frontend) ----------
+
+
+@router.get(
+    "/projects/{project_id}/risks",
+    response_model=list[RiskPublic],
+)
+async def list_project_risks(
+    project_id: uuid.UUID,
+    status_filter: RiskStatus | None = Query(default=None, alias="status"),
+    user: User = Depends(require_any_role(Role.GP, Role.PMO, Role.OPERATOR, Role.CLIENT)),
+    db: AsyncSession = Depends(get_db),
+) -> list[Risk]:
+    """Lista todos os Risks do projeto (agregados por Reports). Filtro opcional por status.
+
+    Adicionado em F5.3 commit 3 para suportar a tela de encerramento, que
+    pré-marca como materializados os Risks com status=MATERIALIZED. Sem
+    endpoint próprio, frontend teria de iterar Reports → 1 GET por report.
+    """
+    project = await db.get(Project, project_id)
+    if not project:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "projeto não encontrado")
+    if user.role == Role.GP and project.gp_user_id != user.id:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "GP não é dono desse projeto")
+    if user.role == Role.CLIENT and project.client_user_id != user.id:
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN, "cliente não tem acesso a esse projeto"
+        )
+
+    stmt = (
+        select(Risk)
+        .join(Report, Report.id == Risk.report_id)
+        .where(Report.project_id == project_id)
+    )
+    if status_filter is not None:
+        stmt = stmt.where(Risk.status == status_filter)
+    stmt = stmt.order_by(Risk.created_at.desc())
+    return list((await db.execute(stmt)).scalars().all())
 
 
 # ---------- F5.3 — Encerramento de projeto + Retrospectiva (v3.1 §10.4) ----------

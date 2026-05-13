@@ -426,6 +426,32 @@ export interface TransitionResult {
   approved_by: string;
 }
 
+// F5.3 — Retrospectiva e encerramento de projeto (v3.1 §10.4)
+
+export interface MaterializedRiskItem {
+  risk_id: string;
+  comment: string | null;
+}
+
+export interface ProjectRetrospective {
+  id: string;
+  project_id: string;
+  delivered_vs_proposed: string;
+  would_do_differently: string;
+  client_feedback: string;
+  materialized_risks: MaterializedRiskItem[];
+  created_by_id: string;
+  created_at: string;
+}
+
+export interface ProjectCloseResult {
+  project_id: string;
+  status: "closed";
+  ended_at: string;
+  retrospective: ProjectRetrospective;
+}
+
+
 export interface InAppNotification {
   id: string;
   kind: string;
