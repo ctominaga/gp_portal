@@ -31,6 +31,9 @@ class DeliveryProgressIn(BaseModel):
     # Persistência da confirmação do modal "Critério de aceite foi atingido?"
     # (spec v3.1 §4.2.2). Obrigatório quando status=done + percent_complete=100.
     acceptance_confirmed: bool | None = None
+    # F5.4 — Modo Assistido por IA (spec v3.1 §10.2). Default False; backend
+    # zera no PATCH quando detecta edição (commit 3 do F5.4).
+    is_prepopulated: bool = False
 
 
 class DeliveryProgressPublic(DeliveryProgressIn):
@@ -47,6 +50,8 @@ class RiskIn(BaseModel):
     owner_id: uuid.UUID | None = None
     due_date: date | None = None
     status: RiskStatus = RiskStatus.IDENTIFIED
+    # F5.4 — Modo Assistido por IA (spec v3.1 §10.2).
+    is_prepopulated: bool = False
 
 
 class RiskPublic(RiskIn):
@@ -85,6 +90,8 @@ class PendingItemIn(BaseModel):
     status: PendingItemStatus = PendingItemStatus.OPEN
     # spec v3.1 §4.2.5 — "se não resolvido, o que afeta"
     impact: str | None = None
+    # F5.4 — Modo Assistido por IA (spec v3.1 §10.2).
+    is_prepopulated: bool = False
 
 
 class PendingItemPublic(PendingItemIn):

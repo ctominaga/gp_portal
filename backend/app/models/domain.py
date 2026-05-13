@@ -568,6 +568,15 @@ class DeliveryProgress(Base):
     # parciais não passam pelo modal.
     acceptance_confirmed: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
 
+    # F5.4 — Modo de Report Assistido por IA (spec v3.1 §10.2). True quando
+    # o registro foi criado por `prepopulate_report` (entrega herdada do
+    # baseline ativo no período do novo report). Backend zera para False
+    # automaticamente no PATCH quando o GP edita qualquer campo relevante
+    # (status, percent_complete, comment, revised_date, acceptance_confirmed).
+    is_prepopulated: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False
+    )
+
 
 class Risk(Base):
     """Risco do projeto (spec v3.1 §4.2.3).
@@ -604,6 +613,15 @@ class Risk(Base):
         nullable=False,
     )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, nullable=False)
+
+    # F5.4 — Modo de Report Assistido por IA (spec v3.1 §10.2). True quando
+    # o Risk foi herdado do report anterior (status IDENTIFIED/MONITORING)
+    # via `prepopulate_report`. Backend zera para False automaticamente no
+    # PATCH quando o GP edita description/probability/impact/mitigation_plan/
+    # owner_id/due_date/status.
+    is_prepopulated: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False
+    )
 
     @property
     def level(self) -> RiskLevel:
@@ -678,6 +696,14 @@ class PendingItem(Base):
     # Cumprido por `created_at` (não duplicamos com campo `open_date`).
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=_utcnow, nullable=False
+    )
+
+    # F5.4 — Modo de Report Assistido por IA (spec v3.1 §10.2). True quando
+    # a pendência foi herdada do report anterior (status=OPEN) via
+    # `prepopulate_report`. Backend zera para False no PATCH quando o GP
+    # edita description/owner_party/due_date/status/impact.
+    is_prepopulated: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False
     )
 
 
