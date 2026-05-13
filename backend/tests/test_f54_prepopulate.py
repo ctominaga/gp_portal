@@ -55,7 +55,10 @@ async def _seed_project_active_baseline(
     """Cria Project + GP + Baseline ACTIVE. Deliverables opcionais com due_date
     para exercitar a janela do DeliveryProgress.
     """
-    gp = User(name="GP", email=gp_email, password_hash=hash_password("x"), role=Role.GP)
+    gp = User(
+        name="GP", email=gp_email.lower(),
+        password_hash=hash_password("JumpDev123!"), role=Role.GP,
+    )
     db.add(gp)
     await db.flush()
     project = Project(name="P", client_name="C", gp_user_id=gp.id)
@@ -285,7 +288,8 @@ async def test_prepopulate_idempotent_returns_409_on_duplicate_period(
 async def test_prepopulate_no_active_baseline_returns_409(db_session) -> None:
     # Cria projeto SEM baseline ativo
     gp = User(
-        name="GP", email="gp-nbl@x.com", password_hash=hash_password("x"), role=Role.GP
+        name="GP", email="gp-nbl@x.com",
+        password_hash=hash_password("JumpDev123!"), role=Role.GP,
     )
     db_session.add(gp)
     await db_session.flush()
@@ -356,6 +360,127 @@ async def test_prepopulate_does_not_inherit_action_plans(db_session) -> None:
 
 
 # ---------- Default da flag em criação manual ----------
+
+
+# ---------- Endpoint POST /projects/{id}/reports/prepopulate ----------
+
+
+async def _login(client, *, role: str, email: str) -> str:
+    await client.post(
+        "/auth/register",
+        json={"name": role.title(), "email": email, "password": "JumpDev123!", "role": role},
+    )
+    r = await client.post("/auth/login", json={"email": email, "password": "JumpDev123!"})
+    return r.json()["access_token"]
+
+
+@pytest.mark.asyncio
+async def test_endpoint_prepopulate_happy_path(client, db_session) -> None:
+    """201 Created retornando ReportPublic com filhos populados."""
+    project, gp, _ = await _seed_project_active_baseline(
+        db_session, gp_email="gp-ep-h@x.com",
+        with_deliverables=[date(2026, 5, 5)],
+    )
+    await _seed_previous_report(
+        db_session, project=project, gp=gp,
+        period_start=date(2026, 4, 1), period_end=date(2026, 4, 15),
+        risks=[("Risk antigo", RiskStatus.MONITORING)],
+        pendings=[("Pendência antiga", PendingItemStatus.OPEN)],
+    )
+    tok = await _login(client, role="GP", email="gp-ep-h@x.com")
+
+    r = await client.post(
+        f"/projects/{project.id}/reports/prepopulate",
+        headers={"Authorization": f"Bearer {tok}"},
+        json={"period_start": "2026-05-01", "period_end": "2026-05-15"},
+    )
+    assert r.status_code == 201, r.text
+    body = r.json()
+    assert body["status"] == "draft"
+    assert body["period_start"] == "2026-05-01"
+    assert len(body["risks"]) == 1
+    assert body["risks"][0]["is_prepopulated"] is True
+    assert len(body["pending_items"]) == 1
+    assert body["pending_items"][0]["is_prepopulated"] is True
+    assert len(body["progresses"]) == 1
+    assert body["progresses"][0]["is_prepopulated"] is True
+
+
+@pytest.mark.asyncio
+async def test_endpoint_prepopulate_409_when_period_exists(client, db_session) -> None:
+    """409 ao chamar 2x no mesmo período — mensagem contém link."""
+    project, gp, _ = await _seed_project_active_baseline(
+        db_session, gp_email="gp-ep-409d@x.com"
+    )
+    tok = await _login(client, role="GP", email="gp-ep-409d@x.com")
+    body = {"period_start": "2026-05-01", "period_end": "2026-05-15"}
+    r1 = await client.post(
+        f"/projects/{project.id}/reports/prepopulate",
+        headers={"Authorization": f"Bearer {tok}"}, json=body,
+    )
+    assert r1.status_code == 201
+
+    r2 = await client.post(
+        f"/projects/{project.id}/reports/prepopulate",
+        headers={"Authorization": f"Bearer {tok}"}, json=body,
+    )
+    assert r2.status_code == 409
+    assert "/reports/" in r2.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_endpoint_prepopulate_409_when_no_active_baseline(
+    client, db_session
+) -> None:
+    """Projeto sem baseline ACTIVE → 409 com mensagem clara."""
+    gp = User(
+        name="GP", email="gp-ep-nb@x.com",
+        password_hash=hash_password("JumpDev123!"), role=Role.GP,
+    )
+    db_session.add(gp)
+    await db_session.flush()
+    project = Project(name="P", client_name="C", gp_user_id=gp.id)
+    db_session.add(project)
+    await db_session.commit()
+    tok = await _login(client, role="GP", email="gp-ep-nb@x.com")
+
+    r = await client.post(
+        f"/projects/{project.id}/reports/prepopulate",
+        headers={"Authorization": f"Bearer {tok}"},
+        json={"period_start": "2026-05-01", "period_end": "2026-05-15"},
+    )
+    assert r.status_code == 409
+    assert "baseline ativo" in r.json()["detail"].lower()
+
+
+@pytest.mark.asyncio
+async def test_endpoint_prepopulate_403_for_non_owner_gp(client, db_session) -> None:
+    project, _, _ = await _seed_project_active_baseline(
+        db_session, gp_email="gp-ep-own@x.com"
+    )
+    other_tok = await _login(client, role="GP", email="gp-ep-other@x.com")
+    r = await client.post(
+        f"/projects/{project.id}/reports/prepopulate",
+        headers={"Authorization": f"Bearer {other_tok}"},
+        json={"period_start": "2026-05-01", "period_end": "2026-05-15"},
+    )
+    assert r.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_endpoint_prepopulate_400_when_start_after_end(
+    client, db_session
+) -> None:
+    project, _, _ = await _seed_project_active_baseline(
+        db_session, gp_email="gp-ep-400@x.com"
+    )
+    tok = await _login(client, role="GP", email="gp-ep-400@x.com")
+    r = await client.post(
+        f"/projects/{project.id}/reports/prepopulate",
+        headers={"Authorization": f"Bearer {tok}"},
+        json={"period_start": "2026-05-20", "period_end": "2026-05-01"},
+    )
+    assert r.status_code == 400
 
 
 @pytest.mark.asyncio

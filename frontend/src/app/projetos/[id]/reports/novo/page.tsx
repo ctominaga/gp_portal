@@ -1,38 +1,85 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api, asApiError } from "@/lib/api";
 import { reportCreateSchema, type ReportCreateInput } from "@/lib/schemas";
-import type { Report } from "@/lib/types";
+import type { Report, ReportSummary } from "@/lib/types";
+
+type Mode = "prepopulate" | "scratch";
 
 export default function NewReportPage() {
   const { id: projectId } = useParams<{ id: string }>();
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
+  // null = ainda carregando; false/true = decisão tomada
+  const [hasPreviousReport, setHasPreviousReport] = useState<boolean | null>(null);
+  const [mode, setMode] = useState<Mode>("scratch");
+
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm<ReportCreateInput>({ resolver: zodResolver(reportCreateSchema) });
 
+  useEffect(() => {
+    if (!projectId) return;
+    void (async () => {
+      try {
+        const r = await api.get<ReportSummary[]>(`/projects/${projectId}/reports`);
+        const exists = r.data.length > 0;
+        setHasPreviousReport(exists);
+        // Pré-marca o modo mais útil: pré-popular se há report anterior,
+        // do zero se é o primeiro report do projeto.
+        setMode(exists ? "prepopulate" : "scratch");
+      } catch {
+        // Falha não-fatal: assume sem report anterior; UI mostra só "Do zero".
+        setHasPreviousReport(false);
+        setMode("scratch");
+      }
+    })();
+  }, [projectId]);
+
   async function onSubmit(values: ReportCreateInput) {
     setSubmitting(true);
     try {
-      const r = await api.post<Report>("/reports", { project_id: projectId, ...values });
-      router.replace(`/projetos/${projectId}/reports/${r.data.id}/edit`);
+      let report: Report;
+      if (mode === "prepopulate") {
+        const r = await api.post<Report>(
+          `/projects/${projectId}/reports/prepopulate`,
+          values,
+        );
+        report = r.data;
+      } else {
+        const r = await api.post<Report>("/reports", {
+          project_id: projectId,
+          ...values,
+        });
+        report = r.data;
+      }
+      router.replace(`/projetos/${projectId}/reports/${report.id}/edit`);
     } catch (e) {
-      toast.error(asApiError(e).message);
+      const err = asApiError(e);
+      // 409 do prepopulate (período duplicado ou baseline inativo) e demais
+      // erros mostram mensagem do servidor — já vem com ação concreta do backend.
+      toast.error(err.message);
       setSubmitting(false);
     }
   }
@@ -42,10 +89,80 @@ export default function NewReportPage() {
       <Card className="mx-auto max-w-xl">
         <CardHeader>
           <CardTitle>Novo report</CardTitle>
-          <CardDescription>Defina o período e siga para o wizard.</CardDescription>
+          <CardDescription>
+            Defina o período e escolha como começar. Você pode aproveitar o
+            report anterior como ponto de partida (riscos abertos, pendências
+            do cliente e entregas no prazo do período).
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+            <fieldset className="space-y-2">
+              <legend className="text-sm font-medium">Modo</legend>
+              <label
+                className={
+                  "flex cursor-pointer items-start gap-3 rounded-md border p-3 text-sm " +
+                  (mode === "prepopulate"
+                    ? "border-primary bg-primary/5"
+                    : "border-input")
+                }
+              >
+                <input
+                  type="radio"
+                  name="mode"
+                  value="prepopulate"
+                  checked={mode === "prepopulate"}
+                  onChange={() => setMode("prepopulate")}
+                  disabled={hasPreviousReport === false}
+                  className="mt-0.5"
+                  data-testid="radio-prepopulate"
+                />
+                <div className="flex-1">
+                  <p className="flex items-center gap-1.5 font-medium">
+                    <Sparkles className="h-4 w-4 text-primary" />
+                    Pré-popular do report anterior
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Herda riscos abertos, pendências em aberto e cria
+                    placeholders para entregas com prazo no período. Cada
+                    item recebe um marcador "do anterior" que some quando
+                    você edita.
+                  </p>
+                  {hasPreviousReport === false && (
+                    <p
+                      className="mt-1 text-xs italic text-muted-foreground"
+                      data-testid="prepopulate-disabled-hint"
+                    >
+                      Sem report anterior — primeiro report do projeto.
+                    </p>
+                  )}
+                </div>
+              </label>
+
+              <label
+                className={
+                  "flex cursor-pointer items-start gap-3 rounded-md border p-3 text-sm " +
+                  (mode === "scratch" ? "border-primary bg-primary/5" : "border-input")
+                }
+              >
+                <input
+                  type="radio"
+                  name="mode"
+                  value="scratch"
+                  checked={mode === "scratch"}
+                  onChange={() => setMode("scratch")}
+                  className="mt-0.5"
+                  data-testid="radio-scratch"
+                />
+                <div className="flex-1">
+                  <p className="font-medium">Começar do zero</p>
+                  <p className="text-xs text-muted-foreground">
+                    Wizard vazio. Você preenche cada seção manualmente.
+                  </p>
+                </div>
+              </label>
+            </fieldset>
+
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="period_start">Início *</Label>
@@ -66,7 +183,7 @@ export default function NewReportPage() {
               <Button variant="ghost" asChild>
                 <Link href={`/projetos/${projectId}`}>Cancelar</Link>
               </Button>
-              <Button type="submit" disabled={submitting}>
+              <Button type="submit" disabled={submitting} data-testid="btn-submit">
                 {submitting ? "Criando…" : "Criar e abrir wizard"}
               </Button>
             </div>

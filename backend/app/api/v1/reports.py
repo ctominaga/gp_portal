@@ -5,10 +5,12 @@ import uuid
 from datetime import UTC, date, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
 from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db, require_any_role
+from app.services.prepopulate import PrepopulateError, prepopulate_report
 from app.models import (
     ActionPlan,
     Deliverable,
@@ -165,6 +167,58 @@ async def create_report(
     db.add(report)
     await db.commit()
     await db.refresh(report)
+    return await _serialize_report(report, db)
+
+
+# ---------- F5.4 — Modo de Report Assistido por IA (v3.1 §10.2) ----------
+
+
+class PrepopulateRequest(BaseModel):
+    """Body do POST /projects/{id}/reports/prepopulate."""
+
+    period_start: date
+    period_end: date
+
+
+@router.post(
+    "/projects/{project_id}/reports/prepopulate",
+    response_model=ReportPublic,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_report_prepopulated(
+    project_id: uuid.UUID,
+    payload: PrepopulateRequest,
+    user: User = Depends(require_any_role(Role.GP)),
+    db: AsyncSession = Depends(get_db),
+) -> ReportPublic:
+    """Cria Report DRAFT pré-populado com herança do report anterior.
+
+    Lógica delegada a `app.services.prepopulate.prepopulate_report` — vide
+    F5.4 commit 1 para detalhes do filtro Risks/Pendings/Deliverables e
+    da janela de 30 dias para entregas atrasadas recentes.
+
+    Erros (cascata; primeira falha vence):
+      - 403 se user não é GP-dono do projeto
+      - 400 se period_start > period_end
+      - 409 se já existe Report no período (qualquer status). Mensagem
+        contém link `/reports/{id}` para o draft existente.
+      - 409 se o projeto não tem Baseline ACTIVE.
+
+    Sucesso: 201 Created com `ReportPublic` (mesmo formato do POST /reports).
+    """
+    project = await _ensure_project_owned(project_id, user, db)
+
+    try:
+        report = await prepopulate_report(
+            db,
+            project=project,
+            period_start=payload.period_start,
+            period_end=payload.period_end,
+            creator_user_id=user.id,
+        )
+    except PrepopulateError as exc:
+        raise HTTPException(status_code=exc.http_status, detail=str(exc))
+
     return await _serialize_report(report, db)
 
 
