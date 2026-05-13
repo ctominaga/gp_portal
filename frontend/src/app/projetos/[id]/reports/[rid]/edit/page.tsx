@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, History } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -429,6 +429,13 @@ export default function ReportEditPage() {
                             <CheckCircle2 className="h-3 w-3" /> aceite confirmado
                           </Badge>
                         )}
+                        {/* F5.4 §10.2: badge quando placeholder do prepopulate. */}
+                        {p.is_prepopulated && (
+                          <Badge variant="secondary" className="gap-1 text-xs" data-testid="badge-prepopulated">
+                            <History className="h-3 w-3" />
+                            Do report anterior
+                          </Badge>
+                        )}
                       </div>
                       {d?.phase && (
                         <p className="text-xs text-muted-foreground">{d.phase}</p>
@@ -604,6 +611,13 @@ export default function ReportEditPage() {
               const lvl = levelOf(r.probability, r.impact);
               const lvlVariant = lvl === "critical" || lvl === "high" ? "red" : lvl === "medium" ? "amber" : "outline";
               return (
+                <div className="space-y-2">
+                  {r.is_prepopulated && (
+                    <Badge variant="secondary" className="gap-1" data-testid="badge-prepopulated">
+                      <History className="h-3 w-3" />
+                      Do report anterior
+                    </Badge>
+                  )}
                 <div className="grid gap-2 sm:grid-cols-[1fr_120px_120px_120px]">
                   <Textarea
                     rows={2}
@@ -656,6 +670,7 @@ export default function ReportEditPage() {
                       }
                     />
                   </div>
+                </div>
                 </div>
               );
             }}
@@ -775,6 +790,13 @@ export default function ReportEditPage() {
             onChange={(pending_items) => setDraft({ ...draft, pending_items })}
             disabled={isReadonly}
             renderItem={(p, set) => (
+              <div className="space-y-2">
+                {p.is_prepopulated && (
+                  <Badge variant="secondary" className="gap-1" data-testid="badge-prepopulated">
+                    <History className="h-3 w-3" />
+                    Do report anterior
+                  </Badge>
+                )}
               <div className="grid gap-2 sm:grid-cols-[1fr_140px_120px]">
                 <Textarea
                   rows={2}
@@ -807,6 +829,7 @@ export default function ReportEditPage() {
                     Aberto em: {new Date(p.created_at).toLocaleDateString("pt-BR")}
                   </p>
                 )}
+              </div>
               </div>
             )}
           />

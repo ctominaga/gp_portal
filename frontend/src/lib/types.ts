@@ -163,6 +163,8 @@ export interface DeliveryProgress {
   // spec v3.1 §4.2.2 — confirmação do modal "Critério de aceite foi atingido?".
   // Obrigatório true quando status=done + percent_complete=100 (validado no backend).
   acceptance_confirmed?: boolean | null;
+  /** F5.4 — true quando entregue como placeholder pelo prepopulate. */
+  is_prepopulated?: boolean;
 }
 
 export interface Risk {
@@ -177,6 +179,8 @@ export interface Risk {
   owner_id: string | null;
   due_date: string | null;
   status: RiskStatus;
+  /** F5.4 — true quando herdado do report anterior. Backend zera ao editar. */
+  is_prepopulated?: boolean;
 }
 
 export interface ActionPlan {
@@ -207,6 +211,8 @@ export interface PendingItem {
   // spec v3.1 §4.2.5 — "Data de abertura: quando foi registrado".
   // Servido pelo backend como `created_at`; UI pode renderizar como "Aberto em".
   created_at?: string;
+  /** F5.4 — true quando herdado do report anterior. Backend zera ao editar. */
+  is_prepopulated?: boolean;
 }
 
 export interface Report {

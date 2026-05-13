@@ -40,6 +40,51 @@ from app.schemas.report import (
 _RAG_RANK = {RAGStatus.GREEN: 0, RAGStatus.AMBER: 1, RAGStatus.RED: 2}
 
 
+# F5.4 — Modo Assistido por IA (spec v3.1 §10.2). Campos que contam como
+# "edição significativa" no PATCH: se algum mudou entre estado atual e payload,
+# o backend zera `is_prepopulated` (registro perde o status "do anterior").
+# Campos NÃO listados (id, report_id, created_at, deviation_flag, is_prepopulated
+# em si) NÃO disparam o auto-zero.
+_RISK_SIGNIFICANT_FIELDS: tuple[str, ...] = (
+    "description", "probability", "impact", "mitigation_plan",
+    "owner_id", "due_date", "status",
+)
+_PENDING_SIGNIFICANT_FIELDS: tuple[str, ...] = (
+    "description", "owner_party", "due_date", "status", "impact",
+)
+_PROGRESS_SIGNIFICANT_FIELDS: tuple[str, ...] = (
+    "status", "percent_complete", "comment", "revised_date", "acceptance_confirmed",
+)
+
+
+def _normalize(v):
+    """Normaliza valor para comparação: UUID/enum → str; outros tipos passam."""
+    if v is None:
+        return None
+    if hasattr(v, "value"):  # enum
+        return v.value
+    return str(v) if not isinstance(v, (str, int, float, bool)) else v
+
+
+def _is_edit_of_prepopulated(
+    *,
+    snapshot,  # ORM object with is_prepopulated attribute
+    payload_dict: dict,
+    fields: tuple[str, ...],
+) -> bool:
+    """Retorna True se o snapshot está marcado is_prepopulated=True E algum
+    campo significativo difere do payload_dict (logo, o backend deve zerar).
+    """
+    if not getattr(snapshot, "is_prepopulated", False):
+        return False
+    for f in fields:
+        snap_v = _normalize(getattr(snapshot, f, None))
+        pay_v = _normalize(payload_dict.get(f))
+        if snap_v != pay_v:
+            return True
+    return False
+
+
 def _aggregate_rag(*dims: RAGStatus | None) -> RAGStatus | None:
     """Worst-of-3. Retorna None se qualquer dimensão for None (não preencheu)."""
     values = [d for d in dims if d is not None]
@@ -301,6 +346,17 @@ async def patch_report(
             ).all()
             due_by_deliv = {r[0]: r[1] for r in rows}
 
+        # F5.4 — Snapshot por deliverable_id ANTES do delete para auto-zero
+        # da flag is_prepopulated em edição significativa.
+        progress_snap_by_deliv: dict[uuid.UUID, DeliveryProgress] = {
+            p.deliverable_id: p
+            for p in (
+                await db.execute(
+                    select(DeliveryProgress).where(DeliveryProgress.report_id == report.id)
+                )
+            ).scalars().all()
+        }
+
         await db.execute(delete(DeliveryProgress).where(DeliveryProgress.report_id == report.id))
         # Cross-model auto-update (spec v3.1 §4.2.2 + §6.4.1): DeliveryProgress
         # com status=done + percent=100 + acceptance_confirmed=True promove
@@ -314,11 +370,23 @@ async def patch_report(
             revised = p.get("revised_date")
             planned = due_by_deliv.get(p["deliverable_id"])
             deviation = bool(revised and planned and revised != planned)
+            # F5.4 — chave natural deliverable_id (UNIQUE no banco). Se o
+            # registro anterior estava pré-populado e algo significativo
+            # mudou no payload, zera a flag.
+            snap = progress_snap_by_deliv.get(p["deliverable_id"])
+            p_final = dict(p)
+            if snap is not None and _is_edit_of_prepopulated(
+                snapshot=snap, payload_dict=p_final, fields=_PROGRESS_SIGNIFICANT_FIELDS
+            ):
+                p_final["is_prepopulated"] = False
+            elif snap is not None and snap.is_prepopulated and "is_prepopulated" not in p_final:
+                # Não houve edição significativa — preserva o estado anterior.
+                p_final["is_prepopulated"] = True
             db.add(
                 DeliveryProgress(
                     report_id=report.id,
                     deviation_flag=deviation,
-                    **p,
+                    **p_final,
                 )
             )
             if (
@@ -334,17 +402,50 @@ async def patch_report(
                 .values(status=_DStatus.CONCLUDED)
             )
     if "risks" in data:
+        # F5.4 — snapshot por `description` (chave natural disponível antes
+        # de IDs estáveis; descrição idêntica = mesma entidade conceitual).
+        risk_snap_by_desc: dict[str, Risk] = {
+            r.description: r
+            for r in (
+                await db.execute(select(Risk).where(Risk.report_id == report.id))
+            ).scalars().all()
+        }
         await db.execute(delete(Risk).where(Risk.report_id == report.id))
         for r in data["risks"] or []:
-            db.add(Risk(report_id=report.id, **r))
+            r_final = dict(r)
+            snap = risk_snap_by_desc.get(r_final.get("description"))
+            if snap is not None and _is_edit_of_prepopulated(
+                snapshot=snap, payload_dict=r_final, fields=_RISK_SIGNIFICANT_FIELDS
+            ):
+                r_final["is_prepopulated"] = False
+            elif snap is not None and snap.is_prepopulated and "is_prepopulated" not in r_final:
+                r_final["is_prepopulated"] = True
+            db.add(Risk(report_id=report.id, **r_final))
     if "action_plans" in data:
         await db.execute(delete(ActionPlan).where(ActionPlan.report_id == report.id))
         for a in data["action_plans"] or []:
             db.add(ActionPlan(report_id=report.id, **a))
     if "pending_items" in data:
+        # F5.4 — mesmo padrão de Risk (chave description).
+        pending_snap_by_desc: dict[str, PendingItem] = {
+            p.description: p
+            for p in (
+                await db.execute(
+                    select(PendingItem).where(PendingItem.report_id == report.id)
+                )
+            ).scalars().all()
+        }
         await db.execute(delete(PendingItem).where(PendingItem.report_id == report.id))
         for p in data["pending_items"] or []:
-            db.add(PendingItem(report_id=report.id, **p))
+            p_final = dict(p)
+            snap = pending_snap_by_desc.get(p_final.get("description"))
+            if snap is not None and _is_edit_of_prepopulated(
+                snapshot=snap, payload_dict=p_final, fields=_PENDING_SIGNIFICANT_FIELDS
+            ):
+                p_final["is_prepopulated"] = False
+            elif snap is not None and snap.is_prepopulated and "is_prepopulated" not in p_final:
+                p_final["is_prepopulated"] = True
+            db.add(PendingItem(report_id=report.id, **p_final))
 
     await db.commit()
     await db.refresh(report)

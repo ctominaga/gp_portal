@@ -47,10 +47,14 @@ describe("NewReportPage — F5.4 escolha de modo", () => {
       data: [{ id: "old-1", period_start: "2026-04-01", period_end: "2026-04-15" }],
     });
     render(<NewReportPage />);
-    await waitFor(() => screen.getByTestId("radio-prepopulate"));
+    // Estado inicial é "scratch"; useEffect resolve a Promise do GET e
+    // muda para "prepopulate" — aguardar a mudança refletir no DOM.
+    await waitFor(() => {
+      const prepop = screen.getByTestId("radio-prepopulate") as HTMLInputElement;
+      expect(prepop.checked).toBe(true);
+    });
     const prepop = screen.getByTestId("radio-prepopulate") as HTMLInputElement;
     const scratch = screen.getByTestId("radio-scratch") as HTMLInputElement;
-    expect(prepop.checked).toBe(true);
     expect(scratch.checked).toBe(false);
     expect(prepop.disabled).toBe(false);
   });

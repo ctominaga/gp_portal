@@ -483,6 +483,115 @@ async def test_endpoint_prepopulate_400_when_start_after_end(
     assert r.status_code == 400
 
 
+# ---------- Auto-zero da flag no PATCH (Commit 3) ----------
+
+
+async def _seed_full_for_patch(client, db_session, *, gp_email: str):
+    """Cria projeto + baseline + report pré-populado com 1 Risk, 1 PendingItem
+    e 1 DeliveryProgress (todos is_prepopulated=True). Retorna report_id e token GP."""
+    project, gp, _ = await _seed_project_active_baseline(
+        db_session, gp_email=gp_email,
+        with_deliverables=[date(2026, 5, 5)],
+    )
+    # Report anterior dá origem aos risks/pendings herdados.
+    await _seed_previous_report(
+        db_session, project=project, gp=gp,
+        period_start=date(2026, 4, 1), period_end=date(2026, 4, 15),
+        risks=[("Risk herdado", RiskStatus.MONITORING)],
+        pendings=[("Pendência herdada cliente", PendingItemStatus.OPEN)],
+    )
+    tok = await _login(client, role="GP", email=gp_email)
+    r = await client.post(
+        f"/projects/{project.id}/reports/prepopulate",
+        headers={"Authorization": f"Bearer {tok}"},
+        json={"period_start": "2026-05-01", "period_end": "2026-05-15"},
+    )
+    assert r.status_code == 201
+    return r.json(), tok
+
+
+@pytest.mark.asyncio
+async def test_patch_keeps_flag_when_no_significant_change(client, db_session) -> None:
+    """Re-send da lista sem alterar campos significativos preserva is_prepopulated."""
+    rep, tok = await _seed_full_for_patch(client, db_session, gp_email="gp-az-1@x.com")
+    # Re-envia exatamente o mesmo risco (sem mudar nada).
+    original_risk = rep["risks"][0]
+    r = await client.patch(
+        f"/reports/{rep['id']}",
+        headers={"Authorization": f"Bearer {tok}"},
+        json={"risks": [{
+            "description": original_risk["description"],
+            "probability": original_risk["probability"],
+            "impact": original_risk["impact"],
+            "mitigation_plan": original_risk["mitigation_plan"],
+            "owner_id": original_risk["owner_id"],
+            "due_date": original_risk["due_date"],
+            "status": original_risk["status"],
+        }]},
+    )
+    assert r.status_code == 200
+    risks = r.json()["risks"]
+    assert len(risks) == 1
+    assert risks[0]["is_prepopulated"] is True  # preservada
+
+
+@pytest.mark.asyncio
+async def test_patch_zeros_flag_on_risk_description_edit(client, db_session) -> None:
+    rep, tok = await _seed_full_for_patch(client, db_session, gp_email="gp-az-2@x.com")
+    original_risk = rep["risks"][0]
+    r = await client.patch(
+        f"/reports/{rep['id']}",
+        headers={"Authorization": f"Bearer {tok}"},
+        json={"risks": [{
+            **{k: original_risk[k] for k in (
+                "probability", "impact", "mitigation_plan", "owner_id", "due_date", "status"
+            )},
+            "description": "Risco re-redigido pelo GP",
+        }]},
+    )
+    assert r.status_code == 200
+    assert r.json()["risks"][0]["is_prepopulated"] is False
+
+
+@pytest.mark.asyncio
+async def test_patch_zeros_flag_on_pending_impact_edit(client, db_session) -> None:
+    rep, tok = await _seed_full_for_patch(client, db_session, gp_email="gp-az-3@x.com")
+    original = rep["pending_items"][0]
+    r = await client.patch(
+        f"/reports/{rep['id']}",
+        headers={"Authorization": f"Bearer {tok}"},
+        json={"pending_items": [{
+            "description": original["description"],
+            "owner_party": original["owner_party"],
+            "due_date": original["due_date"],
+            "status": original["status"],
+            "impact": "Bloqueia release de sprint 5",
+        }]},
+    )
+    assert r.status_code == 200
+    assert r.json()["pending_items"][0]["is_prepopulated"] is False
+
+
+@pytest.mark.asyncio
+async def test_patch_zeros_flag_on_progress_percent_edit(client, db_session) -> None:
+    rep, tok = await _seed_full_for_patch(client, db_session, gp_email="gp-az-4@x.com")
+    original = rep["progresses"][0]
+    r = await client.patch(
+        f"/reports/{rep['id']}",
+        headers={"Authorization": f"Bearer {tok}"},
+        json={"progresses": [{
+            "deliverable_id": original["deliverable_id"],
+            "status": "in_progress",
+            "percent_complete": 50,
+            "comment": None,
+            "revised_date": None,
+            "acceptance_confirmed": None,
+        }]},
+    )
+    assert r.status_code == 200
+    assert r.json()["progresses"][0]["is_prepopulated"] is False
+
+
 @pytest.mark.asyncio
 async def test_default_is_prepopulated_false_on_manual_create(db_session) -> None:
     """Garante que registros criados pelo fluxo normal (não-prepopulate) vêm
