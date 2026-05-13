@@ -165,3 +165,21 @@ Refinável após piloto com PMO real. O valor "50 para amarelo estável" foi man
 **Decisão:** normalizar `payload.email.lower()` antes do exists-check no register. 3 linhas alteradas. Sem mudança de contrato externo — clients que já mandam lowercase continuam idênticos. Fix isolado em commit dedicado (`fix(backend): auth/register normaliza email no SELECT`).
 
 **Consequência:** 500 vira 409 para edge case de case-misto. Sintoma é menos feio em logs / Sentry. Bug dormente desde F2, eliminado sem regressão (suite cheia 171 pass).
+
+## 2026-05-13 — F5.3 fechada com 4 commits + rebase
+
+**Contexto:** F5.3 fechou o ciclo do projeto (criação → reports → encerramento estruturado, spec v3.1 §10.4). Endereçou o item D do P2 da auditoria de conformidade — endpoint `POST /projects/{id}/close` + UI + `ProjectRetrospective` com 4 campos.
+
+**Decisão:** estrutura final em 5 commits no histórico (4 commits + 1 rebase dividindo o do endpoint):
+
+| # | Hash | Tipo | Conteúdo |
+|---|---|---|---|
+| 1 | `fe93d50` | feat | Modelo drop+recreate + migration 0016 + `.coveragerc` |
+| 2a | `4de0188` | fix | auth/register case-bug (isolado em commit dedicado) |
+| 2b | `93bf7bc` | feat | Endpoint POST /close + GET retrospective + cascade Q4 |
+| 3 | `bf5b97f` | feat | Frontend rota /encerramento + render pós-CLOSED + GET /risks |
+| 4 | `(este)` | test+docs | 7 testes /risks + spec Playwright + conformidade + progresso |
+
+**Métricas finais:** pytest 150 → 178 (+28 testes); vitest 84 → 95 (+11 testes); cobertura backend total 87% (com `.coveragerc` real); `projects.py` 91%. Suite cheia 178 pass / 1 skip / 0 fail.
+
+**Consequência:** ciclo do projeto fica completo (criação → reports → encerramento estruturado) — pré-requisito explícito para F5.5 (Agente de Inteligência Cruzada consome retrospectivas). 4 débitos P3 do F5.3 registrados em `conformidade-v3.1.md`; débito F5.2.d **resolvido** (cobertura async via `.coveragerc`); débito F5.3.c **resolvido** no commit 4. Bug dormente descoberto e corrigido em commit isolado preserva auditoria. Aprendizado de cobertura real (87%, não 72%) anotado em `fase-5-progresso.md` para que métricas históricas sejam interpretadas com contexto.

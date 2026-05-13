@@ -484,3 +484,198 @@ async def test_get_retrospective_client_outsider_403(
         headers={"Authorization": f"Bearer {outsider_tok}"},
     )
     assert r.status_code == 403
+
+
+# ---------- F5.3 commit 4 — GET /projects/{id}/risks (débito F5.3.c) ----------
+
+
+async def _seed_project_with_risks(
+    db, *, gp_email: str, client_email: str | None = None
+) -> tuple[Project, list[Risk]]:
+    """Cria projeto ACTIVE com 1 report CLIENT_RELEASED + 3 risks de status
+    distintos (IDENTIFIED, MONITORING, MATERIALIZED) para exercitar filtros."""
+    project, gp = await _seed_project_for_close(
+        db, gp_email=gp_email, client_email=client_email
+    )
+    proposal = Proposal(
+        project_id=project.id, version=1, file_url="x", file_sha256="a" * 64,
+        original_filename="p", size_bytes=1, status=ProposalStatus.EXTRACTED,
+        uploaded_by_id=gp.id,
+    )
+    db.add(proposal)
+    await db.flush()
+    report = Report(
+        project_id=project.id, period_start=date(2026, 4, 1),
+        period_end=date(2026, 4, 15),
+        status=ReportStatus.CLIENT_RELEASED, created_by_id=gp.id,
+    )
+    db.add(report)
+    await db.flush()
+    risks_data = [
+        ("Risk identificado", RiskProbability.MEDIA, RiskImpact.MEDIO, RiskStatus.IDENTIFIED),
+        ("Risk em monitoramento", RiskProbability.ALTA, RiskImpact.MEDIO, RiskStatus.MONITORING),
+        ("Risk materializado", RiskProbability.ALTA, RiskImpact.ALTO, RiskStatus.MATERIALIZED),
+    ]
+    risks_created = []
+    for desc, prob, imp, st in risks_data:
+        r = Risk(
+            report_id=report.id, description=desc,
+            probability=prob, impact=imp, status=st,
+        )
+        db.add(r)
+        risks_created.append(r)
+    await db.commit()
+    for r in risks_created:
+        await db.refresh(r)
+    return project, risks_created
+
+
+@pytest.mark.asyncio
+async def test_list_project_risks_returns_all_no_filter(
+    client: AsyncClient, db_session
+) -> None:
+    project, _ = await _seed_project_with_risks(db_session, gp_email="gp-r-all@x.com")
+    tok = await _login(client, role="GP", email="gp-r-all@x.com")
+    r = await client.get(
+        f"/projects/{project.id}/risks",
+        headers={"Authorization": f"Bearer {tok}"},
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert len(body) == 3
+    statuses = {item["status"] for item in body}
+    assert statuses == {"identified", "monitoring", "materialized"}
+
+
+@pytest.mark.asyncio
+async def test_list_project_risks_filter_identified(
+    client: AsyncClient, db_session
+) -> None:
+    project, _ = await _seed_project_with_risks(db_session, gp_email="gp-r-id@x.com")
+    tok = await _login(client, role="GP", email="gp-r-id@x.com")
+    r = await client.get(
+        f"/projects/{project.id}/risks?status=identified",
+        headers={"Authorization": f"Bearer {tok}"},
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert len(body) == 1
+    assert body[0]["status"] == "identified"
+
+
+@pytest.mark.asyncio
+async def test_list_project_risks_filter_materialized(
+    client: AsyncClient, db_session
+) -> None:
+    project, _ = await _seed_project_with_risks(db_session, gp_email="gp-r-mat@x.com")
+    tok = await _login(client, role="GP", email="gp-r-mat@x.com")
+    r = await client.get(
+        f"/projects/{project.id}/risks?status=materialized",
+        headers={"Authorization": f"Bearer {tok}"},
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert len(body) == 1
+    assert body[0]["status"] == "materialized"
+    assert body[0]["description"] == "Risk materializado"
+
+
+@pytest.mark.asyncio
+async def test_list_project_risks_invalid_status_returns_422(
+    client: AsyncClient, db_session
+) -> None:
+    project, _ = await _seed_project_with_risks(db_session, gp_email="gp-r-bad@x.com")
+    tok = await _login(client, role="GP", email="gp-r-bad@x.com")
+    r = await client.get(
+        f"/projects/{project.id}/risks?status=invalid_status",
+        headers={"Authorization": f"Bearer {tok}"},
+    )
+    assert r.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_list_project_risks_404_when_project_missing(
+    client: AsyncClient, db_session
+) -> None:
+    tok = await _login(client, role="GP", email="gp-r-404@x.com")
+    fake_id = uuid.uuid4()
+    r = await client.get(
+        f"/projects/{fake_id}/risks",
+        headers={"Authorization": f"Bearer {tok}"},
+    )
+    assert r.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_list_project_risks_role_matrix(
+    client: AsyncClient, db_session
+) -> None:
+    """GP-dono 200, GP outro 403, PMO 200, CLIENT-dono 200, CLIENT-outro 403."""
+    project, _ = await _seed_project_with_risks(
+        db_session, gp_email="gp-role-own@x.com", client_email="cli-role-own@x.com",
+    )
+    url = f"/projects/{project.id}/risks"
+
+    gp_owner_tok = await _login(client, role="GP", email="gp-role-own@x.com")
+    r = await client.get(url, headers={"Authorization": f"Bearer {gp_owner_tok}"})
+    assert r.status_code == 200
+
+    gp_other_tok = await _login(client, role="GP", email="gp-role-other@x.com")
+    r = await client.get(url, headers={"Authorization": f"Bearer {gp_other_tok}"})
+    assert r.status_code == 403
+
+    pmo_tok = await _login(client, role="PMO", email="pmo-role@x.com")
+    r = await client.get(url, headers={"Authorization": f"Bearer {pmo_tok}"})
+    assert r.status_code == 200
+
+    cli_owner_tok = await _login(client, role="CLIENT", email="cli-role-own@x.com")
+    r = await client.get(url, headers={"Authorization": f"Bearer {cli_owner_tok}"})
+    assert r.status_code == 200
+
+    cli_other_tok = await _login(client, role="CLIENT", email="cli-role-out@x.com")
+    r = await client.get(url, headers={"Authorization": f"Bearer {cli_other_tok}"})
+    assert r.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_list_project_risks_ordered_by_created_at_desc(
+    client: AsyncClient, db_session
+) -> None:
+    """Endpoint ordena por Risk.created_at DESC. Mais recente primeiro."""
+    from datetime import timedelta
+
+    project, gp = await _seed_project_for_close(db_session, gp_email="gp-r-ord@x.com")
+    proposal = Proposal(
+        project_id=project.id, version=1, file_url="x", file_sha256="a" * 64,
+        original_filename="p", size_bytes=1, status=ProposalStatus.EXTRACTED,
+        uploaded_by_id=gp.id,
+    )
+    db_session.add(proposal)
+    await db_session.flush()
+    report = Report(
+        project_id=project.id, period_start=date(2026, 4, 1),
+        period_end=date(2026, 4, 15),
+        status=ReportStatus.CLIENT_RELEASED, created_by_id=gp.id,
+    )
+    db_session.add(report)
+    await db_session.flush()
+    base = datetime.now(UTC) - timedelta(hours=3)
+    for i, label in enumerate(["antigo", "meio", "recente"]):
+        r = Risk(
+            report_id=report.id, description=label,
+            probability=RiskProbability.MEDIA, impact=RiskImpact.MEDIO,
+            status=RiskStatus.IDENTIFIED,
+            created_at=base + timedelta(hours=i),
+        )
+        db_session.add(r)
+    await db_session.commit()
+
+    tok = await _login(client, role="GP", email="gp-r-ord@x.com")
+    r = await client.get(
+        f"/projects/{project.id}/risks",
+        headers={"Authorization": f"Bearer {tok}"},
+    )
+    assert r.status_code == 200
+    body = r.json()
+    descriptions = [item["description"] for item in body]
+    assert descriptions == ["recente", "meio", "antigo"]

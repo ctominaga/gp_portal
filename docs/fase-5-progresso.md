@@ -1,8 +1,8 @@
 # Fase 5 — Progresso
 
-**Status atual:** F5.1 e F5.2 fechadas. F5.3 a F5.9 pendentes. Pronto para retomada.
+**Status atual:** F5.1, F5.2 e F5.3 fechadas. F5.4 a F5.9 pendentes. Pronto para retomada.
 
-**Última atualização:** 2026-05-12
+**Última atualização:** 2026-05-13
 
 ---
 
@@ -97,13 +97,81 @@ Todos em `docs/conformidade-v3.1.md` seção "Débitos menores de F5.2 (P3)":
 
 ---
 
-## F5.3 a F5.9 — Pendentes
+## F5.3 — Retrospectiva ao encerrar projeto ✅ FECHADA
+
+Fluxo end-to-end de encerramento com retrospectiva estruturada (spec v3.1 §10.4):
+GP preenche 4 campos (`delivered_vs_proposed`, `would_do_differently`, `client_feedback`,
++ lista de `materialized_risks`) → POST /projects/{id}/close → cascade de 8 validações
+→ cria `ProjectRetrospective` + marca `Project.status=CLOSED` + `ended_at=today` →
+UI redireciona pra `/projetos/[id]` com banner verde + render read-only da retrospectiva.
+
+### Commits
+
+| # | Commit | Conteúdo |
+|---|---|---|
+| 1 | `fe93d50` | Modelo ProjectRetrospective drop+recreate (4 campos NOT NULL + materialized_risks JSON) + migration 0016 + `.coveragerc` resolvendo F5.2.d |
+| 2a | `4de0188` | `fix(backend)`: auth/register normaliza email no SELECT (bug dormente desde F2, descoberto pelo seed de teste F5.3 com case misto) |
+| 2b | `93bf7bc` | `POST /projects/{id}/close` (cascade 8 validações Q4) + `GET /projects/{id}/retrospective` + schemas Pydantic + 21 testes pytest |
+| 3 | `bf5b97f` | Frontend: rota `/projetos/[id]/encerramento` com form rich + Dialog + render pós-CLOSED em `/projetos/[id]`. Novo `GET /projects/{id}/risks` para pré-marcar materializados (Q1 híbrida). 11 testes vitest |
+| 4 | (este commit) | 7 testes pytest do `GET /risks` (débito F5.3.c resolvido) + spec Playwright versionado + conformidade + progresso |
+
+### Métricas (evolução durante F5.3)
+
+| Métrica | Início F5.3 | Commit 1 | Commit 2a+2b | Commit 3 | **Commit 4 (final)** |
+|---|---|---|---|---|---|
+| pytest backend | 150 | 150 | 171 | 171 | **178** |
+| vitest frontend | 84 | 84 | 84 | 95 | **95** |
+| Cobertura backend total | (subreport 72%) → **87%** real | **87%** | **88%** | **88%** | **88%** |
+| Cobertura `projects.py` | (subreport ~46%) → 67% real | 67% | 90% | 82% | **91%** |
+
+### Decisões respondidas (Q1-Q6 do início da sub-fase)
+
+| # | Pergunta | Resposta |
+|---|---|---|
+| **Q1** | materialized_risks: automático, manual ou híbrido? | (c) **Híbrido** — backend pré-popula com `Risk.status=MATERIALIZED` do projeto; GP edita livremente (adiciona/remove/comenta). |
+| **Q2** | Forma de armazenar materialized_risks | (a) **JSON na coluna** — `list[{risk_id, comment}]`. FK validation em camada Pydantic via JOIN no endpoint, não SQL (JSON não suporta FK constraint nativa). |
+| **Q3** | Transição CLOSED irreversível via API? | **Sim** — reabertura é caminho operacional excepcional, não exposto. Documentado no docstring do endpoint. |
+| **Q4** | Matriz de bloqueios | Aprovada: ScopeChange PROPOSED, Reports DRAFT/SUBMITTED/PMO_APPROVED/NEEDS_REVISION (desvio intencional, ADR), Baseline DRAFT v2+, Project PAUSED, Project CLOSED (idempotência). Cada mensagem 409 com ação concreta. |
+| **Q5** | Quem fecha? | **GP unilateral** (GP-dono). PMO não interfere. |
+| **Q6** | UI: modal ou rota? | **Rota dedicada** `/projetos/[id]/encerramento` com form rich + Dialog de confirmação irreversível antes do POST. |
+
+### Decisões internas adicionais
+
+- **`closed_at` não duplicado como coluna** — `ProjectRetrospective.created_at` cumpre semanticamente (registro só existe quando projeto é encerrado). `Project.ended_at` (Date) é o "calendar end date" do cliente.
+- **NEEDS_REVISION adicionado à lista bloqueante** — desvio intencional da spec literal (§10.4 lista 3 status). ADR registrado: NEEDS_REVISION é trabalho pendente do GP; permitir encerrar cria órfão semântico.
+- **`materialized_risks` no frontend como `Map<risk_id, comment>`** — O(1) lookup, presença=marcado, valor=comment. Conversão para Array só no submit.
+- **`GET /retrospective` no detail page só dispara se `status=closed`** — evita 404 ruidoso no console pra projetos ativos.
+
+### Aprendizados marcantes da sub-fase
+
+- **Bug dormente em auth/register descoberto** — SELECT sem `.lower()` + INSERT com `.lower()` causava 500 em vez de 409 em payload com case misto. Bug ativo desde F2; nunca acionado em produção porque clients sempre mandam lowercase. F5.3 commit 2a corrigiu em 3 linhas. Reforça a importância de tests com setup variado.
+- **Cobertura real do projeto era 87%, não 72%** — `.coveragerc` com `concurrency=thread,greenlet` revelou que `pytest-cov` subreportava funções `async def`. Métricas históricas (F4, F5.1, F5.2) ficam com a anotação "medidas sem .coveragerc — números reais são maiores". A partir de F5.3, cobertura reportada é real.
+
+### Conformidade — itens marcados em `docs/conformidade-v3.1.md`
+
+- ~~D. Endpoint POST /projects/{id}/close + UI + ProjectRetrospective com 4 campos~~ → endereçado em F5.3 commits 1-4
+- Linha "Retrospectiva" §10.4 da tabela principal: ⚠️⚠️ → ✅
+- Débito F5.2.d marcado como resolvido (cobertura async)
+
+### Débitos menores P3 do F5.3
+
+Todos em `docs/conformidade-v3.1.md` seção "Débitos menores de F5.3 (P3)":
+
+| ID | Item | Status |
+|---|---|---|
+| **F5.3.a** | Testes para paths defensivos `portfolio.py:97-116` + `scope_changes.py:51,60,98,101,103` | aberto, hardening F5.X/F6 |
+| **F5.3.b** | Documentar CWD do pytest pra `.coveragerc` | parcialmente atendido em `dev_notes.md`; Makefile fica como complemento futuro |
+| **F5.3.c** | `GET /projects/{id}/risks` sem teste pytest específico | **resolvido em commit 4** (7 testes novos, cobertura 82%→91%) |
+| **F5.3.d** | PNGs Playwright F5.3 pendentes | aberto, mesmo problema F5.2 (ambiente local) |
+
+---
+
+## F5.4 a F5.9 — Pendentes
 
 Conforme plano em `docs/fase-5-plano.md`. Ordem recomendada (conservadora: schemas estáveis antes de LGPD/deploy):
 
 | # | Sub-fase | Estimativa | Bloqueia / é bloqueada por |
 |---|---|---|---|
-| F5.3 | Retrospectiva (`POST /projects/{id}/close` + 4 campos + UI) | ~30k | bloqueia F5.5 (agente portfólio usa retrospectivas) |
 | F5.4 | Modo de Report Assistido por IA | ~25k | livre |
 | F5.5 | Agente de Inteligência Cruzada (heurística inicial + flag) | ~30k | depende de F5.3 |
 | F5.6 | WSL clean + F2.6 worker real + F2.8 smoke | ~50k (teto) | depende de runbook + execução manual sua |
@@ -176,4 +244,4 @@ bc32d04 fix(backend): alinhar SOURCE_EXCERPT_MAX ao prompt v1 R4
 
 ---
 
-*Documento atualizado ao fim de cada sub-fase de F5 fechada. Próximo update: ao fim de F5.3.*
+*Documento atualizado ao fim de cada sub-fase de F5 fechada. Próximo update: ao fim de F5.4.*
