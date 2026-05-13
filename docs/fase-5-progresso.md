@@ -1,6 +1,6 @@
 # Fase 5 — Progresso
 
-**Status atual:** F5.1, F5.2 e F5.3 fechadas. F5.4 a F5.9 pendentes. Pronto para retomada.
+**Status atual:** F5.1, F5.2, F5.3 e F5.4 fechadas. F5.5 a F5.9 pendentes. Pronto para retomada.
 
 **Última atualização:** 2026-05-13
 
@@ -166,13 +166,74 @@ Todos em `docs/conformidade-v3.1.md` seção "Débitos menores de F5.3 (P3)":
 
 ---
 
-## F5.4 a F5.9 — Pendentes
+## F5.4 — Modo de Report Assistido por IA ✅ FECHADA (parcial — sugestões IA dependem de F2.6)
+
+Pré-população estruturada do novo report (spec v3.1 §10.2): backend cria Report
+DRAFT herdando Risks abertos, PendingItems abertos e DeliveryProgress placeholders
+para Deliverables com prazo no período. Flag `is_prepopulated` controla badge
+visual "Do report anterior" no wizard; backend zera automaticamente ao detectar
+edição significativa.
+
+### Commits
+
+| # | Commit | Conteúdo |
+|---|---|---|
+| 1 | `d90eef5` | Flag `is_prepopulated` em Risk/PendingItem/DeliveryProgress + migration 0017 + service `prepopulate_report` (8 testes cobrindo herança, idempotência, sem baseline ACTIVE, janela 30 dias) |
+| 2 | `5e5d258` | Endpoint `POST /projects/{id}/reports/prepopulate` (role GP-dono, tradução de exceções tipadas) + UI radio "Pré-popular" vs "Do zero" em `/reports/novo` com pré-marcação por presença de report anterior |
+| 3 | `9dc3a65` | Badge "Do report anterior" no wizard (Risk/PendingItem/DeliveryProgress) + auto-zero da flag no PATCH via snapshot pré-delete + comparação por chave natural |
+| 4 | (este commit) | Modal 409 com link "Abrir report existente" + 5 testes adicionais (vitest do modal + 4 testes pytest do auto-zero do commit 3) + Playwright spec versionado + conformidade + progresso |
+
+### Métricas (evolução durante F5.4)
+
+| Métrica | Início F5.4 | Commit 1 | Commit 2 | Commit 3 | **Commit 4 (final)** |
+|---|---|---|---|---|---|
+| pytest backend | 178 | 186 | 191 | 195 | **195** |
+| vitest frontend | 95 | 95 | 99 | 103 | **104** |
+| Cobertura backend total | 88% | 88% | 88% | 88% | **88%** |
+
+### Decisões respondidas (Q1-Q5 do início da sub-fase)
+
+| # | Pergunta | Resposta |
+|---|---|---|
+| **Q1** | Flag `is_prepopulated`: abordagem | (a) **Bool por entidade, zerada ao editar pelo backend** — visual hint do plano F5 + simplicidade. |
+| **Q2** | Pré-população server-side ou client-side | (b) **Server-side** — endpoint dedicado `POST /reports/prepopulate`. Robusto a refresh, consistência de sugestões não-determinísticas. |
+| **Q3** | Sugestões IA do stub no pre-create | (c) **Pular no MVP** — stub não agrega valor; débito F5.4.X registrado. |
+| **Q4** | UX de troca de modo | **Antes do primeiro POST** — radio escolhe; após submit, modo fica fixo. |
+| **Q5** | ActionPlan herda? | (b) **Não** — vínculo a Risks/Deliverables herdados; GP recria se faz sentido. Botão "Criar plano vinculado" no wizard fica como débito F5.4.Y. |
+
+### Decisões internas adicionais
+
+- **Status de Report "herdável"** = `(SUBMITTED, PMO_APPROVED, CLIENT_RELEASED, ARCHIVED)`. DRAFT e NEEDS_REVISION descartados como fonte porque ainda estão sendo trabalhados.
+- **Filtro Risks segue `OPEN_RISK_STATUSES`** (constante F5.1: IDENTIFIED + MONITORING). Não inventou filtro novo.
+- **Janela DeliveryProgress = `[period_start - 30d, period_end]`** — captura entregas atrasadas recentes (trabalho real do período) sem arrastar deliverables antigos esquecidos.
+- **Match-by-description para preservar flag no PATCH** — trade-off conhecido (débito F5.4.W); refactor para upsert por ID fica para hardening futuro.
+- **Modal 409 com extração de UUID da mensagem** — backend retorna `"/reports/{uuid}"` na mensagem do conflict; regex client-side abre Dialog com link clicável "Abrir report existente" em vez de toast cru.
+
+### Conformidade — itens marcados em `docs/conformidade-v3.1.md`
+
+- ~~C. Modo de Report Assistido por IA~~ → endereçado em F5.4 commits 1-4 (parcial — sugestões IA pendentes em F5.4.X)
+- Linha "Modo de Report Assistido por IA" §10.2 da tabela principal: ❌ → ✅ (parcial)
+
+### Débitos menores P3 do F5.4
+
+Todos em `docs/conformidade-v3.1.md` seção "Débitos menores de F5.4 (P3)":
+
+| ID | Item | Status |
+|---|---|---|
+| **F5.4.W** | Match-by-description para preservar `is_prepopulated` em PATCH | aberto; refactor para upsert por ID em hardening futuro |
+| **F5.4.X** | Sugestões textuais da IA pendentes | aberto, depende de F5.5/F2.6 |
+| **F5.4.Y** | Botão "Criar plano vinculado" ao lado de Risk herdado | aberto, UX enhancement de baixa prioridade |
+| **F5.4.Z** | Limitação Vitest em Tabs do Radix (mesmo F5.1.c) | aberto, hardening de testes |
+| **F5.4 PNGs** | Playwright PNGs F5.4 pendentes | aberto, mesmo ambiente F5.2/F5.3 |
+
+---
+
+## F5.5 a F5.9 — Pendentes
 
 Conforme plano em `docs/fase-5-plano.md`. Ordem recomendada (conservadora: schemas estáveis antes de LGPD/deploy):
 
 | # | Sub-fase | Estimativa | Bloqueia / é bloqueada por |
 |---|---|---|---|
-| F5.4 | Modo de Report Assistido por IA | ~25k | livre |
 | F5.5 | Agente de Inteligência Cruzada (heurística inicial + flag) | ~30k | depende de F5.3 |
 | F5.6 | WSL clean + F2.6 worker real + F2.8 smoke | ~50k (teto) | depende de runbook + execução manual sua |
 | F5.7 | LGPD: `lgpd.md` + `/me/data-export` + `/me/data-deletion-request` | ~45k | depende de F5.1 estabilizado (✅) + F5.3 (idealmente) |
@@ -244,4 +305,4 @@ bc32d04 fix(backend): alinhar SOURCE_EXCERPT_MAX ao prompt v1 R4
 
 ---
 
-*Documento atualizado ao fim de cada sub-fase de F5 fechada. Próximo update: ao fim de F5.4.*
+*Documento atualizado ao fim de cada sub-fase de F5 fechada. Próximo update: ao fim de F5.5.*

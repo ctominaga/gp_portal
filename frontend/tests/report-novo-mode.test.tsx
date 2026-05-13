@@ -18,7 +18,10 @@ vi.mock("@/components/app-shell", () => ({
 const apiMock = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn() }));
 vi.mock("@/lib/api", () => ({
   api: apiMock,
-  asApiError: (e: { message: string }) => ({ message: e?.message ?? "x", status: 0 }),
+  asApiError: (e: { response?: { status?: number; data?: { detail?: string } }; message?: string }) => ({
+    message: e?.response?.data?.detail ?? e?.message ?? "x",
+    status: e?.response?.status ?? 0,
+  }),
 }));
 
 vi.mock("sonner", () => ({
@@ -126,6 +129,50 @@ describe("NewReportPage — F5.4 escolha de modo", () => {
           period_end: "2026-05-15",
         }),
       ),
+    );
+  });
+
+  it("409 do prepopulate (período duplicado) abre modal com link para report existente", async () => {
+    apiMock.get.mockResolvedValue({
+      data: [{ id: "old-1", period_start: "2026-04-01", period_end: "2026-04-15" }],
+    });
+    const existingId = "11111111-2222-3333-4444-555555555555";
+    apiMock.post.mockRejectedValue({
+      isAxiosError: true,
+      response: {
+        status: 409,
+        data: {
+          detail:
+            `Já existe report no período 2026-05-01–2026-05-15. ` +
+            `Acesse-o em /reports/${existingId}.`,
+        },
+      },
+      message: "Request failed with status code 409",
+    });
+    render(<NewReportPage />);
+    await waitFor(() => {
+      const prepop = screen.getByTestId("radio-prepopulate") as HTMLInputElement;
+      expect(prepop.checked).toBe(true);
+    });
+
+    act(() => {
+      fireEvent.change(screen.getByLabelText(/Início/), {
+        target: { value: "2026-05-01" },
+      });
+      fireEvent.change(screen.getByLabelText(/Fim/), {
+        target: { value: "2026-05-15" },
+      });
+    });
+    act(() => {
+      fireEvent.submit(screen.getByTestId("btn-submit").closest("form")!);
+    });
+
+    // Modal abre com link extraído da mensagem
+    await waitFor(() => screen.getByText(/Report já existe nesse período/));
+    // Button asChild faz o data-testid recair no Link (anchor) diretamente.
+    const link = screen.getByTestId("btn-open-existing-report");
+    expect(link.getAttribute("href")).toBe(
+      `/projetos/p-1/reports/${existingId}/edit`,
     );
   });
 });

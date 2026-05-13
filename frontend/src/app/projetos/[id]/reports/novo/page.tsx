@@ -17,11 +17,27 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api, asApiError } from "@/lib/api";
 import { reportCreateSchema, type ReportCreateInput } from "@/lib/schemas";
 import type { Report, ReportSummary } from "@/lib/types";
+
+// F5.4 — backend retorna 409 com formato "Já existe report no período X-Y.
+// Acesse-o em /reports/{uuid}." quando há duplicação. Extrai o ID para
+// abrir modal com link clicável em vez de toast cru.
+function extractReportIdFromConflict(message: string): string | null {
+  const match = message.match(/\/reports\/([0-9a-f-]{36})/i);
+  return match ? match[1]! : null;
+}
 
 type Mode = "prepopulate" | "scratch";
 
@@ -32,6 +48,8 @@ export default function NewReportPage() {
   // null = ainda carregando; false/true = decisão tomada
   const [hasPreviousReport, setHasPreviousReport] = useState<boolean | null>(null);
   const [mode, setMode] = useState<Mode>("scratch");
+  // Estado do modal de conflito (409 — período já existe). null = fechado.
+  const [conflict, setConflict] = useState<{ reportId: string; message: string } | null>(null);
 
   const {
     register,
@@ -77,9 +95,16 @@ export default function NewReportPage() {
       router.replace(`/projetos/${projectId}/reports/${report.id}/edit`);
     } catch (e) {
       const err = asApiError(e);
-      // 409 do prepopulate (período duplicado ou baseline inativo) e demais
-      // erros mostram mensagem do servidor — já vem com ação concreta do backend.
-      toast.error(err.message);
+      // 409 do prepopulate (período duplicado) — extrai o report_id da
+      // mensagem e abre modal com link clicável. Outros 409 (baseline
+      // inativo) e demais erros caem no toast genérico.
+      const existingId =
+        err.status === 409 ? extractReportIdFromConflict(err.message) : null;
+      if (existingId) {
+        setConflict({ reportId: existingId, message: err.message });
+      } else {
+        toast.error(err.message);
+      }
       setSubmitting(false);
     }
   }
@@ -190,6 +215,37 @@ export default function NewReportPage() {
           </form>
         </CardContent>
       </Card>
+
+      <Dialog
+        open={conflict !== null}
+        onOpenChange={(o) => {
+          if (!o) setConflict(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Report já existe nesse período</DialogTitle>
+            <DialogDescription>
+              {conflict?.message ??
+                "Já existe um report cobrindo essas datas. Você pode abrir o existente ou escolher outro período."}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setConflict(null)}>
+              Escolher outro período
+            </Button>
+            {conflict && (
+              <Button asChild data-testid="btn-open-existing-report">
+                <Link
+                  href={`/projetos/${projectId}/reports/${conflict.reportId}/edit`}
+                >
+                  Abrir report existente
+                </Link>
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppShell>
   );
 }

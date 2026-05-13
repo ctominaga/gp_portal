@@ -183,3 +183,22 @@ Refinável após piloto com PMO real. O valor "50 para amarelo estável" foi man
 **Métricas finais:** pytest 150 → 178 (+28 testes); vitest 84 → 95 (+11 testes); cobertura backend total 87% (com `.coveragerc` real); `projects.py` 91%. Suite cheia 178 pass / 1 skip / 0 fail.
 
 **Consequência:** ciclo do projeto fica completo (criação → reports → encerramento estruturado) — pré-requisito explícito para F5.5 (Agente de Inteligência Cruzada consome retrospectivas). 4 débitos P3 do F5.3 registrados em `conformidade-v3.1.md`; débito F5.2.d **resolvido** (cobertura async via `.coveragerc`); débito F5.3.c **resolvido** no commit 4. Bug dormente descoberto e corrigido em commit isolado preserva auditoria. Aprendizado de cobertura real (87%, não 72%) anotado em `fase-5-progresso.md` para que métricas históricas sejam interpretadas com contexto.
+
+## 2026-05-13 — F5.4 fechada com 4 commits
+
+**Contexto:** F5.4 implementa o Modo de Report Assistido por IA (spec v3.1 §10.2). Endereça o item C do P2 da auditoria de conformidade — pré-popular novo report com base no anterior.
+
+**Decisão:** estrutura final em 4 commits sequenciais:
+
+| # | Hash | Tipo | Conteúdo |
+|---|---|---|---|
+| 1 | `d90eef5` | feat | Flag `is_prepopulated` + migration 0017 + service `prepopulate_report` |
+| 2 | `5e5d258` | feat | Endpoint `POST /projects/{id}/reports/prepopulate` + UI radio escolha de modo |
+| 3 | `9dc3a65` | feat | Badge "Do report anterior" + auto-zero da flag em PATCH via snapshot |
+| 4 | `(este)` | test+docs | Modal 409 com link + Playwright spec + conformidade + progresso |
+
+Implementa pré-população do report cumprindo **80% da spec §10.2** (herança de Risks/Pendings/DeliveryProgress placeholders). **Sugestões textuais da IA (§10.2 ponto 3) ficam para quando F2.6/F5.5 trouxer agente real** — débito F5.4.X registrado.
+
+**Métricas finais:** pytest 178 → 195 (+17 testes); vitest 95 → 104 (+9 testes); cobertura backend total 88% (estável). Suite cheia 195 pass / 1 skip / 0 fail.
+
+**Consequência:** GP economiza tempo significativo a cada novo report — riscos abertos, pendências em aberto e entregas no prazo do período já vêm pré-preenchidas com badge visual "Do report anterior". Backend zera a flag automaticamente quando o GP edita, mantendo a auditoria clean. F5.4.W (match-by-description em PATCH), F5.4.X (sugestões IA), F5.4.Y (botão criar plano vinculado), F5.4.Z (limitação Vitest em Tabs) e PNGs Playwright pendentes registrados como débitos P3. Nenhum bloqueia release.
