@@ -202,3 +202,27 @@ Implementa pré-população do report cumprindo **80% da spec §10.2** (herança
 **Métricas finais:** pytest 178 → 195 (+17 testes); vitest 95 → 104 (+9 testes); cobertura backend total 88% (estável). Suite cheia 195 pass / 1 skip / 0 fail.
 
 **Consequência:** GP economiza tempo significativo a cada novo report — riscos abertos, pendências em aberto e entregas no prazo do período já vêm pré-preenchidas com badge visual "Do report anterior". Backend zera a flag automaticamente quando o GP edita, mantendo a auditoria clean. F5.4.W (match-by-description em PATCH), F5.4.X (sugestões IA), F5.4.Y (botão criar plano vinculado), F5.4.Z (limitação Vitest em Tabs) e PNGs Playwright pendentes registrados como débitos P3. Nenhum bloqueia release.
+
+## 2026-05-13 — F5.6a / Worker real é processo separado; stub asyncio preservado (decisões B-α/β/γ)
+
+**Contexto:** F5.6a constrói o worker real (consumidor da fila Redis `jobs.agent`) que fechará — junto com F5.6b — o débito K (F2.6 worker real + F2.8 smoke). O briefing inicial sugeria "substituir `worker_stub.py` por `worker_real.py`", mas o inventário do início da sub-fase revelou três coisas:
+
+1. `backend/app/services/worker_stub.py` é um **stub asyncio in-process** (não consome Redis), controlado por `STUB_WORKER_ENABLED` — é fallback de **desenvolvimento**, não o lugar onde o worker real vive.
+2. `jump_agent_runner/` (lib desde F1) já oferece `AgentRunner` com fallback Claude↔Codex, `ClaudeProvider`/`CodexProvider`, `WSLTmuxBroker`, `ArtifactValidator` e `Observer` — o worker apenas **instancia** essa máquina, não duplica nada.
+3. `worker/pyproject.toml` já declara dependências e entrypoint `jump-worker = worker.main:main`, mas `worker/worker/main.py` ainda **não existe**. Esse é o coração do F5.6a.
+
+Três decisões pontuais sobre o escopo do worker real (B-α/β/γ) também precisaram ser resolvidas antes do código.
+
+**Decisão:**
+
+1. **`worker_stub.py` NÃO é substituído nem renomeado.** Continua existindo no backend como fallback dev controlado por `STUB_WORKER_ENABLED`. O worker real é processo separado em `worker/worker/main.py`, consome `jobs.agent` do Redis e reporta via `POST /internal/agent-results/{run_id}` (HMAC). Em produção, `STUB_WORKER_ENABLED=false` desliga o stub e a publicação no Redis vira o caminho ativo. Em dev local sem worker rodando, o stub mantém o fluxo do frontend honesto.
+
+2. **B-α — Status `RUNNING` durante execução: (a) não muda nada.** O endpoint atual só aceita estado terminal (DONE/FAILED). Heartbeat periódico do worker já dá observability suficiente sobre "worker vivo + processando". Adicionar `phase=start|complete` no callback exigiria mudança no schema/endpoint que não estava no escopo do F5.6a. Quando alguém pedir visibilidade granular do estado intermediário, reabrir essa decisão — provavelmente em F5.9 (pré-deploy) ou no primeiro feedback do PMO no piloto.
+
+3. **B-β — Construção do prompt: (a) stub mínimo de prompt em F5.6a.** `worker/worker/prompt_builder.py` retorna template hardcoded por `task_type` ("você é o agente leitor de propostas / análise de relatório / padrão de portfólio"). O prompt versionado real (`proposal_reader_v1.md`) entra no fluxo só em F5.6b, junto com o smoke F2.8 que valida a aderência. Razão: prompt real exige acoplamento com `schema_hint` e com download de input (B-γ) — empacotar tudo em F5.6a estouraria o orçamento da sub-fase.
+
+4. **B-γ — Download de input (PDF da proposta): (a) F5.6a roda jobs sintéticos.** Se o payload tiver `input_files=[]`, o worker invoca claude só com o prompt — suficiente para testar o ciclo Redis→runner→callback→AgentRunLog. Download via boto3 do R2 (lib já em deps) entra em F5.6b, junto com o smoke real contra a proposta Bradesco. F5.6a foca em provar que o **transporte** funciona; F5.6b prova que a **extração** funciona.
+
+**Consequência:** F5.6a fica enxuto e isolado de dependências externas (R2, prompt versionado, proposta real). Todos os testes pytest do worker podem mockar `AgentRunner` integralmente e validar o ciclo de mensageria + HMAC + heartbeat — não há claude/codex sendo chamado em teste automatizado. Risco residual: F5.6a pode passar verde e F5.6b descobrir bugs na borda runner↔worker que só aparecem com proposta real (longo timeout, falha de download, prompt rejeitado pelo validator). Mitigação: F5.6b vai exercitar essa borda em smoke explícito; se descobrir gap, reabre F5.6a parcialmente para o ajuste pontual.
+
+Débito K em `docs/conformidade-v3.1.md` passa a estar **parcialmente endereçado** ao fim de F5.6a (F2.6 worker real cumprido; F2.8 smoke ainda aberto). F5.6b fecha o débito K completo. ADR registra também a mudança no `worker/scripts/setup-windows.ps1` para suportar essa arquitetura: `systemd=true` no `/etc/wsl.conf`, Node 20 LTS via NodeSource, ordem de `PATH` priorizando `~/.npm-global/bin` sobre `/mnt/c/.../npm` — sem essas três correções, `claude` continua resolvendo pro mount Windows e cai na armadilha do ADR `2026-05-11 — F2.8 adiado`.
