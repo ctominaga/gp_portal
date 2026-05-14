@@ -283,3 +283,42 @@ claude -p 'responda apenas: ok' --output-format json
 **Consequência:** o motivo técnico do F2.8 ter sido adiado (`2026-05-11 — F2.8 adiado`) está **fechado**. F5.6b agora pode invocar o agente leitor real contra a proposta Bradesco sem precisar de API key — basta o OAuth Team. Adicionalmente, descobriu-se que `bash -lc` (login shell, usado por subprocess Python e `wsl -- <cmd>`) ignora `~/.bashrc` — exige PATH em `~/.profile`. Commit `adf41b7` ajustou o `setup-windows.ps1` para escrever em ambos.
 
 **Lição operacional:** flags de CLIs externos podem mudar semântica entre minor versions. Pin de versão do `@anthropic-ai/claude-code` (atualmente `npm install -g` sem pin) seria mais seguro pro setup do worker em piloto, ao custo de não receber bugfixes automaticamente. Decisão aberta para F5.6b/F5.9.
+
+## 2026-05-14 — F5.6b / F2.8 fechado: agente leitor v1 valida contra proposta Bradesco
+
+**Contexto:** F5.6b era o pacote final do débito K (aberto desde ADR `2026-05-11 — F2.8 adiado para F5`). Após F5.6a destravar os pré-requisitos (worker real + diagnóstico do `--bare`), faltava (1) rodar o agente real contra a proposta gold-standard com o prompt versionado `proposal_reader_v1.md`, (2) comparar o output contra `bradesco_sas_databricks.expected.json`, (3) decidir se o agente pode operar em modo automático no piloto. Decisão arquitetural pendente: **F5.6a.Y — onde o `jump-worker` (e o smoke) rodam: Windows host invocando `wsl.exe -- claude` ou Python dentro do WSL Linux com claude no PATH nativo?**
+
+**Decisão:** estrutura final em 4 commits sequenciais:
+
+| # | Hash | Tipo | Conteúdo |
+|---|---|---|---|
+| 1 | `177e5ee` | chore | **Resolve F5.6a.Y**: Python venv via `uv` (instalado por `pip install --user`, não `curl|sh` — mesma decisão de F5.6a.X) em `~/.jump-runner/.venv-worker`. `setup-windows.ps1` passos 3.11–3.14 idempotentes. `wsl --cd $repoRootWsl --` para que `$PWD` aponte para a raiz do monorepo. |
+| 2 | `84f5e72` | feat | `scripts/f28_smoke_bradesco.py` — invoca `AgentRunner(ClaudeProvider, CodexProvider)` direto contra texto pré-extraído da proposta Bradesco (Q2=b) com prompt `proposal_reader_v1.md`. Salva artefato + metadata em `~/.jump-runner/f28-bradesco/`. |
+| 3 | `92ffb61` | feat | `scripts/f28_compare_bradesco.py` (recall simples + recall ponderado por criticidade) + `f28_show_bradesco_output.py` (helper de debug) + `docs/f28-bradesco-baseline-quality.md` (relatório completo com decisão operacional dual). |
+| 4 | `(este)` | docs | ADR de fechamento, atualização `conformidade-v3.1.md` (K marcado ✅), `fase-5-progresso.md` (seção F5.6b completa), memória `project_jump_gp_portal.md`. |
+
+**Resultado do smoke (run `f28-bradesco-1778780537`):**
+
+- 159.2s no Claude headless (1 tentativa, sem fallback).
+- `phases` 100% (4/4), `deliverables` 100% (21/21), `project` 90.9% (10/11).
+- `key_premises` 0% strict / 33% para `out_of_scope` — artefato do Jaccard de palavras para sinônimos PT-BR (16 e 17 extras semanticamente válidos respectivamente).
+- **Recall simples 64.8% (SHADOW). Recall ponderado por criticidade 81.5% (PASS).**
+
+**Decisão operacional final (aprovada por Christopher Tominaga):**
+
+- **PASS técnico** — agente leitor v1 entra em produção no piloto.
+- **SHADOW na semana 1** — spec v3.1 §1.5 já prevê; GP audita o primeiro baseline real.
+- **Upgrade condicional para AUTOMÁTICO na semana 2+** — critério binário: se GP editar pouco/nada em premises/oos do primeiro baseline, agente promove. Se editar muito, abre ciclo de iteração para `proposal_reader_v1.1.md`.
+
+**Decisões refinadas durante a execução:**
+
+- **Q1 (F5.6a.Y) = (a) WSL Linux**: refactor de `ClaudeHeadlessRoute` para invocar `wsl.exe` seria menos aderente à spec original do `02_jump_agent_runner_spec.md §6.1`. Manter Python no WSL é menos invasivo. Resolve simultaneamente o problema de mount cross-OS (`/mnt/c/.../npm/claude` vs `~/.npm-global/bin/claude`) que reapareceria se Python rodasse no Windows host.
+- **Q2 = (b) `.txt` pré-extraído**: isola "agente leitor" de "extração de PDF". Download R2 + `pypdf` no fly fica para F5.6c/F5.9 — não bloqueia o piloto onde o worker REAL (não o smoke) baixa o PDF.
+- **Q3 evoluído**: começou como "strict" (decisão original do briefing). Quando o número simples ficou em SHADOW mas inspeção visual mostrou que era artefato do Jaccard, foi adicionada **métrica ponderada por criticidade do campo** como segundo veredito. Reportar AS DUAS dá ao operador o sinal correto sem esconder a fragilidade da heurística.
+
+**Consequência:** débito K **FECHADO**. Bug F2.8 do ADR `2026-05-11` resolvido em duas frentes complementares (bug `--bare` + Python no Linux). F5.6 (a+b) virou o **destravamento técnico mais importante de F5** — não só fechou o débito mas também consolidou o **ambiente de desenvolvimento worker** que servirá F5.5, F5.7 e F5.9. F5.6a.Y resolvida. Próximas sub-fases: F5.7 (LGPD, DPO Christopher), F5.5 (inteligência cruzada, paralelizável), F5.8 (export, independente), F5.9 (deploy + v3.2). Caminho crítico para piloto Bradesco está claro.
+
+**Riscos residuais conhecidos (documentados em `docs/f28-bradesco-baseline-quality.md`):** (1) `project.estimated_capacity_per_sprint_hours` não extraído (trivialmente derivável); (2) 2 itens de `out_of_scope` do expected não capturados — risco controlado pelo SHADOW; (3) Jaccard de palavras é fraco para sinônimos — substituir por embedding similarity local em hardening futuro (F5.9 ou F6).
+
+**Riscos arquiteturais decididos (não residuais):**
+- **CodexProvider permanece como fallback configurado mas sem login efetivo** — URL do installer oficial retornou não-200 em 2026-05-14 (F5.6a.X pegou cedo). Plano B3 do runbook em vigor: rodar só com Claude. `AgentRunner` configurado a cair para Codex se Claude falhar, mas Codex reportará `BROKER_UNAVAILABLE` cedo. Operacionalmente aceitável.

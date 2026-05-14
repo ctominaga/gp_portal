@@ -295,19 +295,92 @@ Todos em `docs/conformidade-v3.1.md` seção "Débitos menores de F5.6a (P3)":
 
 ---
 
-## F5.5, F5.6b, F5.7 a F5.9 — Pendentes
+## F5.6b — Smoke real do agente leitor contra Bradesco ✅ FECHADA
 
-Conforme plano em `docs/fase-5-plano.md`. F5.6 foi dividida em F5.6a (fechada
-acima) e F5.6b (smoke F2.8) após a sessão de inventário. Ordem recomendada
+Roda o smoke F2.8 end-to-end (debito K do `conformidade-v3.1.md`): carrega
+prompt versionado `proposal_reader_v1.md`, alimenta texto pre-extraido da
+proposta Bradesco para o `AgentRunner`, compara o JSON resultante contra
+`bradesco_sas_databricks.expected.json`, decide pass/shadow/fail por recall
+ponderado (criticidade-aware).
+
+### Commits
+
+| # | Hash | Tipo | Conteúdo |
+|---|---|---|---|
+| 1 | `177e5ee` | chore | `setup-windows.ps1` etapas 3.11–3.14: `uv` via `pip --user` (sem `curl|sh`), Python 3.12 em userspace, venv worker em `~/.jump-runner/.venv-worker`, `uv pip install -e jump_agent_runner worker`. **Resolve F5.6a.Y: jump-worker roda dentro do WSL Linux** (claude no PATH nativo, sem mount). |
+| 2 | `84f5e72` | feat | `scripts/f28_smoke_bradesco.py` — invoca `AgentRunner(ClaudeProvider, CodexProvider)` direto contra a proposta Bradesco com o prompt v1. Workspace, schema_hint, metadata logada para o comparador. |
+| 3 | `92ffb61` | feat | `scripts/f28_compare_bradesco.py` (Jaccard + recall simples + recall ponderado) + `scripts/f28_show_bradesco_output.py` (debug helper) + `docs/f28-bradesco-baseline-quality.md` (relatório completo + decisão operacional aprovada). |
+| 4 | `(este)` | docs | ADR fechamento débito K + atualização `conformidade-v3.1.md` (K marcado ✅) + atualização `fase-5-progresso.md`. |
+
+### Resultado do smoke
+
+Run `f28-bradesco-1778780537` (2026-05-14, 159.2s, Claude headless, 1 tentativa,
+sem fallback):
+
+| Chave | Recall | Match | Notas |
+|---|---|---|---|
+| `project` | 90.9% | 10/11 | Perde só `estimated_capacity_per_sprint_hours` (calculável trivialmente) |
+| `phases` | 100.0% | 4/4 | sprint-1/2/3 + phaseout |
+| `deliverables` | 100.0% | 21/21 | Core do baseline em PERFEITO |
+| `key_premises` | 0% strict | 0/4 (+16 extras) | Artefato do Jaccard de palavras para sinônimos; substância coberta nos extras |
+| `out_of_scope` | 33.3% | 1/3 (+17 extras) | 1 match literal; 2 itens do expected não capturados (risco controlado) |
+
+**Recall simples:** 64.8% → SHADOW.
+**Recall ponderado (criticidade-aware, deliverables peso 2):** 81.5% → **PASS**.
+
+### Decisões respondidas (Q1/Q2/Q3 do briefing)
+
+| # | Pergunta | Resposta |
+|---|---|---|
+| **Q1 (F5.6a.Y)** | Onde o `jump-worker` roda — Windows host vs WSL Linux? | **(a) WSL Linux.** Python venv via `uv` em `~/.jump-runner/.venv-worker`. Claude resolvido pelo subprocess Python aponta para nativo `~/.npm-global/bin/claude`, sem mount cross-OS. |
+| **Q2** | Extrair PDF do R2 no fly ou usar `.txt` pré-extraído? | **(b) `.txt` pré-extraído** (`backend/tests/fixtures/proposals/bradesco_sas_databricks.txt`). Isola "agente leitor" de "extração de PDF". Download R2 + pypdf no fly fica para F5.6c/F5.9 se necessário. |
+| **Q3** | Modo de comparação — strict, normalizado, ou soft? | **Híbrido evoluído:** normalize + substring + Jaccard ≥ 0.45. Quando a métrica simples ficou em SHADOW mas inspeção visual mostrou que era artefato do Jaccard para sinônimos, adicionei **métrica ponderada por criticidade** como segundo veredito. Reportar ambos é mais honesto que escolher um. |
+
+### Decisão operacional final
+
+**Aprovada por Christopher Tominaga em 2026-05-14:**
+
+- **PASS técnico** (recall ponderado 81.5%). Agente leitor v1 entra em produção no piloto Bradesco.
+- **SHADOW na semana 1**. Spec v3.1 §1.5 já prevê. GP audita primeiro baseline real.
+- **Upgrade condicional para AUTOMÁTICO na semana 2+**. Critério binário: se GP editar pouco/nada em premises/oos do primeiro baseline, agente promove. Se editar muito, fica em shadow e abre ciclo de iteração para `proposal_reader_v1.1.md`.
+
+### Decisões internas adicionais
+
+- **Comparador com duas métricas vale o esforço.** Jaccard de palavras é fraco para sinônimos PT-BR — "código SAS legado" vs "scripts SAS originais" tem Jaccard 0.08 mas é a mesma premissa. Reportar só métrica simples seria injusto com o agente e levaria a iteração de prompt desnecessária. Reportar só ponderado esconde a fragilidade da heurística. Reportar AS DUAS dá ao operador o sinal correto.
+- **F5.6a.Y resolvida da forma menos invasiva.** Alternativa (b) — wrapper em `ClaudeHeadlessRoute._claude_path` que invoca `wsl.exe -- claude ...` — exigiria refactor do `jump_agent_runner` e injeção de configuração específica para Windows host. Manter Python dentro do WSL é mais simples, mais aderente à spec original do `02_jump_agent_runner_spec.md §6.1`, e usa o mesmo `~/.npm-global/bin/claude` que já validamos.
+- **`uv` via `pip install --user`, não `curl|sh`** — mesma decisão arquitetural do F5.6a.X (NodeSource sem `bash -` root). Guard interno do Claude Code bloqueia `curl|sh` durante F5.6b — confirmação independente da consistência da regra.
+
+### Aprendizados marcantes da sub-fase
+
+- **O bug F2.8 do ADR 2026-05-11 era múltiplo, não único.** A causa raiz (descoberta em F5.6a) era `--bare` desabilitando OAuth. Mas mesmo após o fix, sem o venv Python no Linux (resolução F5.6a.Y), o `subprocess` rodando do Windows host resolveria claude para o mount e voltaria o bug. **Os dois precisavam ser corrigidos simultaneamente** — fix no `claude_headless.py` (F5.6a commit `4c22e53`) + Python rodando no Linux (F5.6b commit `177e5ee`). Cada um isoladamente não bastava.
+- **Métricas heurísticas precisam de leitura qualitativa.** Quando o número diz uma coisa e a inspeção visual diz outra, a heurística está errada — não a realidade. F5.6b absorveu isso: dois números, decisão explícita do humano. Padrão a copiar em outras avaliações de IA-output futuras.
+
+### Conformidade — itens marcados em `docs/conformidade-v3.1.md`
+
+- **K. F2.8 — smoke real do agente leitor** → **FECHADO**. Era débito desde ADR 2026-05-11. F5.6a entregou o worker e diagnosticou bug `--bare`; F5.6b rodou o smoke real e validou o agente em produção (com SHADOW de salvaguarda na semana 1).
+
+### Próximas sub-fases
+
+Com F5.6 (a+b) fechada, o caminho crítico para o **lançamento do piloto Bradesco** está claro:
+
+- **F5.7 — LGPD**: depende de Christopher como DPO produzir/aprovar `docs/lgpd.md`. Pré-deploy obrigatório.
+- **F5.5 — Inteligência cruzada**: independente do piloto; pode rodar em paralelo.
+- **F5.8 — Export PDF/PPTX**: independente; pode ficar para depois do piloto começar (não bloqueia).
+- **F5.9 — Deploy Railway + v3.2 consolidada**: depende de F5.7 (LGPD assinado). F5.6b (smoke validado) já cumprido.
+
+---
+
+## F5.5, F5.7, F5.8, F5.9 — Pendentes
+
+Conforme plano em `docs/fase-5-plano.md`. F5.6 (a+b) fechada. Ordem recomendada
 (conservadora: schemas estáveis antes de LGPD/deploy):
 
 | # | Sub-fase | Estimativa | Bloqueia / é bloqueada por |
 |---|---|---|---|
 | F5.5 | Agente de Inteligência Cruzada (heurística inicial + flag) | ~30k | depende de F5.3 (✅); worker real (F5.6a ✅) já suficiente |
-| F5.6b | Smoke F2.8 real contra `bradesco_sas_databricks.expected.json` + decisão F5.6a.Y (onde o worker roda) | ~25k | depende de F5.6a (✅) + login interativo do Chris no `tmux project-claude` |
-| F5.7 | LGPD: `lgpd.md` + `/me/data-export` + `/me/data-deletion-request` | ~45k | depende de F5.1 estabilizado (✅) + F5.3 (✅) |
+| F5.7 | LGPD: `lgpd.md` + `/me/data-export` + `/me/data-deletion-request` | ~45k | depende de F5.1 estabilizado (✅) + F5.3 (✅); Christopher é DPO |
 | F5.8 | Exportação PDF/PPTX | ~50k (teto) | livre |
-| F5.9 | Deploy Railway + v3.2 consolidada | ~40k | depende de F5.6b (smoke validado pro piloto) + F5.7 (LGPD assinado) |
+| F5.9 | Deploy Railway + v3.2 consolidada | ~40k | depende de F5.6b (✅) + F5.7 (LGPD assinado) |
 
 ---
 
