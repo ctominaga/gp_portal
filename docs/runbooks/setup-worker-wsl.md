@@ -118,12 +118,19 @@ else
 fi
 ```
 
-**Faz** (só se faltar):
+**Faz** (só se faltar) — versão manual sem `bash -` root:
 
 ```bash
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt-get install -y curl gnupg ca-certificates
+curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
+  | sudo gpg --dearmor --yes -o /etc/apt/trusted.gpg.d/nodesource.gpg
+echo "deb https://deb.nodesource.com/node_20.x nodistro main" \
+  | sudo tee /etc/apt/sources.list.d/nodesource.list >/dev/null
+sudo apt-get update -y
 sudo apt-get install -y nodejs
 ```
+
+> 💡 O script `setup-windows.ps1` faz exatamente isso. A alternativa em "uma linha" `curl ... | sudo -E bash -` (instalador oficial NodeSource) também funciona, mas executa um shell root vindo da internet — preferimos o caminho manual em qualquer setup automatizado.
 
 **Sanity:**
 
@@ -201,9 +208,14 @@ claude --version # imprime versão
 [ -f "$HOME/.codex/bin/codex" ] && echo "OK codex já presente" || echo "FALTA instalar codex"
 ```
 
-**Faz** (só se faltar):
+**Faz** (só se faltar) — com verificação preventiva da URL antes de baixar (débito F5.6a.X):
 
 ```bash
+# 1) HEAD request — confirma que a URL responde 200 antes de gastar tempo no download.
+#    Se 4xx/5xx, aborta e vai pra "Solução de problemas" abaixo (Plano B 1/2/3).
+curl -I -fsS https://codex.openai.com/install.sh
+
+# 2) Se OK, baixa e executa
 curl -fsSL https://codex.openai.com/install.sh | sh
 ```
 

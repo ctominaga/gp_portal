@@ -86,11 +86,23 @@ else
     note_skipped "3.2 pacotes apt ja presentes (tmux/curl/jq/python3/...)"
 fi
 
-# 3.3 Node 20 LTS via NodeSource (substitui Node 12 do apt do Ubuntu-22.04)
+# 3.3 Node 20 LTS via NodeSource — versao manual (gpg + tee + apt-get) em vez do
+# instalador oficial `curl ... | sudo -E bash -`. Razao: o sudoers granular
+# usado durante F5.6a (/etc/sudoers.d/jump-setup-f56a) restringe NOPASSWD a
+# apt-get, tee em arquivos especificos e gpg — NAO inclui `bash -`. Manual
+# fica mais seguro mesmo em produção (sem shell root de fonte externa).
 NODE_RAW=$(node --version 2>/dev/null || echo "")
 NODE_MAJOR=$(echo "$NODE_RAW" | sed -E "s/^v([0-9]+).*/\\1/" | grep -E "^[0-9]+$" || echo 0)
 if [ "$NODE_MAJOR" -lt 18 ]; then
-    curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - >/dev/null 2>&1
+    # Dependencias da operacao (idempotente; ja vieram do 3.2 mas garantia extra)
+    sudo apt-get install -y curl gnupg ca-certificates >/dev/null
+    # Importa chave do NodeSource em /etc/apt/trusted.gpg.d/ (presente na Ubuntu 22.04)
+    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
+      | sudo gpg --dearmor --yes -o /etc/apt/trusted.gpg.d/nodesource.gpg
+    # Adiciona repo — 'nodistro' funciona transversalmente em Ubuntu/Debian
+    echo "deb https://deb.nodesource.com/node_20.x nodistro main" \
+      | sudo tee /etc/apt/sources.list.d/nodesource.list >/dev/null
+    sudo apt-get update -y >/dev/null
     sudo apt-get install -y nodejs >/dev/null
     if [ -z "$NODE_RAW" ]; then
         note_done "3.3 Node 20 LTS instalado via NodeSource (era ausente)"
@@ -132,12 +144,16 @@ else
     note_skipped "3.6 claude nativo ja presente em ~/.npm-global/bin/"
 fi
 
-# 3.7 Codex CLI via installer oficial
+# 3.7 Codex CLI via installer oficial — com curl -I preventivo (debito F5.6a.X)
+# Antes de gastar 5-10min num download que pode falhar, valida que a URL
+# responde 200. Se 4xx/5xx, aborta cedo com mensagem clara apontando o runbook.
 if [ ! -f "$HOME/.codex/bin/codex" ]; then
-    if curl -fsSL https://codex.openai.com/install.sh | sh >/dev/null 2>&1; then
+    if ! curl -I -fsS https://codex.openai.com/install.sh >/dev/null 2>&1; then
+        note_done "3.7 ERRO: URL https://codex.openai.com/install.sh nao retornou 200. Plano B 1/2/3 em docs/runbooks/setup-worker-wsl.md (Solucao de problemas)."
+    elif curl -fsSL https://codex.openai.com/install.sh | sh >/dev/null 2>&1; then
         note_done "3.7 codex instalado via installer oficial OpenAI"
     else
-        note_done "3.7 ERRO: codex installer falhou (URL pode ter mudado; ver runbook 'Solucao de problemas')"
+        note_done "3.7 ERRO: codex installer baixou (HEAD 200) mas execucao falhou; ver Plano B no runbook"
     fi
 else
     note_skipped "3.7 codex ja presente em ~/.codex/bin/"
