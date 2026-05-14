@@ -98,6 +98,45 @@ await client.post(...)
 fresh = await db_session.get(Baseline, b.id)  # cache stale
 ```
 
+## Claude Code v2.1.x: `--bare` desabilita OAuth — diagnóstico do ADR 2026-05-11
+
+**Bug histórico:** o ADR `2026-05-11 — F2.8 adiado` documentou que `claude -p ...` retornava `Not logged in` em headless apesar do TUI `claude /login` reportar sucesso. A causa parecia ser mount cross-OS (`/mnt/c/...`). Em F5.6a, mesmo com `claude` instalado **nativamente no Linux** (`/home/$USER/.npm-global/bin/claude`) e OAuth funcionando no TUI, o `claude -p ... --bare` continuava falhando com a mesma mensagem.
+
+**Causa real descoberta em F5.6a (`claude --help` do v2.1.141):**
+
+```
+--bare    Minimal mode: ... Anthropic auth is strictly
+          ANTHROPIC_API_KEY or apiKeyHelper via --settings
+          (OAuth and keychain are never read).
+```
+
+`--bare` no v2.1.x **estritamente desabilita OAuth/keychain**. Em versões anteriores aceitava OAuth, mas a flag passou a ser estrita. Sem `--bare`:
+
+```bash
+claude -p 'responda apenas: ok' --output-format json
+# {"is_error": false, "result": "ok", ...}
+```
+
+**Implicação para o `jump_agent_runner`:**
+
+- `claude_headless.py`: removido `--bare` do cmd (commit `4c22e53`).
+- `broker/wsl_tmux.py`: removido `--bare` do probe `is_logged_in` (mesmo commit).
+- Os comportamentos úteis do `--bare` (skip hooks, LSP, plugin sync, CLAUDE.md auto-discovery) já são implícitos em `-p` (print mode non-interactive). Não há regressão.
+
+**Lição operacional:** flags de CLIs externos podem mudar semântica entre minor versions. Pin de versão do `@anthropic-ai/claude-code` (atualmente `npm install -g` sem pin) seria mais seguro pro setup do worker em piloto, ao custo de não receber bugfixes automaticamente. Decisão aberta para F5.6b/F5.9.
+
+## Bash login shells (`bash -lc`) ignoram `~/.bashrc` — exportar PATH em `~/.profile`
+
+Subprocess Python (`claude_headless.py` via `resolve_executable("claude")`) e `wsl -- <cmd>` em modo não-interativo herdam o ambiente do **login shell**, não do interactive shell. Resultado:
+
+- `~/.bashrc` é lido apenas em shell interativo (`bash` sem `-c`).
+- `~/.profile` (ou `~/.bash_profile`) é lido em login shells.
+- Em Ubuntu default, `~/.profile` carrega `.bashrc` SE existir, MAS só quando o bash detecta TTY interativo — não para `bash -lc cmd`.
+
+Sem exportar `PATH=$HOME/.npm-global/bin:$PATH` no `.profile`, `which claude` em `bash -lc` retorna `/mnt/c/.../npm/claude` (mount Windows), não `~/.npm-global/bin/claude` (nativo).
+
+`setup-windows.ps1` (a partir do commit pós-F5.6a) **escreve a linha de export em ambos `~/.bashrc` E `~/.profile`** para cobrir os dois modos de invocação. Idempotente — `grep -qxF` evita duplicação.
+
 ## Como rodar o worker em dev (F5.6a)
 
 Pré-requisitos:

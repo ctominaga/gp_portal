@@ -10,6 +10,11 @@
 
 $ErrorActionPreference = "Stop"
 
+# Forca encoding UTF-8 no PowerShell — wsl.exe emite UTF-16LE por default,
+# o que quebra comparacoes -match com strings normais (NUL bytes intercalados).
+[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new()
+$OutputEncoding           = [System.Text.UTF8Encoding]::new()
+
 # Contadores para relatorio final
 $script:Done    = New-Object System.Collections.ArrayList
 $script:Skipped = New-Object System.Collections.ArrayList
@@ -34,7 +39,9 @@ Mark-Skipped "1. WSL2 ja instalado"
 
 # ---- 2. Distro Ubuntu-22.04 + default ----
 Write-Host "==> [2/4] Distro Ubuntu-22.04..." -ForegroundColor Cyan
-$distros = wsl -l -q
+# Defesa em profundidade: limpa NUL bytes residuais caso o encoding UTF-8
+# acima ainda nao tenha vencido o comportamento UTF-16 do wsl.exe nessa versao.
+$distros = ((wsl -l -q | Out-String) -replace "`0", "").Trim()
 if ($distros -notmatch "Ubuntu-22\.04") {
     Write-Host "Ubuntu-22.04 ausente. Instalando..." -ForegroundColor Yellow
     wsl --install -d Ubuntu-22.04
@@ -123,14 +130,22 @@ else
     note_skipped "3.4 npm prefix ja em ~/.npm-global"
 fi
 
-# 3.5 PATH em ~/.bashrc - ~/.npm-global/bin precede /mnt/c/.../npm
+# 3.5 PATH em ~/.bashrc E ~/.profile - ~/.npm-global/bin precede /mnt/c/.../npm
+# Razao do .profile (alem de .bashrc):
+#   - bash interativo le .bashrc
+#   - bash -lc (login shell) le .profile/.bash_profile, NAO .bashrc
+#   - subprocess de Python (claude_headless.py) e wsl -- <cmd> heredam o
+#     ambiente do login shell. Sem PATH no .profile, o `claude` resolvido
+#     vira o do mount Windows (/mnt/c/.../npm/claude) que nao tem login.
 PATH_LINE='export PATH="$HOME/.npm-global/bin:$PATH"'
-if ! grep -qxF "$PATH_LINE" ~/.bashrc; then
-    echo "$PATH_LINE" >> ~/.bashrc
-    note_done "3.5 PATH ~/.npm-global/bin adicionado ao ~/.bashrc"
-else
-    note_skipped "3.5 PATH ~/.npm-global/bin ja no ~/.bashrc"
-fi
+for rcfile in ~/.bashrc ~/.profile; do
+    if ! grep -qxF "$PATH_LINE" "$rcfile" 2>/dev/null; then
+        echo "$PATH_LINE" >> "$rcfile"
+        note_done "3.5 PATH ~/.npm-global/bin adicionado ao $rcfile"
+    else
+        note_skipped "3.5 PATH ~/.npm-global/bin ja em $rcfile"
+    fi
+done
 
 # Garante PATH na sessao atual (proximas etapas dependem disso)
 export PATH="$HOME/.npm-global/bin:$PATH"
@@ -159,14 +174,16 @@ else
     note_skipped "3.7 codex ja presente em ~/.codex/bin/"
 fi
 
-# 3.8 PATH ~/.codex/bin em ~/.bashrc
+# 3.8 PATH ~/.codex/bin em ~/.bashrc E ~/.profile (mesmo motivo do 3.5)
 CODEX_PATH_LINE='export PATH="$HOME/.codex/bin:$PATH"'
-if ! grep -qxF "$CODEX_PATH_LINE" ~/.bashrc; then
-    echo "$CODEX_PATH_LINE" >> ~/.bashrc
-    note_done "3.8 PATH ~/.codex/bin adicionado ao ~/.bashrc"
-else
-    note_skipped "3.8 PATH ~/.codex/bin ja no ~/.bashrc"
-fi
+for rcfile in ~/.bashrc ~/.profile; do
+    if ! grep -qxF "$CODEX_PATH_LINE" "$rcfile" 2>/dev/null; then
+        echo "$CODEX_PATH_LINE" >> "$rcfile"
+        note_done "3.8 PATH ~/.codex/bin adicionado ao $rcfile"
+    else
+        note_skipped "3.8 PATH ~/.codex/bin ja em $rcfile"
+    fi
+done
 export PATH="$HOME/.codex/bin:$PATH"
 
 # 3.9 tmux sessions PERSISTENTES - NUNCA mata sessao existente (login pode estar la)
@@ -202,11 +219,29 @@ cat "$ACTIONS_FILE"
 rm -f "$ACTIONS_FILE"
 '@
 
-$linuxOutput = wsl -d Ubuntu-22.04 -- bash -c $linuxSetup
-if ($LASTEXITCODE -ne 0) {
+# Escreve o bloco bash em arquivo temp e executa via path. Passar via
+# 'bash -c $bigString' quebra com parenteses, aspas e heredocs aninhados —
+# o PowerShell + wsl.exe nao escapam consistentemente strings multi-linha.
+$tmpScript = Join-Path $env:TEMP ("jump-setup-" + [guid]::NewGuid().ToString("N") + ".sh")
+# Grava UTF-8 SEM BOM (bash nao gosta de BOM no primeiro byte)
+$utf8NoBom = [System.Text.UTF8Encoding]::new($false)
+[System.IO.File]::WriteAllText($tmpScript, $linuxSetup, $utf8NoBom)
+
+# Converte path Windows -> WSL manualmente. wslpath via wsl.exe sofre quoting
+# inconsistente das backslashes em alguns ambientes (vimos perda de '\' no PS 5.1).
+# Caminho manual e deterministico: "C:\path\to" -> "/mnt/c/path/to".
+$drive = $tmpScript.Substring(0, 1).ToLower()
+$rest = $tmpScript.Substring(2) -replace '\\', '/'
+$wslScriptPath = "/mnt/$drive$rest"
+
+$linuxOutput = wsl -d Ubuntu-22.04 -- bash $wslScriptPath
+$linuxExit = $LASTEXITCODE
+Remove-Item -LiteralPath $tmpScript -ErrorAction SilentlyContinue
+
+if ($linuxExit -ne 0) {
     Write-Host "Falha no setup Linux. Output completo:" -ForegroundColor Red
     Write-Host $linuxOutput
-    Mark-Failed "3. Bloco Linux abortou (exit code $LASTEXITCODE)"
+    Mark-Failed "3. Bloco Linux abortou (exit code $linuxExit)"
 }
 
 # Parser do output: classifica em done/skipped/versions
