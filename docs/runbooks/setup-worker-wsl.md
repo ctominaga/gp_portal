@@ -359,6 +359,51 @@ Se falhar com `engine=codex route=broker` (deu fallback completo), funcionou mas
 
 ---
 
+## 11.5. Python 3.12 + venv do worker no WSL Linux (F5.6b)
+
+**Por quê:** o `jump-worker` (e portanto `jump_agent_runner`) precisa rodar **dentro do WSL Linux** pra que `claude` resolvido pelo `subprocess` aponte para o binário nativo (`~/.npm-global/bin/claude`) — caso contrário cai no bug `Not logged in` do ADR 2026-05-11. Ubuntu 22.04 traz Python 3.10; `pyproject.toml` do worker exige `>=3.12`. Usamos `uv` (toolchain manager) instalado **em userspace via `pip --user`** (não `curl|sh` — mesma decisão de segurança do F5.6a.X NodeSource).
+
+**Verifica:**
+
+```bash
+[ -f ~/.local/bin/uv ] && echo "OK uv" || echo "FALTA uv"
+[ -f ~/.jump-runner/.venv-worker/bin/python ] && echo "OK venv" || echo "FALTA venv"
+[ -f ~/.jump-runner/.venv-worker/bin/jump-worker ] && echo "OK jump-worker" || echo "FALTA install"
+```
+
+**Faz** (só o que faltar):
+
+```bash
+# 1) uv via pip --user
+python3 -m pip install --user uv
+
+# Garante ~/.local/bin no PATH da sessão (Ubuntu default .profile já inclui)
+export PATH="$HOME/.local/bin:$PATH"
+
+# 2) Python 3.12 (uv baixa pré-compilado em ~/.local/share/uv/python/)
+uv python install 3.12
+
+# 3) Venv isolado em ~/.jump-runner/.venv-worker
+mkdir -p ~/.jump-runner
+uv venv --python 3.12 ~/.jump-runner/.venv-worker
+
+# 4) jump_agent_runner + worker editable. Use o path do repo via /mnt/c/...
+REPO=/mnt/c/Users/<user>/.../jump-report   # ajuste para sua máquina
+uv pip install \
+  --python ~/.jump-runner/.venv-worker/bin/python \
+  -e "$REPO/jump_agent_runner" \
+  -e "$REPO/worker"
+```
+
+**Sanity:**
+
+```bash
+~/.jump-runner/.venv-worker/bin/python --version    # Python 3.12.x
+~/.jump-runner/.venv-worker/bin/jump-runner smoke --help
+```
+
+> 💡 O `setup-windows.ps1` automatiza esses passos (3.11–3.14) usando `wsl --cd <repoRoot>` para que `$PWD` aponte pra raiz do monorepo dentro do bash. Manual fica como documentação e troubleshooting.
+
 ## 12. Validação final consolidada
 
 Comando único que confirma todo o setup:

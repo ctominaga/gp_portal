@@ -200,7 +200,59 @@ else
     note_skipped "3.10 tmux project-codex ja existe (preservada)"
 fi
 
-# 3.11 Estado dos componentes (para reporte final no PowerShell)
+# === F5.6b: Python 3.12 + venv worker (sem sudo, sem curl|sh) ===
+# Razao: jump-worker e seu pyproject exigem Python >=3.12; Ubuntu 22.04 traz
+# 3.10. Usamos `uv` (toolchain manager Astral) instalado em userspace via
+# pip --user, NAO via `curl|sh` (mesma decisao do F5.6a.X — NodeSource sem
+# bash root). uv baixa Python 3.12 pre-compilado no home, cria venv isolado
+# em ~/.jump-runner/.venv-worker, e instala editable o pacote do worker e do
+# jump_agent_runner. Resultado: `jump-worker` e `jump-runner` callable de
+# dentro do WSL Linux com claude nativo no PATH.
+
+# 3.11 uv via pip --user (sem `curl|sh`)
+if [ ! -f "$HOME/.local/bin/uv" ]; then
+    python3 -m pip install --user --quiet uv >/dev/null 2>&1
+    note_done "3.11 uv instalado via pip --user (~/.local/bin/uv)"
+else
+    note_skipped "3.11 uv ja presente em ~/.local/bin/"
+fi
+
+# uv requer ~/.local/bin no PATH; Ubuntu .profile default ja inclui se exists.
+export PATH="$HOME/.local/bin:$PATH"
+
+# 3.12 Python 3.12 (pre-compilado pelo uv, instalado em userspace)
+if ! uv python list --only-installed 2>/dev/null | grep -q "3.12"; then
+    uv python install 3.12 >/dev/null 2>&1
+    note_done "3.12 Python 3.12 instalado via uv (userspace)"
+else
+    note_skipped "3.12 Python 3.12 ja instalado via uv"
+fi
+
+# 3.13 venv worker em ~/.jump-runner/.venv-worker
+mkdir -p "$HOME/.jump-runner"
+if [ ! -f "$HOME/.jump-runner/.venv-worker/bin/python" ]; then
+    uv venv --python 3.12 "$HOME/.jump-runner/.venv-worker" >/dev/null 2>&1
+    note_done "3.13 venv ~/.jump-runner/.venv-worker criado (Python 3.12)"
+else
+    note_skipped "3.13 venv ~/.jump-runner/.venv-worker ja existe"
+fi
+
+# 3.14 Instalar jump_agent_runner + worker editable no venv
+# `--cd <repo_root>` do `wsl -- bash` (chamado pelo PowerShell wrapper) faz
+# `$PWD` apontar para a raiz do monorepo `jump-report/`. Caminhos relativos
+# abaixo funcionam tanto em CI quanto em workstation.
+if [ ! -f "$HOME/.jump-runner/.venv-worker/bin/jump-worker" ]; then
+    uv pip install \
+        --python "$HOME/.jump-runner/.venv-worker/bin/python" \
+        --quiet \
+        -e "$PWD/jump_agent_runner" \
+        -e "$PWD/worker" >/dev/null 2>&1
+    note_done "3.14 jump_agent_runner + worker instalados editable no venv"
+else
+    note_skipped "3.14 jump-worker entrypoint ja existe (instalacao previa)"
+fi
+
+# 3.16 Estado dos componentes (para reporte final no PowerShell)
 {
   echo "VERSIONS_START"
   echo "tmux=$(tmux -V 2>/dev/null | head -1)"
@@ -212,6 +264,8 @@ fi
   echo "which_codex=$(which codex 2>/dev/null || echo ausente)"
   echo "claude_login=$([ -f $HOME/.claude/.credentials.json ] && echo presente || echo ausente)"
   echo "codex_login=$([ -d $HOME/.codex ] && echo presente || echo ausente)"
+  echo "worker_venv=$([ -f $HOME/.jump-runner/.venv-worker/bin/python ] && echo presente || echo ausente)"
+  echo "jump_worker=$([ -f $HOME/.jump-runner/.venv-worker/bin/jump-worker ] && echo presente || echo ausente)"
   echo "VERSIONS_END"
 } >> "$ACTIONS_FILE"
 
@@ -230,11 +284,20 @@ $utf8NoBom = [System.Text.UTF8Encoding]::new($false)
 # Converte path Windows -> WSL manualmente. wslpath via wsl.exe sofre quoting
 # inconsistente das backslashes em alguns ambientes (vimos perda de '\' no PS 5.1).
 # Caminho manual e deterministico: "C:\path\to" -> "/mnt/c/path/to".
-$drive = $tmpScript.Substring(0, 1).ToLower()
-$rest = $tmpScript.Substring(2) -replace '\\', '/'
-$wslScriptPath = "/mnt/$drive$rest"
+function ConvertTo-WslPath($winPath) {
+    $drive = $winPath.Substring(0, 1).ToLower()
+    $rest = $winPath.Substring(2) -replace '\\', '/'
+    return "/mnt/$drive$rest"
+}
+$wslScriptPath = ConvertTo-WslPath $tmpScript
 
-$linuxOutput = wsl -d Ubuntu-22.04 -- bash $wslScriptPath
+# Raiz do monorepo jump-report/ (parent de worker/, que e parent de scripts/).
+# Convertido para path Linux. `wsl --cd $repoRootWsl` faz `$PWD` dentro do
+# bash apontar para a raiz — passos 3.14 (uv pip install -e $PWD/...) dependem.
+$repoRootWin = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
+$repoRootWsl = ConvertTo-WslPath $repoRootWin
+
+$linuxOutput = wsl -d Ubuntu-22.04 --cd $repoRootWsl -- bash $wslScriptPath
 $linuxExit = $LASTEXITCODE
 Remove-Item -LiteralPath $tmpScript -ErrorAction SilentlyContinue
 
@@ -309,6 +372,8 @@ Show-State "which claude" $versions["which_claude"] '^/home/'
 Show-State "which codex"  $versions["which_codex"]  '^/home/'
 Show-State "claude login" $versions["claude_login"] '^presente$'
 Show-State "codex login"  $versions["codex_login"]  '^presente$'
+Show-State "worker venv"  $versions["worker_venv"]  '^presente$'
+Show-State "jump-worker"  $versions["jump_worker"]  '^presente$'
 
 $loginPending = ($versions["claude_login"] -ne "presente") -or ($versions["codex_login"] -ne "presente")
 

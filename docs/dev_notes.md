@@ -125,6 +125,19 @@ claude -p 'responda apenas: ok' --output-format json
 
 **Lição operacional:** flags de CLIs externos podem mudar semântica entre minor versions. Pin de versão do `@anthropic-ai/claude-code` (atualmente `npm install -g` sem pin) seria mais seguro pro setup do worker em piloto, ao custo de não receber bugfixes automaticamente. Decisão aberta para F5.6b/F5.9.
 
+## Python no WSL: `uv` via `pip --user`, não via `curl | sh`
+
+`uv` (Astral toolchain manager) é a forma mais simples de obter Python 3.12 em Ubuntu 22.04 sem mexer em `add-apt-repository`/deadsnakes/sudo. **Instalamos via `python3 -m pip install --user uv`**, NÃO via `curl -LsSf https://astral.sh/uv/install.sh | sh`.
+
+Razão: a decisão arquitetural do F5.6a.X (`setup-windows.ps1` substituindo `curl ... NodeSource | sudo bash -` por `gpg + tee + apt-get`) foi "não executar shell-from-internet em setup automatizado". Aplicar `curl | sh` pro uv seria inconsistente — o guard interno do Claude Code também bloqueia em F5.6b. Trade-off: `pip --user` exige Python 3 já no sistema (vem com Ubuntu) e ~3MB de download a mais que o binário standalone do uv. Aceitável.
+
+Onde fica:
+- `uv` → `~/.local/bin/uv` (Ubuntu default `.profile` já adiciona ao PATH se existir).
+- Python 3.12 → `~/.local/share/uv/python/cpython-3.12.x-linux-x86_64-gnu/`.
+- Venv do worker → `~/.jump-runner/.venv-worker/` com `jump-worker` e `jump-runner` no `bin/`.
+
+`setup-windows.ps1` passos 3.11–3.14 automatizam isso idempotentemente; ver `docs/runbooks/setup-worker-wsl.md` passo 11.5 para forma manual.
+
 ## Bash login shells (`bash -lc`) ignoram `~/.bashrc` — exportar PATH em `~/.profile`
 
 Subprocess Python (`claude_headless.py` via `resolve_executable("claude")`) e `wsl -- <cmd>` em modo não-interativo herdam o ambiente do **login shell**, não do interactive shell. Resultado:
