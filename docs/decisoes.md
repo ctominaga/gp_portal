@@ -243,3 +243,43 @@ Débito K em `docs/conformidade-v3.1.md` passa a estar **parcialmente endereçad
 **Métricas finais:** pytest worker 0 → **27** (pacote novo, cobertura 82%, gate ≥70% folgado); pytest backend e vitest frontend inalterados (F5.6a não toca código de produto fora de `worker/`). Suite cheia do monorepo: 195 backend + 27 worker + 104 vitest, sem regressão. Tempo de execução dos testes do worker: 17s.
 
 **Consequência:** débito K (`F2.8 — smoke real do agente leitor`) passa a estar **parcialmente endereçado** — F2.6 (worker real) pronto, validado por pipeline + retry + dead-letter + heartbeat. F5.6b fecha o débito K completo (carrega `proposal_reader_v1.md`, baixa proposta do R2 via boto3, invoca claude nativo, compara com `bradesco_sas_databricks.expected.json`, gera `docs/f28-bradesco-baseline-quality.md`). F5.6b também força a decisão **F5.6a.Y** (onde o `jump-worker` roda — Windows host com wrapper para `wsl.exe`, ou Python dentro do WSL Linux com claude no PATH nativo). Próxima sub-fase pode ser F5.6b OU pular para F5.5 (inteligência cruzada — não exige smoke validado, só worker funcional, que já temos).
+
+## 2026-05-14 — F5.6a / Bug `--bare` desabilita OAuth no Claude Code v2.1.x (fecha causa raiz do ADR 2026-05-11)
+
+**Contexto:** durante a execução do setup F5.6a, com `claude` instalado nativamente no Linux do WSL (`~/.npm-global/bin/claude`) e OAuth login completado com sucesso via TUI (`claude /login` autenticou conta `christopher.tominaga@jumplabel.com.br` na Team), a invocação headless `claude -p '...' --bare --output-format json` continuou retornando o mesmo erro do ADR `2026-05-11 — F2.8 adiado`:
+
+```
+"Not logged in · Please run /login"
+```
+
+Ou seja, o diagnóstico original do 2026-05-11 (atribuído a "mount cross-OS errático") era **incompleto**. Mesmo com tudo no Linux nativo, o headless falhava.
+
+**Decisão / Diagnóstico:** o `claude --help` do v2.1.141 documenta literalmente:
+
+```
+--bare    Minimal mode: skip hooks, LSP, plugin sync, attribution,
+          auto-memory, background prefetches, keychain reads, and
+          CLAUDE.md auto-discovery. Sets CLAUDE_CODE_SIMPLE=1.
+          Anthropic auth is strictly ANTHROPIC_API_KEY or
+          apiKeyHelper via --settings (OAuth and keychain are
+          never read).
+```
+
+`--bare` no v2.1.x passou a **estritamente exigir API key** e desabilitar OAuth/keychain. Versões anteriores (quando o `jump_agent_runner` foi escrito em F1) aceitavam OAuth com `--bare`. Spec proíbe API key (modo shadow no piloto Bradesco depende de Team subscription via OAuth, não billing API).
+
+**Mudança:** commit `4c22e53` removeu `--bare` de:
+- `jump_agent_runner/routes/claude_headless.py` (cmd headless principal)
+- `jump_agent_runner/broker/wsl_tmux.py` (probe `is_logged_in`)
+
+Os comportamentos úteis do `--bare` (skip hooks, LSP, plugin sync, CLAUDE.md auto-discovery) já são implícitos em `-p` (print mode non-interactive). Não há regressão. Suite cheia do `jump_agent_runner`: 71 passed.
+
+Smoke manual pós-fix (executado em F5.6a):
+
+```bash
+claude -p 'responda apenas: ok' --output-format json
+# {"is_error": false, "result": "ok", ...}
+```
+
+**Consequência:** o motivo técnico do F2.8 ter sido adiado (`2026-05-11 — F2.8 adiado`) está **fechado**. F5.6b agora pode invocar o agente leitor real contra a proposta Bradesco sem precisar de API key — basta o OAuth Team. Adicionalmente, descobriu-se que `bash -lc` (login shell, usado por subprocess Python e `wsl -- <cmd>`) ignora `~/.bashrc` — exige PATH em `~/.profile`. Commit `adf41b7` ajustou o `setup-windows.ps1` para escrever em ambos.
+
+**Lição operacional:** flags de CLIs externos podem mudar semântica entre minor versions. Pin de versão do `@anthropic-ai/claude-code` (atualmente `npm install -g` sem pin) seria mais seguro pro setup do worker em piloto, ao custo de não receber bugfixes automaticamente. Decisão aberta para F5.6b/F5.9.

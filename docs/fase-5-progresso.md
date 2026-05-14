@@ -243,7 +243,10 @@ contra `bradesco_sas_databricks.expected.json`) fica para F5.6b.
 | 1 | `0cb9ff9` | docs | Runbook `setup-worker-wsl.md` (12 passos idempotentes + 6 troubleshootings) + ADR worker real (decisões B-α/β/γ agrupadas) |
 | 2 | `365e0d7` | chore | `setup-windows.ps1` reescrito idempotente (systemd, Node 20 LTS via NodeSource, PATH `~/.npm-global` precede mount Windows, relatório colorido final por componente) + seção "Como rodar o worker em dev" em `dev_notes.md` |
 | 3 | `797785f` | feat(worker) | `worker/worker/{config,hmac_signer,http_client,heartbeat,prompt_builder,main}.py` — pipeline completo Redis→Runner→callback com retry tenacity + dead-letter |
-| 4 | `(este)` | test+docs | 27 testes pytest (worker 82% cobertura) + `.env.example` + `.coveragerc` + atualização `conformidade-v3.1.md` + ADR fechamento |
+| 4 | `14ed546` | test+docs | 27 testes pytest (worker 82% cobertura) + `.env.example` + `.coveragerc` + atualização `conformidade-v3.1.md` |
+| 5 | `5697b7d` | chore | F5.6a.X: NodeSource sem `bash -` root (gpg+tee+apt-get) + `curl -I` preventivo no codex installer |
+| 6 | `4c22e53` | fix | **F2.8 destravado:** remove `--bare` de `claude_headless.py` e `wsl_tmux.py` (incompatível com OAuth no v2.1.x — diagnóstico do ADR 2026-05-11) |
+| 7 | `adf41b7` | chore | `setup-windows.ps1` escreve PATH em `~/.profile` além de `~/.bashrc` (`bash -lc` não lê bashrc) + dev_notes diagnóstico `--bare` + conformidade atualizada |
 
 ### Métricas
 
