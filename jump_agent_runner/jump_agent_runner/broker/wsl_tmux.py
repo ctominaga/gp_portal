@@ -124,8 +124,10 @@ class WSLTmuxBroker:
         await self.ensure_ready()
         if not await self.session_exists(name):
             return False
+        # NOTA F5.6a: `--bare` removido do probe do Claude — vide claude_headless.py
+        # para justificativa. v2.1.x faz `--bare` exigir API key e ignorar OAuth.
         probe = {
-            Engine.CLAUDE: 'claude -p "respond with just ok" --bare --output-format json',
+            Engine.CLAUDE: 'claude -p "respond with just ok" --output-format json',
             Engine.CODEX: 'codex exec --skip-git-repo-check --json "respond with just ok"',
         }[engine]
         await self.send_command(name, probe)

@@ -82,11 +82,23 @@ class ClaudeHeadlessRoute:
         wrapped = wrap_prompt(task)
         sentinel = sentinel_for(task.run_id)
 
+        # NOTA F5.6a (2026-05-14): `--bare` foi REMOVIDO. No Claude Code v2.1.141
+        # (e provavelmente toda v2.1.x), `--bare` força auth via ANTHROPIC_API_KEY
+        # ou apiKeyHelper, e *NUNCA* lê OAuth/keychain — vide `claude --help`:
+        #
+        #   "Anthropic auth is strictly ANTHROPIC_API_KEY or apiKeyHelper via
+        #    --settings (OAuth and keychain are never read)."
+        #
+        # Com OAuth login feito via TUI (`claude /login`), o headless com `--bare`
+        # retorna `Not logged in · Please run /login` — bug F2.8 que adiou o smoke
+        # no ADR 2026-05-11 e agora foi diagnosticado. Versões anteriores aceitavam
+        # OAuth com `--bare`, mas o flag passou a ser estrito. Os comportamentos
+        # úteis do `--bare` (skip hooks, LSP, plugin sync, CLAUDE.md auto-discovery)
+        # já estão implicitamente cobertos por `-p` (print mode non-interactive).
         cmd = [
             path,
             "-p",
             wrapped,
-            "--bare",
             "--output-format",
             "json",
             "--allowedTools",
