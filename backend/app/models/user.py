@@ -34,6 +34,13 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
     )
+    # F5.7 — LGPD piloto. Quando preenchido, o registro foi anonimizado
+    # (name="Titular removido", email="anonymized_{id}@removed.local",
+    # password_hash=""). Login guard em /auth/login rejeita com 401
+    # genérico. Migration 0018 adiciona índice parcial WHERE NOT NULL.
+    anonymized_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     def __repr__(self) -> str:
         return f"<User {self.email} {self.role.value}>"
