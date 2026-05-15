@@ -10,6 +10,7 @@ from sqlalchemy import text
 
 from app.api.internal.agent_results import router as internal_results_router
 from app.api.internal.heartbeats import router as internal_heartbeats_router
+from app.api.v1.admin_data_requests import router as admin_data_requests_router
 from app.api.v1.approvals import router as approvals_router
 from app.api.v1.auth import router as auth_router
 from app.api.v1.baselines import router as baselines_router
@@ -120,5 +121,6 @@ app.include_router(files_router)
 app.include_router(me_router)
 app.include_router(operator_router)
 app.include_router(events_router)
+app.include_router(admin_data_requests_router)
 app.include_router(internal_results_router)
 app.include_router(internal_heartbeats_router)

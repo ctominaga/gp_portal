@@ -46,7 +46,16 @@ async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)) -> To
     user = (
         await db.execute(select(User).where(User.email == payload.email.lower()))
     ).scalar_one_or_none()
-    if not user or not verify_password(payload.password, user.password_hash):
+    # F5.7 LGPD login guard: usuários anonimizados retornam o MESMO texto
+    # de credenciais inválidas. Vazar "esta conta foi anonimizada" daria
+    # ao invasor uma sonda para descobrir titulares que pediram eliminação.
+    # Após anonimização, password_hash="" também garante que verify_password
+    # falharia naturalmente — o guard explícito é cinto-e-suspensórios.
+    if (
+        not user
+        or user.anonymized_at is not None
+        or not verify_password(payload.password, user.password_hash)
+    ):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "credenciais inválidas")
 
     token = create_access_token(sub=user.id, role=user.role)
