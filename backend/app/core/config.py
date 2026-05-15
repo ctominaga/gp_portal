@@ -1,6 +1,6 @@
 from functools import lru_cache
 
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -36,6 +36,25 @@ class Settings(BaseSettings):
     @property
     def cors_origins_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+
+    @model_validator(mode="after")
+    def _validate_cors_origins_prod(self) -> "Settings":
+        """F5.9a: em produção, recusa `*` como origem CORS.
+
+        `*` em produção combinado com `allow_credentials=True` é vetor de
+        CSRF/cookie leak. Setting fail-fast aqui evita um deploy silencioso
+        com a porta aberta. Em dev/staging, `*` permanece aceito para
+        ergonomia local.
+        """
+        if self.environment == "prod":
+            origins = [o.strip() for o in self.cors_origins.split(",")]
+            if any(o == "*" for o in origins):
+                raise ValueError(
+                    "CORS_ORIGINS=* não é permitido em ENVIRONMENT=prod. "
+                    "Configure a URL exata do frontend (ex.: "
+                    "https://app.example.com)."
+                )
+        return self
 
 
 @lru_cache

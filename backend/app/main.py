@@ -1,12 +1,9 @@
 from contextlib import asynccontextmanager
-from typing import Literal
 
 import redis.asyncio as redis_async
 import sentry_sdk
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from sqlalchemy import text
 
 from app.api.internal.agent_results import router as internal_results_router
 from app.api.internal.heartbeats import router as internal_heartbeats_router
@@ -17,6 +14,7 @@ from app.api.v1.baselines import router as baselines_router
 from app.api.v1.client_portal import router as client_router
 from app.api.v1.events import router as events_router
 from app.api.v1.files import router as files_router
+from app.api.v1.health import router as health_router
 from app.api.v1.me import router as me_router
 from app.api.v1.notifications import router as notifications_router
 from app.api.v1.operator import router as operator_router
@@ -74,40 +72,12 @@ async def request_id_middleware(request: Request, call_next):
     return response
 
 
-class HealthResponse(BaseModel):
-    status: Literal["ok", "degraded"]
-    db: Literal["ok", "down"]
-    redis: Literal["ok", "down"]
-    version: str
-
-
-@app.get("/health", response_model=HealthResponse, tags=["meta"])
-async def health() -> HealthResponse:
-    db_status: Literal["ok", "down"] = "ok"
-    redis_status: Literal["ok", "down"] = "ok"
-
-    try:
-        async with engine.connect() as conn:
-            await conn.execute(text("SELECT 1"))
-    except Exception as exc:
-        log.warning("health.db_down", error=str(exc))
-        db_status = "down"
-
-    try:
-        await app.state.redis.ping()
-    except Exception as exc:
-        log.warning("health.redis_down", error=str(exc))
-        redis_status = "down"
-
-    overall: Literal["ok", "degraded"] = "ok" if db_status == "ok" and redis_status == "ok" else "degraded"
-    return HealthResponse(status=overall, db=db_status, redis=redis_status, version=settings.app_version)
-
-
 @app.get("/", tags=["meta"])
 async def root() -> dict[str, str]:
     return {"name": settings.app_name, "version": settings.app_version, "docs": "/docs"}
 
 
+app.include_router(health_router)
 app.include_router(auth_router)
 app.include_router(projects_router)
 app.include_router(baselines_router)
