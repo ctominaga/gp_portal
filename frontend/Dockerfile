@@ -7,6 +7,12 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+# NEXT_PUBLIC_API_URL é build-time (inlined no bundle do client). Em produção
+# Railway, definir nas variáveis do serviço — Railway repassa como build arg
+# quando a key começa com NEXT_PUBLIC_. Em dev local, docker-compose.yml já
+# injeta via build.args (ver linhas 50-52 do compose).
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
