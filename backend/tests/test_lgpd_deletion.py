@@ -85,7 +85,7 @@ async def test_titular_cria_pedido_de_eliminacao_e_dispara_emails(
     # 1 e-mail pro DPO, 1 e-mail neutro pro titular.
     assert len(rec.calls) == 2
     to_addrs = {c["to"] for c in rec.calls}
-    assert "anderson.argentoni@jumplabel.com.br" in to_addrs
+    assert "christopher.tominaga@jumplabel.com.br" in to_addrs
     assert "ana-del@example.com" in to_addrs
     titular_call = next(
         c for c in rec.calls if c["to"] == "ana-del@example.com"

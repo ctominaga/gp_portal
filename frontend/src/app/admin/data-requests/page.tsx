@@ -298,7 +298,7 @@ export default function AdminDataRequestsPage() {
             <DialogTitle>Novo pedido manual</DialogTitle>
             <DialogDescription>
               Registre um pedido LGPD recebido pelo canal externo
-              (anderson.argentoni@jumplabel.com.br ou outro canal documentado).
+              (christopher.tominaga@jumplabel.com.br ou outro canal documentado).
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-3">

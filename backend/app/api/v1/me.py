@@ -35,10 +35,11 @@ from app.services.notifications import _send_email
 router = APIRouter(prefix="/me", tags=["me-lgpd"])
 
 # Canal LGPD operacional. Christopher Tominaga é o DPO designado/signatário
-# (christopher.tominaga@jumplabel.com.br); Anderson Argentoni atua como
-# receptor operacional dos pedidos enquanto o alias lgpd@jumplabel.com.br
-# não é provisionado (débito F5.7.Z).
-_DPO_OPERATIONAL_EMAIL = "anderson.argentoni@jumplabel.com.br"
+# e atua como receptor operacional direto dos pedidos enquanto o alias
+# lgpd@jumplabel.com.br não é provisionado (débito F5.7.Z). Hardcode
+# documentado como débito de hardening F5.9.X (refactor para env var
+# DPO_NOTIFICATION_EMAIL fica para F6).
+_DPO_OPERATIONAL_EMAIL = "christopher.tominaga@jumplabel.com.br"
 
 
 def _zip_filename(user: User, now: datetime) -> str:

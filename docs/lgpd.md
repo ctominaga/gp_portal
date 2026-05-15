@@ -18,7 +18,7 @@ Referências normativas adotadas: LGPD arts. 5º (definições), 6º (princípio
 **Encarregado / DPO (art. 5º VIII e art. 41 LGPD):** Christopher Tominaga.
 
 - E-mail funcional do DPO: `christopher.tominaga@jumplabel.com.br`
-- Canal LGPD para titulares externos (sem conta no Sistema): `anderson.argentoni@jumplabel.com.br`
+- Canal LGPD para titulares externos (sem conta no Sistema): `christopher.tominaga@jumplabel.com.br`
 - Atribuições: recepção de comunicações dos titulares e da ANPD, orientação interna sobre proteção de dados, coordenação da resposta a incidentes (§7).
 
 Os papéis acima são designações internas. O Encarregado responde pela conformidade do tratamento, mas o controlador é a pessoa jurídica.
@@ -102,7 +102,7 @@ Os direitos abaixo seguem o art. 18 LGPD. Toda solicitação é respondida no pr
 | Tipo de titular | Canal primário | Observação |
 |---|---|---|
 | Titular com conta no Sistema (GP, PMO, CLIENT, OPERATOR) | Endpoints autenticados `GET /me/data-export` e `POST /me/data-deletion-request` | Resposta imediata para export; eliminação revisada pelo PMO antes do atendimento |
-| Titular externo sem conta no Sistema (terceiros mencionados em propostas, ex-funcionários após eliminação, demais interessados) | E-mail dirigido a `anderson.argentoni@jumplabel.com.br` | Em v1.0 o DPO registra o pedido manualmente no painel administrativo. Formulário web público é débito v1.1 (F5.7.Y) |
+| Titular externo sem conta no Sistema (terceiros mencionados em propostas, ex-funcionários após eliminação, demais interessados) | E-mail dirigido a `christopher.tominaga@jumplabel.com.br` | Em v1.0 o DPO registra o pedido manualmente no painel administrativo. Formulário web público é débito v1.1 (F5.7.Y) |
 
 ### 6.2. Direito de confirmação e acesso (art. 18 I e II)
 
@@ -194,7 +194,7 @@ Os itens abaixo foram identificados durante a redação desta versão v1.0 e fic
 
 - **F5.7.X — Anonimização de texto livre.** Em v1.0 a eliminação anonimiza apenas metadados estruturados da entidade `User`. Texto livre em descrições de risco, pendência, plano de ação e seções narrativas do relatório pode conter menções nominais ao titular; sua retenção é justificada como histórico do projeto entregue ao cliente sob o art. 16 II LGPD. Em v1.1 será implementada varredura programática de texto livre com redaction explícita ou pseudonimização.
 - **F5.7.Y — Formulário web público para titulares externos.** Em v1.0 o canal para titulares sem conta é o e-mail dirigido ao DPO, com registro manual no painel administrativo. Em v1.1 será adicionado um formulário web público que cria o `DataProcessingRecord` automaticamente.
-- **F5.7.Z — Provisionamento do alias dedicado para canal LGPD.** O canal externo desta v1.0 opera com o e-mail corporativo `anderson.argentoni@jumplabel.com.br` (Anderson Argentoni atua como receptor operacional do canal LGPD, sob coordenação do DPO designado). O provisionamento do alias dedicado `lgpd@jumplabel.com.br` no Workspace e a substituição subsequente do canal documentado são débito v1.1.
+- **F5.7.Z — Provisionamento do alias dedicado para canal LGPD.** O canal externo desta v1.0 opera com o e-mail corporativo do DPO designado, `christopher.tominaga@jumplabel.com.br`, que recebe pedidos diretamente (simplificação registrada em ADR `2026-05-15 — F5.9 / Canal LGPD operacional simplificado para o DPO direto`). O provisionamento do alias dedicado `lgpd@jumplabel.com.br` no Workspace — e a substituição subsequente do canal documentado — permanece como débito v1.1, motivado pela boa prática de não expor e-mail pessoal corporativo como canal LGPD público.
 - **Revisão jurídica externa.** Esta v1.0 é texto técnico assinado pelo DPO designado para fins de piloto Bradesco. A revisão jurídica externa é pré-requisito para v1.1 e é registrada como dependência explícita.
 - **Spec v3.1 §9.5 — modelagem do `DataProcessingRecord`.** A spec lista `processing_purpose`, `legal_basis` e `retention_period` como atributos do `DataProcessingRecord`. A redação desta v1.0 reconhece que esses atributos pertencem ao Registro de Atividades de Tratamento (`docs/rat.md`), não ao log de pedido de titular. Correção da spec é débito da consolidação v3.2.
 

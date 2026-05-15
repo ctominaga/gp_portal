@@ -385,7 +385,7 @@ def _render_readme(*, subject: User, extracted_at: datetime) -> str:
         "Política aplicável: docs/lgpd.md no repositório do Sistema.\n"
         "Encarregado (DPO): Christopher Tominaga"
         " <christopher.tominaga@jumplabel.com.br>.\n"
-        "Canal LGPD operacional: anderson.argentoni@jumplabel.com.br.\n"
+        "Canal LGPD operacional: christopher.tominaga@jumplabel.com.br.\n"
         "\n"
         "Em caso de dúvida sobre o conteúdo ou pedido de retificação/eliminação,\n"
         "responda este e-mail citando o id do titular acima.\n"

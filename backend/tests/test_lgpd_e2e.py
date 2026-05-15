@@ -3,7 +3,7 @@
 Cobre o caminho feliz inteiro descrito em docs/lgpd.md §"Eliminação":
 
   1. Titular registra conta e pede eliminação via /me/data-deletion-request.
-  2. Notificação ao DPO sai (dry-run) — anderson.argentoni@jumplabel.com.br.
+  2. Notificação ao DPO sai (dry-run) — christopher.tominaga@jumplabel.com.br.
   3. Recibo neutro chega ao titular sem prometer outcome.
   4. PMO faz login e atende o pedido via /admin/data-requests/{id}/fulfill.
   5. Titular tenta logar de novo — recebe 401 idêntico ao de senha errada.
@@ -72,7 +72,7 @@ async def test_fluxo_e2e_titular_pede_pmo_atende_login_bloqueia(
 
     # 3. As 2 notificações saíram em dry-run.
     addrs = {e["to"] for e in sent_emails}
-    assert "anderson.argentoni@jumplabel.com.br" in addrs
+    assert "christopher.tominaga@jumplabel.com.br" in addrs
     assert "joana@example.com" in addrs
     titular_email = next(e for e in sent_emails if e["to"] == "joana@example.com")
     assert titular_email["subject"] == "Pedido recebido"

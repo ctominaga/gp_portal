@@ -374,7 +374,7 @@ Com F5.6 (a+b) fechada, o caminho crítico para o **lançamento do piloto Brades
 
 Aberta em `docs/decisoes.md` ADR `2026-05-14 — F5.7 / Abertura` e fechada em `2026-05-15 — F5.7 / Fechada`. Pré-requisito formal de F5.9 (deploy Railway com piloto Bradesco) atendido.
 
-**Modo confirmado pós-execução:** híbrido. Agente produziu `docs/lgpd.md` v1.0 e `docs/rat.md` v1.0; DPO Christopher Tominaga revisou e assinou como signatário designado. Anderson Argentoni atua como receptor operacional do canal externo (`anderson.argentoni@jumplabel.com.br`) — alias `lgpd@jumplabel.com.br` é débito F5.7.Z. Revisão jurídica externa permanece como débito v1.1.
+**Modo confirmado pós-execução:** híbrido. Agente produziu `docs/lgpd.md` v1.0 e `docs/rat.md` v1.0; DPO Christopher Tominaga revisou e assinou como signatário designado. Canal externo do piloto operava com `anderson.argentoni@jumplabel.com.br` (Anderson Argentoni como receptor operacional sob coordenação do DPO) no momento do fechamento de F5.7. **Adendo 2026-05-15:** durante preparação de F5.9 o canal foi simplificado para o e-mail direto do DPO (`christopher.tominaga@jumplabel.com.br`); ver ADR `2026-05-15 — F5.9 / Canal LGPD operacional simplificado para o DPO direto`. Alias `lgpd@jumplabel.com.br` é débito F5.7.Z. Revisão jurídica externa permanece como débito v1.1.
 
 **5 commits sequenciais aprovados commit-a-commit pelo humano:**
 
@@ -411,7 +411,7 @@ Aberta em `docs/decisoes.md` ADR `2026-05-14 — F5.7 / Abertura` e fechada em `
 
 - **F5.7.X (v1.1)** — Anonimização de texto livre em descrições de `Risk`/`PendingItem`/`ActionPlan` e seções narrativas de `Report`. v1.0 retém com justificativa em [`docs/lgpd.md`](lgpd.md) §6.4/§10 (LGPD art. 16 II).
 - **F5.7.Y (v1.1)** — Formulário web público para abertura de pedido por titular externo. v1.0 cobre via `POST /admin/data-requests` (DPO transcreve manualmente).
-- **F5.7.Z (v1.1)** — Provisionamento do alias `lgpd@jumplabel.com.br` e migração do canal documentado em `docs/lgpd.md` e `docs/rat.md`. v1.0 opera com `anderson.argentoni@jumplabel.com.br`.
+- **F5.7.Z (v1.1)** — Provisionamento do alias `lgpd@jumplabel.com.br` e migração do canal documentado em `docs/lgpd.md` e `docs/rat.md`. v1.0 inicial registrou `anderson.argentoni@jumplabel.com.br`. **Adendo 2026-05-15:** simplificado para `christopher.tominaga@jumplabel.com.br` (DPO direto) — ver ADR `2026-05-15 — F5.9 / Canal LGPD operacional simplificado para o DPO direto` em `docs/decisoes.md`.
 - **L (v3.2 da spec)** — Spec consolidada lista `processing_purpose`/`legal_basis`/`retention_period` no `DataProcessingRecord`. Esses campos vivem por atividade em `docs/rat.md`, não no modelo SQL. `conformidade-v3.1.md:60` já reflete; ajuste na spec entra no próximo ciclo.
 
 **Checkpoints humanos:** #1 (inventário + plano) concluído em 2026-05-14. #2 (DPO lê `docs/lgpd.md` e `docs/rat.md` inteiros) concluído em 2026-05-15. #3 (rodar `GET /me/data-export` local antes do Commit 5) **não exercido** — aprovação direta para sequenciamento dos commits restantes após Commit 3.

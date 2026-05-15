@@ -64,11 +64,14 @@ após o deploy mas precisam acontecer antes do go-live com o Bradesco.
 
 ## Operacional
 
-- [ ] **Anderson Argentoni avisado** que canal LGPD
-      (`anderson.argentoni@jumplabel.com.br`) vai entrar em uso real.
-- [ ] **F5.7.Z** (alias `lgpd@jumplabel.com.br`) — OK adiar se Anderson
-      ainda receber direto durante o piloto. Marcar prazo para
-      provisionamento (recomendado: 2 semanas após go-live).
+- [ ] **Canal LGPD operacional ativo**: `christopher.tominaga@jumplabel.com.br`
+      (DPO designado recebe diretamente). Christopher confirma que monitora
+      a caixa do e-mail no go-live e tem regra de filtro/etiqueta para pedidos
+      LGPD entrantes.
+- [ ] **F5.7.Z** (alias `lgpd@jumplabel.com.br`) — débito v1.1.
+      Provisionamento recomendado em até 2 semanas pós go-live para evitar
+      uso prolongado do e-mail pessoal corporativo do DPO como canal LGPD
+      público.
 - [ ] **Backup automático Postgres** validado. Railway oferece point-in-time
       recovery em planos pagos — confirmar que está ativo.
 - [ ] **Worker local** rodando no WSL do Christopher, heartbeat verde

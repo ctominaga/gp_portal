@@ -10,6 +10,8 @@ Decisões tomadas durante a construção que merecem registro. Convenção: cabe
 
 **Consequência:** specs não viajam com o repo; `docs/` interno do monorepo é a fonte de verdade durante a construção.
 
+**Adendo 2026-05-15:** o URL `ctominaga-jump/gp_portal` registrado nesta decisão foi a intenção original. Na execução de F0 (ver `fase-0-relatorio.md` linhas 89 e 115) o push real foi feito para `ctominaga/gp_portal` porque a conta `ctominaga-jump` ainda não existia. Em 2026-05-15, durante a preparação de F5.9, o repositório foi transferido de `ctominaga` para `ctominaga-jump` via GitHub *Transfer ownership* — mantém histórico, issues, releases, e ativa redirect HTTP automático do URL antigo. Remote local atualizado por `git remote set-url origin https://github.com/ctominaga-jump/gp_portal.git`. Credencial Git em cache de `ctominaga` removida do Windows Credential Manager para forçar re-autenticação como `ctominaga-jump`. A decisão original se realiza com 9 dias de atraso; relatórios históricos de F0 ficam intactos.
+
 ## 2026-05-06 — F0 / Propostas reais como fixtures gold-standard
 
 **Contexto:** prompt-mestre pedia 3 propostas sintéticas geradas em PT-BR. O usuário forneceu 3 propostas reais em `propostas/` (Bradesco SAS→Databricks, Torra Governança, PTC 20262113 Diretriz Estratégica).
@@ -355,7 +357,7 @@ Duas instâncias Claude foram consultadas em paralelo na abertura desta sub-fase
 
 7. **(Q6 — consentimento como base legal).** Não utilizado como base primária em v1.0. O Sistema não tem feature opcional de comunicação de marketing nem outra hipótese que dependa de consentimento. Se entrar feature desse tipo, a seção §4 de `docs/lgpd.md` será revisada (v1.1 ou superior).
 
-8. **(Q7 — canal LGPD para titulares externos).** Resolvido em 2026-05-15 com o e-mail corporativo `anderson.argentoni@jumplabel.com.br`. Anderson Argentoni atua como receptor operacional do canal LGPD, sob coordenação do DPO designado (Christopher Tominaga, que mantém `christopher.tominaga@jumplabel.com.br` como e-mail funcional do encarregado). O alias dedicado `lgpd@jumplabel.com.br` não foi provisionado a tempo da v1.0; seu provisionamento e a substituição subsequente do canal documentado abrem o débito formal **F5.7.Z** para v1.1. Os documentos da v1.0 foram redigidos com placeholder `{{DPO_EMAIL}}` durante o checkpoint humano #2, com substituição por `sed` imediatamente antes do Commit 1.
+8. **(Q7 — canal LGPD para titulares externos).** Resolvido em 2026-05-15 com o e-mail corporativo `anderson.argentoni@jumplabel.com.br`. Anderson Argentoni atua como receptor operacional do canal LGPD, sob coordenação do DPO designado (Christopher Tominaga, que mantém `christopher.tominaga@jumplabel.com.br` como e-mail funcional do encarregado). O alias dedicado `lgpd@jumplabel.com.br` não foi provisionado a tempo da v1.0; seu provisionamento e a substituição subsequente do canal documentado abrem o débito formal **F5.7.Z** para v1.1. Os documentos da v1.0 foram redigidos com placeholder `{{DPO_EMAIL}}` durante o checkpoint humano #2, com substituição por `sed` imediatamente antes do Commit 1. **Adendo 2026-05-15 (pré-F5.9):** durante a preparação do deploy, o canal foi simplificado para o e-mail direto do DPO designado (`christopher.tominaga@jumplabel.com.br`); Anderson Argentoni não atua mais como receptor operacional. Ver ADR `2026-05-15 — F5.9 / Canal LGPD operacional simplificado para o DPO direto` mais abaixo neste arquivo.
 
 9. **(Adicionais identificados no inventário, não previstos no briefing original).**
    - **Login pós-anonimização.** [`auth.py`](../backend/app/api/v1/auth.py) `/auth/login` passa a rejeitar com `401 "credenciais inválidas"` (texto idêntico ao caso de senha errada, sem vazar informação de anonimização) quando `users.anonymized_at IS NOT NULL`. Tratado no Commit 3, junto com a anonimização que produz esse estado.
@@ -414,9 +416,32 @@ Checkpoints humanos formais: **#1** já concluído (inventário + plano aprovado
 
 - **F5.7.X (v1.1)** — Anonimização de texto livre em descrições de `Risk`/`PendingItem`/`ActionPlan` e seções narrativas de `Report` (`highlights`, `next_steps`, `notes`, justificativas de RAG). v1.0 retém com justificativa em [`docs/lgpd.md`](lgpd.md) §6.4 e §10 (art. 16 II LGPD).
 - **F5.7.Y (v1.1)** — Formulário web público para abertura de pedido por titular externo. v1.0 cobre via `POST /admin/data-requests` (DPO transcreve manualmente).
-- **F5.7.Z (v1.1)** — Provisionamento do alias `lgpd@jumplabel.com.br` e migração do canal documentado em [`docs/lgpd.md`](lgpd.md) e [`docs/rat.md`](rat.md). v1.0 opera com `anderson.argentoni@jumplabel.com.br` (receptor operacional sob coordenação do DPO designado Christopher Tominaga).
+- **F5.7.Z (v1.1)** — Provisionamento do alias `lgpd@jumplabel.com.br` e migração do canal documentado em [`docs/lgpd.md`](lgpd.md) e [`docs/rat.md`](rat.md). v1.0 inicial registrado com `anderson.argentoni@jumplabel.com.br` (Anderson como receptor operacional). **Adendo 2026-05-15 (pré-F5.9):** canal simplificado para `christopher.tominaga@jumplabel.com.br` (DPO recebe direto). Ver ADR `2026-05-15 — F5.9 / Canal LGPD operacional simplificado para o DPO direto`.
 - **L (v3.2 da spec)** — Correção do modelo do `DataProcessingRecord` na spec consolidada, removendo `processing_purpose`/`legal_basis`/`retention_period` (que pertencem ao RAT). `conformidade-v3.1.md:60` já reflete esta decisão; ajuste correspondente na spec entra no próximo ciclo de spec.
 
 **Consequência:** F5.7 fechada. Pré-requisito formal de F5.9 (deploy Railway com dados reais do piloto Bradesco) e da operação contratual atendido. DPO designado tem agora (1) política assinada `docs/lgpd.md` v1.0, (2) RAT correspondente em `docs/rat.md`, (3) endpoints LGPD operacionais (`/me/data-export`, `/me/data-deletion-request`, `/admin/data-requests` com fulfill), (4) tela admin para operar pedidos manuais e atender pedidos internos, (5) auditoria sólida (DataProcessingRecord persistido em todas as operações). Login guard fecha o vetor de vazamento "esta conta foi anonimizada".
 
 Próximas sub-fases possíveis: **F5.5** (inteligência cruzada — débito independente, paralelizável), **F5.8** (export de relatórios para PDF/DOCX — independente), **F5.9** (deploy + v3.2 da spec, agora destravado). Caminho crítico para piloto Bradesco mantém a tríade F5.5/F5.8/F5.9 com prioridade definida pelo Christopher.
+
+## 2026-05-15 — F5.9 / Canal LGPD operacional simplificado para o DPO direto
+
+**Contexto:** F5.7 fechou em 2026-05-15 com `anderson.argentoni@jumplabel.com.br` registrado em `docs/lgpd.md` v1.0 e em `docs/rat.md` v1.0 como receptor operacional do canal LGPD externo, sob coordenação do DPO designado Christopher Tominaga (signatário). Durante a preparação de F5.9 (pré-deploy Railway com piloto Bradesco), revisão da estrutura operacional concluiu que separar receptor operacional de DPO designado adicionava complexidade sem ganho proporcional para o piloto: o pedido vindo pelo canal externo já precisa do DPO designado para classificar e atender (art. 18 §§3-4 LGPD), e o intermediário gerava uma etapa de encaminhamento sem valor agregado em volume baixo (piloto Bradesco).
+
+**Decisão:** o canal LGPD operacional passa a ser diretamente `christopher.tominaga@jumplabel.com.br`. Christopher Tominaga acumula em v1.0 os papéis de DPO designado (signatário) e receptor direto. Aplicação retroativa às referências vigentes em código, testes, UI e documentação. Registros históricos (ADR de abertura e fechamento de F5.7, seção F5.7 em `fase-5-progresso.md`) recebem adendo apontando para este ADR — não são reescritos.
+
+**Consequência:**
+
+- Hardcode em `_DPO_OPERATIONAL_EMAIL` ([`backend/app/api/v1/me.py`](../backend/app/api/v1/me.py)) atualizado.
+- README do ZIP gerado em `GET /me/data-export` reflete o novo canal ([`backend/app/services/data_export_service.py`](../backend/app/services/data_export_service.py)).
+- Modal "Novo pedido manual" em `/admin/data-requests` (frontend) atualizado.
+- Testes `test_lgpd_e2e.py` e `test_lgpd_deletion.py` ajustados (assertion no endereço de notificação ao DPO).
+- `docs/lgpd.md` §1, §6.1 e §10 (F5.7.Z) atualizados; `docs/rat.md` cabeçalho atualizado.
+- `docs/pre-deploy-checklist.md` item operacional reescrito (Anderson sai; Christopher confirma que monitora a caixa).
+- Memória do projeto atualizada.
+
+**Débitos pós-decisão:**
+
+- **F5.7.Z (v1.1, sem mudança)** — Provisionamento do alias `lgpd@jumplabel.com.br` ganha argumento adicional: evita uso prolongado do e-mail pessoal corporativo do DPO como canal LGPD público. Prazo recomendado: 2 semanas após go-live do piloto.
+- **F5.9.X (NOVO, v1.1 ou F6)** — O e-mail do canal LGPD está hardcoded em `_DPO_OPERATIONAL_EMAIL` em [`backend/app/api/v1/me.py`](../backend/app/api/v1/me.py). Refactor para env var `DPO_NOTIFICATION_EMAIL` lida em `app/core/config.py` evita redeploy quando o canal mudar (especialmente quando F5.7.Z for fechado). Hardening de configuração.
+
+**Risco residual:** durante o piloto, todos os pedidos LGPD entrantes chegam à caixa pessoal corporativa do DPO. Mitigação operacional: Christopher confirma que mantém filtro/etiqueta dedicada para os pedidos e responde dentro do SLA de 15 dias úteis (LGPD art. 19) mesmo em períodos de férias ou ausência (com plano de cobertura combinado). Risco aceito pelo período do piloto até F5.7.Z fechar.

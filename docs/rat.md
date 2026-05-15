@@ -3,7 +3,7 @@
 **Versão:** v1.0 piloto Bradesco — revisão jurídica externa pendente para v1.1
 **Data:** 2026-05-14
 **Encarregado (DPO) responsável:** Christopher Tominaga — `christopher.tominaga@jumplabel.com.br`
-**Canal LGPD para titulares externos:** `anderson.argentoni@jumplabel.com.br`
+**Canal LGPD para titulares externos:** `christopher.tominaga@jumplabel.com.br`
 
 Este Registro de Atividades de Tratamento descreve, para cada atividade do Sistema de Report Jump, a finalidade, os dados tratados, os titulares envolvidos, a base legal (LGPD art. 7º), a retenção e os operadores. É o complemento técnico de [`docs/lgpd.md`](lgpd.md); decisões sobre direitos do titular e procedimento de incidentes ficam lá.
 
