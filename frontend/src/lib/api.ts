@@ -51,6 +51,54 @@ export function createApiClient(): AxiosInstance {
 
 export const api = createApiClient();
 
+// F5.7 LGPD — helpers do /admin/data-requests. Mantidos como funções soltas
+// para preservar o padrão do projeto (api.get/api.post diretos no resto do
+// frontend); este é o primeiro recurso novo que justifica agrupamento por
+// causa do número de operações (list/create manual/fulfill) que o admin opera.
+import type {
+  AdminDataRequestCreate,
+  DataProcessingRecord,
+  DataProcessingRecordList,
+  DPRequestStatus,
+  DPRequestType,
+} from "./types";
+
+export const apiAdminDataRequests = {
+  async list(params: {
+    status?: DPRequestStatus;
+    request_type?: DPRequestType;
+    page?: number;
+    page_size?: number;
+  }): Promise<DataProcessingRecordList> {
+    const qs = new URLSearchParams();
+    if (params.status) qs.set("status", params.status);
+    if (params.request_type) qs.set("request_type", params.request_type);
+    if (params.page) qs.set("page", String(params.page));
+    if (params.page_size) qs.set("page_size", String(params.page_size));
+    const suffix = qs.toString();
+    const url = `/admin/data-requests${suffix ? `?${suffix}` : ""}`;
+    const r = await api.get<DataProcessingRecordList>(url);
+    return r.data;
+  },
+
+  async createManual(
+    payload: AdminDataRequestCreate,
+  ): Promise<DataProcessingRecord> {
+    const r = await api.post<DataProcessingRecord>(
+      "/admin/data-requests",
+      payload,
+    );
+    return r.data;
+  },
+
+  async fulfill(id: string): Promise<DataProcessingRecord> {
+    const r = await api.post<DataProcessingRecord>(
+      `/admin/data-requests/${id}/fulfill`,
+    );
+    return r.data;
+  },
+};
+
 export function asApiError(e: unknown): ApiError {
   if (e instanceof AxiosError) {
     const data = e.response?.data as { detail?: unknown } | undefined;

@@ -27,11 +27,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const navByRole = (() => {
     if (user.role === "PMO" || user.role === "OPERATOR") {
-      return [
+      const items = [
         { href: "/pmo/portfolio", label: "Portfólio" },
         { href: "/projetos", label: "Projetos" },
         { href: "/pmo/scope-changes", label: "Transições" },
       ];
+      // F5.7 — link admin LGPD só para PMO (OPERATOR não tem acesso ao
+      // RBAC do backend; mostrar o link seria 403 no clique).
+      if (user.role === "PMO") {
+        items.push({ href: "/admin/data-requests", label: "LGPD" });
+      }
+      return items;
     }
     if (user.role === "CLIENT") {
       return [{ href: "/portal", label: "Meus projetos" }];

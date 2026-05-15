@@ -467,3 +467,42 @@ export interface InAppNotification {
   read_at: string | null;
   created_at: string;
 }
+
+// F5.7 — LGPD piloto (v3.1 §9.5 + docs/lgpd.md)
+
+export type DPRequestType =
+  | "export"
+  | "deletion"
+  | "access"
+  | "rectification";
+
+export type DPRequestStatus =
+  | "pending"
+  | "approved"
+  | "fulfilled"
+  | "rejected";
+
+export interface DataProcessingRecord {
+  id: string;
+  subject_user_id: string | null;
+  subject_external_email: string | null;
+  request_type: DPRequestType;
+  status: DPRequestStatus;
+  requested_at: string;
+  fulfilled_at: string | null;
+  handled_by_id: string | null;
+  notes: string | null;
+}
+
+export interface DataProcessingRecordList {
+  items: DataProcessingRecord[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+export interface AdminDataRequestCreate {
+  subject_external_email: string;
+  request_type: DPRequestType;
+  notes?: string | null;
+}
