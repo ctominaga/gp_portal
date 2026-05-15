@@ -17,8 +17,13 @@ Railway hospeda backend FastAPI, frontend Next.js, Postgres, Redis.
   (pytest backend 221+, vitest frontend 108+, sem regressão).
 - [ ] `.env.production` preparado localmente (NÃO commitado) usando
   `.env.production.example` como base.
-- [ ] Resend: domínio `jumplabel.com.br` verificado, API key gerada.
-- [ ] Storage: decidir entre R2 (recomendado) ou volume Railway (vide §6).
+- [ ] Resend: **opcional no piloto inicial** — domínio `jumplabel.com.br`
+  ainda não verificado. Aceitar `RESEND_API_KEY` vazio = dry-run
+  (notificações operacionais ficam in-app; recibo LGPD ao titular
+  NÃO sai por email). Ativar quando F5.9.Resend fechar. Vide ADR
+  `2026-05-15 — F5.9 / Resend em dry-run durante piloto inicial`.
+- [ ] Storage: **volume Railway** (decisão F5.9.bonus) criado em `/data`
+  ANTES do primeiro `railway up` (vide §6.1).
 - [ ] DNS: subdomain `*.up.railway.app` (zero config) — confirmado pelo
   Christopher em 2026-05-15.
 
@@ -61,9 +66,14 @@ ativados por padrão (planos pagos).
    railway variables set JWT_SECRET=$(python -c "import secrets; print(secrets.token_urlsafe(32))")
    railway variables set WORKER_SHARED_SECRET=$(python -c "import secrets; print(secrets.token_urlsafe(32))")
    railway variables set WORKER_HMAC_KEY=$(python -c "import secrets; print(secrets.token_urlsafe(32))")
-   railway variables set RESEND_API_KEY=...
+   # Resend em dry-run (decisão F5.9.bonus). Manter vazio até DNS
+   # jumplabel.com.br ser verificado — F5.9.Resend.
+   railway variables set RESEND_API_KEY=
    railway variables set RESEND_FROM_EMAIL=notificacoes@jumplabel.com.br
-   # R2 ou storage local — vide §6
+   # Storage local com volume Railway — vide §6 (caminho oficial F5.9.bonus)
+   railway variables set OBJECT_STORAGE_BACKEND=local
+   railway variables set LOCAL_STORAGE_ROOT=/data
+   railway variables set LOCAL_STORAGE_BASE_URL=https://<backend-service>.up.railway.app
    railway variables set CORS_ORIGINS=https://frontend-<hash>.up.railway.app
    railway variables set SEED_ON_STARTUP=true
    railway variables set SEED_PMO_PASSWORD=$(python -c "import secrets; print(secrets.token_urlsafe(16))")
@@ -94,38 +104,61 @@ ativados por padrão (planos pagos).
 6. **Voltar ao backend** e atualizar `CORS_ORIGINS` com a URL exata do
    frontend (NÃO `*` — backend bloqueia com ValidationError em prod).
 
-## 6. Decisão pendente — Storage de arquivos (Proposals)
+## 6. Storage de arquivos — LocalStorage com volume Railway (oficial F5.9.bonus)
 
-**Opção A — Cloudflare R2 (recomendada):**
-1. Criar bucket `jump-report-proposals` no console R2.
-2. Gerar API token R/W. Anotar `R2_ACCOUNT_ID`, `R2_ACCESS_KEY`,
-   `R2_SECRET_KEY`.
-3. Configurar variáveis no backend:
-   ```
-   railway variables set R2_ACCOUNT_ID=...
-   railway variables set R2_ACCESS_KEY=...
-   railway variables set R2_SECRET_KEY=...
-   railway variables set R2_BUCKET=jump-report-proposals
-   railway variables set R2_ENDPOINT_URL=https://<ACCOUNT_ID>.r2.cloudflarestorage.com
-   ```
+Decisão F5.9.bonus (2026-05-15, ADR `2026-05-15 — F5.9 / Storage backend
+mudou para LocalStorage com volume Railway`): o piloto adota
+LocalStorage com volume Railway. Concentra billing no Railway, dispensa
+conta de operador externo e cobre o volume previsível do piloto
+Bradesco (3 PDFs ~73+10+8 MB + ZIPs do worker e do export LGPD).
 
-**Opção B — Volume Railway (fallback):**
-1. No service backend, **Settings → Volumes → Add** → mount path
-   `/data`. Tamanho inicial 5 GB (suficiente para piloto Bradesco;
-   3 PDFs ~73+10+8 MB).
-2. Variáveis:
-   ```
-   railway variables set STORAGE_BACKEND=local
-   railway variables set STORAGE_LOCAL_PATH=/data
-   railway variables set R2_*=  # vazios; jump_storage cai para fs local
-   ```
-3. **Limitação**: volume único; se backend escalar para múltiplas
-   instâncias, propostas de um pod não são visíveis no outro. Aceitável
-   para piloto (1 instância); migrar para R2 ao escalar.
+### 6.1 Criar o volume (ANTES do primeiro `railway up`)
 
-Em 2026-05-15, Christopher AINDA NÃO decidiu entre A e B. Recomendação:
-A (R2) por melhor TCO ao escalar. Migração A→B ou B→A é viável (jump_storage
-abstrai), mas dados não migram automaticamente.
+No dashboard Railway → Service backend → **Settings → Volumes → Add**:
+1. **Mount Path**: `/data`.
+2. **Size**: começar com 10 GB. Pode crescer depois pelo dashboard.
+
+O `railway.json` na raiz já declara o mount; o passo manual provê o
+volume físico subjacente. Sem o volume criado, o deploy sobe mas o
+backend falha em qualquer upload (`/data` inexistente).
+
+### 6.2 Variáveis no Railway (service backend)
+
+```
+railway variables set OBJECT_STORAGE_BACKEND=local
+railway variables set LOCAL_STORAGE_ROOT=/data
+railway variables set LOCAL_STORAGE_BASE_URL=https://<backend-service>.up.railway.app
+# R2_* ficam vazios (jump_storage ignora quando OBJECT_STORAGE_BACKEND=local).
+```
+
+`LOCAL_STORAGE_SIGNING_SECRET` cai para `JWT_SECRET` por convenção do
+`jump_storage.factory` — não precisa definir separadamente, salvo
+desejo explícito de chave isolada (recomendado em F6).
+
+### 6.3 Backup do volume (manual no piloto)
+
+Volume Railway é region-locked e o snapshot automático é responsabilidade
+do operador. No piloto:
+- 1ª opção (recomendada): job mensal externo que baixa o conteúdo via
+  `railway run --service backend tar -czf /tmp/data-$(date +%F).tar.gz /data`
+  e copia para storage frio.
+- 2ª opção: snapshot manual via dashboard Railway (quando feature ficar
+  disponível para o plano).
+
+A automação do backup é débito formal **F5.9.Y** (vide
+`docs/decisoes.md` ADR `2026-05-15 — F5.9 / Storage backend mudou…`).
+
+### 6.4 Alternativa Cloudflare R2 (apenas se reativada em F6)
+
+O backend R2 permanece como código vivo em `jump_storage/r2.py`. Para
+reativar (ex.: ao escalar para múltiplas instâncias backend, quando o
+volume único fica restritivo):
+1. Criar bucket + API tokens no console R2.
+2. Configurar `OBJECT_STORAGE_BACKEND=r2` + as vars `R2_*`.
+3. Migrar dados existentes do volume para o bucket (script manual; não
+   há migração automatizada).
+4. Atualizar `docs/lgpd.md` §2 incluindo Cloudflare R2 como operador
+   ativo de novo — exige reassinatura do DPO.
 
 ## 7. Deploy
 

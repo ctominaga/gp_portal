@@ -51,16 +51,21 @@ após o deploy mas precisam acontecer antes do go-live com o Bradesco.
 
 ## Integrações externas
 
-- [ ] **Resend**: domínio `jumplabel.com.br` verificado (SPF/DKIM/DMARC
-      publicados). API key gerada com role apropriado.
-- [ ] **`RESEND_FROM_EMAIL`** aponta para endereço verificado (recomendado:
-      `notificacoes@jumplabel.com.br`).
-- [ ] **Cloudflare R2** (se opção A em §6 do runbook deploy-railway):
-      bucket `jump-report-proposals` criado, API tokens R/W gerados,
-      `R2_*` configurados no Railway. Smoke: upload de arquivo
-      pequeno via console R2 + delete.
-- [ ] **OU Storage local + Railway volume** (se opção B): volume
-      montado em `/data`, `STORAGE_BACKEND=local`.
+- [ ] **Resend em dry-run** (decisão F5.9.bonus): `RESEND_API_KEY` fica
+      VAZIO no Railway. DNS de `jumplabel.com.br` (SPF/DKIM/DMARC) ainda
+      não verificado — débito F5.9.Resend. Notificações operacionais
+      ficam apenas in-app; recibo LGPD ao titular NÃO sai por email no
+      piloto inicial. Vide ADR `2026-05-15 — F5.9 / Resend em dry-run`.
+- [ ] **`RESEND_FROM_EMAIL`** mantido como `notificacoes@jumplabel.com.br`
+      (placeholder; só passa a operar quando F5.9.Resend fechar).
+- [ ] **Smoke do dry-run**: após deploy, fluxo de pedido LGPD ou
+      submissão de report **NÃO emite erro 5xx** — `_send_email`
+      cai no caminho "email.dry_run" e segue.
+- [ ] **Storage = LocalStorage + volume Railway** (decisão F5.9.bonus,
+      caminho oficial): volume de 10 GB criado em `/data` ANTES do
+      primeiro `railway up`. Variáveis: `OBJECT_STORAGE_BACKEND=local`,
+      `LOCAL_STORAGE_ROOT=/data`, `LOCAL_STORAGE_BASE_URL=<URL backend prod>`.
+      R2 fica desativado (`R2_*` vazios; jump_storage ignora).
 
 ## Operacional
 

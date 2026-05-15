@@ -1,9 +1,9 @@
 # Política de Tratamento de Dados Pessoais — Sistema de Report Jump
 
-**Versão:** v1.0 piloto Bradesco — revisão jurídica externa pendente para v1.1
-**Data:** 2026-05-14
+**Versão:** v1.0.1 piloto Bradesco — operador de storage atualizado para Railway volume; revisão jurídica externa pendente para v1.1
+**Data:** 2026-05-15
 **Encarregado (DPO) responsável:** Christopher Tominaga — `christopher.tominaga@jumplabel.com.br`
-**Aprovação:** Christopher Tominaga, DPO designado, em 2026-05-14.
+**Aprovação:** Christopher Tominaga, DPO designado, em 2026-05-15.
 
 Este documento descreve o tratamento de dados pessoais realizado pela Jump Label no contexto do Sistema de Report Jump (Sistema), em conformidade com a Lei 13.709/2018 (Lei Geral de Proteção de Dados Pessoais — LGPD). Tom técnico-jurídico; finalidade é registro auditável, não comunicação comercial.
 
@@ -33,9 +33,8 @@ Operadores (art. 5º VII LGPD) — terceiros que tratam dados pessoais por ordem
 |---|---|---|---|
 | Anthropic | Execução do agente leitor de propostas (modelo Claude) | Conteúdo textual de propostas comerciais submetidas pelos GPs | Estados Unidos |
 | OpenAI | Fallback do agente leitor (modelo Codex) — atualmente em pausa operacional | Mesmas categorias da Anthropic, quando ativado | Estados Unidos |
-| Cloudflare R2 | Armazenamento de PDFs de propostas, artefatos do worker e ZIPs gerados para titulares | Conteúdo de propostas, identificadores de titulares (no nome de objeto) | União Europeia / Estados Unidos |
-| Railway | Hospedagem da aplicação (PostgreSQL, Redis, backend, frontend) | Todos os metadados estruturados do Sistema (usuários, projetos, relatórios, aprovações, logs de execução) | Estados Unidos |
-| Resend | Envio de e-mail transacional | Endereços de e-mail de destinatários, conteúdo das mensagens enviadas | Estados Unidos |
+| Railway | Hospedagem da aplicação (PostgreSQL, Redis, backend, frontend) **e armazenamento dos PDFs de propostas, artefatos do worker e ZIPs gerados para titulares**, em volume persistente montado no serviço backend | Todos os metadados estruturados do Sistema (usuários, projetos, relatórios, aprovações, logs de execução) + PDFs originais de propostas, artefatos do worker, ZIPs do export LGPD | Estados Unidos |
+| Resend | Envio de e-mail transacional. **Em piloto inicial v1.0.1 o operador opera em modo dry-run** (chave de API não provisionada enquanto F5.9.Resend não fecha); nenhum dado é transferido nesse período. Vide §6 sobre comunicação ao titular | Endereços de e-mail de destinatários, conteúdo das mensagens enviadas (a partir do go-live de F5.9.Resend) | Estados Unidos |
 
 Os contratos de operação adotam, no mínimo, as cláusulas listadas na §8 (cláusulas obrigatórias com operadores).
 
@@ -47,7 +46,7 @@ Os contratos de operação adotam, no mínimo, as cláusulas listadas na §8 (cl
 |---|---|---|---|
 | Nome e e-mail corporativo de usuários internos (GP, PMO, OPERATOR) | Cadastro pela Jump Label | PostgreSQL Railway | Identificação para autenticação e atribuição de responsabilidades |
 | Nome e e-mail corporativo de representantes do cliente contratante (CLIENT) | Cadastro mediante contrato comercial | PostgreSQL Railway | Acesso ao portal de aprovação de relatórios |
-| Conteúdo de propostas comerciais | Upload realizado pelo GP | Cloudflare R2 (PDF) + PostgreSQL Railway (texto extraído) + workspace temporário do worker | Pode conter dados pessoais de terceiros mencionados pelo cliente; consulta o §4 sobre base legal |
+| Conteúdo de propostas comerciais | Upload realizado pelo GP | Volume Railway (PDF original e artefatos persistentes) + PostgreSQL Railway (texto extraído e metadados) + workspace temporário do worker local | Pode conter dados pessoais de terceiros mencionados pelo cliente; consulta o §4 sobre base legal |
 | Conteúdo de relatórios executivos | Preenchimento pelo GP | PostgreSQL Railway | Texto livre pode mencionar pessoas envolvidas no projeto (limitação tratada em §10 — débito F5.7.X) |
 | Logs de execução do agente leitor (prompts e respostas) | Worker | Disco local efêmero do worker + agregado em `AgentRunLog` no PostgreSQL | Auditoria de qualidade da extração e investigação de incidentes |
 | Registros de pedidos do titular (`DataProcessingRecord`) | Sistema | PostgreSQL Railway | Necessário para demonstrar atendimento (art. 6º X — responsabilização e prestação de contas) |
@@ -134,6 +133,16 @@ Cumprido por este documento (§2 — Inventário de operadores).
 
 Não aplicável em v1.0, dado que o consentimento (art. 7º I) não é base legal primária do Sistema. Revisado quando da introdução de funcionalidades baseadas em consentimento (v1.1 ou superior).
 
+### 6.8. Comunicação ao titular em janela Resend dry-run (v1.0.1 — F5.9.Resend)
+
+Em piloto inicial v1.0.1, o operador Resend opera em modo dry-run (chave de API não provisionada enquanto o domínio `jumplabel.com.br` aguarda verificação SPF/DKIM/DMARC). Como consequência operacional:
+
+- O recibo automático ao titular previsto em §6.4 (eliminação) e §6.5 (portabilidade) **não é remetido por e-mail** enquanto F5.9.Resend permanecer aberto.
+- O Sistema permanece atendendo o pedido tecnicamente (o registro no `DataProcessingRecord` é criado e o atendimento é executado pelo DPO dentro do SLA do art. 19 LGPD — 15 dias úteis).
+- A comunicação ao titular ocorre por canal alternativo definido pelo DPO (e-mail manual a partir da caixa do DPO, comunicação no canal contratual com o cliente, etc.), com registro do meio escolhido em `DataProcessingRecord.notes`.
+
+O encerramento do débito F5.9.Resend (verificação DNS de `jumplabel.com.br` e ativação da chave de API) reativa o recibo automático sem mudança adicional de código. Este adendo é retirado quando o débito fechar.
+
 ---
 
 ## §7. Procedimento de incidentes
@@ -169,9 +178,8 @@ Antes da abertura do tratamento com cada operador, e antes do piloto Bradesco en
 
 - **Anthropic:** opção contratual ou de painel para opt-out de uso dos dados em treinamento de modelos confirmada e ativada na conta corporativa.
 - **OpenAI:** Data Controls com "Improve the model for everyone" desativado na conta corporativa.
-- **Cloudflare R2:** transporte sob TLS e criptografia em repouso ativada por padrão; chaves de acesso restritas ao backend.
-- **Railway:** conexão sob TLS, isolamento de tenant verificado.
-- **Resend:** transporte sob TLS; verificar política de retenção do conteúdo de e-mail enviado e ajustar contrato se houver retenção indevida.
+- **Railway:** conexão sob TLS, isolamento de tenant verificado. Volume persistente que armazena PDFs de propostas e ZIPs do export LGPD usa o mesmo isolamento de tenant. Backup do volume é manual no piloto (débito **F5.9.Y** — automação do backup).
+- **Resend:** transporte sob TLS; verificar política de retenção do conteúdo de e-mail enviado e ajustar contrato se houver retenção indevida. Em piloto inicial v1.0.1 o operador opera em modo dry-run e nenhum dado é remetido enquanto F5.9.Resend não fechar.
 
 O operador da máquina worker é treinado para verificar essas configurações em cada conta corporativa antes de habilitar tratamento de produção. Falhas observadas são tratadas como incidente (§7).
 
@@ -197,6 +205,8 @@ Os itens abaixo foram identificados durante a redação desta versão v1.0 e fic
 - **F5.7.Z — Provisionamento do alias dedicado para canal LGPD.** O canal externo desta v1.0 opera com o e-mail corporativo do DPO designado, `christopher.tominaga@jumplabel.com.br`, que recebe pedidos diretamente (simplificação registrada em ADR `2026-05-15 — F5.9 / Canal LGPD operacional simplificado para o DPO direto`). O provisionamento do alias dedicado `lgpd@jumplabel.com.br` no Workspace — e a substituição subsequente do canal documentado — permanece como débito v1.1, motivado pela boa prática de não expor e-mail pessoal corporativo como canal LGPD público.
 - **Revisão jurídica externa.** Esta v1.0 é texto técnico assinado pelo DPO designado para fins de piloto Bradesco. A revisão jurídica externa é pré-requisito para v1.1 e é registrada como dependência explícita.
 - **Spec v3.1 §9.5 — modelagem do `DataProcessingRecord`.** A spec lista `processing_purpose`, `legal_basis` e `retention_period` como atributos do `DataProcessingRecord`. A redação desta v1.0 reconhece que esses atributos pertencem ao Registro de Atividades de Tratamento (`docs/rat.md`), não ao log de pedido de titular. Correção da spec é débito da consolidação v3.2.
+- **F5.9.Y — Automação do backup do volume Railway** (aberto em v1.0.1). O storage de PDFs/ZIPs migrou para volume Railway montado no backend. Backup é manual no piloto inicial (vide `docs/runbooks/deploy-railway.md §6.3`). Automação (snapshot mensal ou rotina externa idempotente) deve fechar antes da v1.1.
+- **F5.9.Resend — Verificação DNS de `jumplabel.com.br` e ativação do Resend** (aberto em v1.0.1). Enquanto este débito permanecer, o operador Resend opera em modo dry-run (§2, §6.8). Pré-requisito: SPF/DKIM/DMARC publicados e validados pela TI Jump Label. O encerramento dispensa qualquer ajuste de código — basta provisionar `RESEND_API_KEY` na produção.
 
 ---
 
@@ -205,3 +215,4 @@ Os itens abaixo foram identificados durante a redação desta versão v1.0 e fic
 | Versão | Data | Mudanças |
 |---|---|---|
 | v1.0 piloto Bradesco | 2026-05-14 | Versão inicial. Assinada pelo DPO Christopher Tominaga. Revisão jurídica externa pendente para v1.1. |
+| v1.0.1 piloto Bradesco | 2026-05-15 | Operador de storage substituído: Cloudflare R2 sai do inventário; armazenamento de PDFs/artefatos/ZIPs passa a operar no volume Railway montado no serviço backend (decisão F5.9.bonus). §2, §3 (linha de proposta), §8 atualizados. Novo §6.8 documenta janela Resend dry-run (débito F5.9.Resend) durante o piloto inicial — recibo automático ao titular não sai enquanto DNS jumplabel.com.br não for verificado; atendimento técnico do pedido continua dentro do SLA. Novo débito **F5.9.Y** (automação do backup do volume). Assinatura mantida pelo DPO Christopher Tominaga. |

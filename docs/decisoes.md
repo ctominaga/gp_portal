@@ -445,3 +445,49 @@ Próximas sub-fases possíveis: **F5.5** (inteligência cruzada — débito inde
 - **F5.9.X (NOVO, v1.1 ou F6)** — O e-mail do canal LGPD está hardcoded em `_DPO_OPERATIONAL_EMAIL` em [`backend/app/api/v1/me.py`](../backend/app/api/v1/me.py). Refactor para env var `DPO_NOTIFICATION_EMAIL` lida em `app/core/config.py` evita redeploy quando o canal mudar (especialmente quando F5.7.Z for fechado). Hardening de configuração.
 
 **Risco residual:** durante o piloto, todos os pedidos LGPD entrantes chegam à caixa pessoal corporativa do DPO. Mitigação operacional: Christopher confirma que mantém filtro/etiqueta dedicada para os pedidos e responde dentro do SLA de 15 dias úteis (LGPD art. 19) mesmo em períodos de férias ou ausência (com plano de cobertura combinado). Risco aceito pelo período do piloto até F5.7.Z fechar.
+
+## 2026-05-15 — F5.9 / Storage backend mudou para LocalStorage com volume Railway
+
+**Contexto:** F5.9a `.env.production.example` listava Cloudflare R2 e LocalStorage como opções equivalentes ("decisão pendente"). Christopher Tominaga decidiu, em 2026-05-15, adotar LocalStorage com volume Railway como caminho oficial do piloto Bradesco. Justificativa direta: concentra billing no Railway, evita conta de operador externo extra (Cloudflare) e cobre com folga o volume previsível do piloto (3 PDFs de propostas Bradesco/Torra/PTC somando ~91 MB + artefatos do worker + ZIPs do export LGPD).
+
+A abstração `jump_storage` já suporta os dois backends desde F2 (`OBJECT_STORAGE_BACKEND=local|r2` em [`jump_storage/factory.py`](../jump_storage/jump_storage/factory.py)). Mudar a decisão não toca código de produto — só configuração, docs e infraestrutura.
+
+**Decisão:**
+1. Produção do piloto adota `OBJECT_STORAGE_BACKEND=local`, `LOCAL_STORAGE_ROOT=/data`, `LOCAL_STORAGE_BASE_URL=<URL backend prod>`. `LOCAL_STORAGE_SIGNING_SECRET` cai para `JWT_SECRET` pela convenção de `jump_storage.factory`.
+2. Volume Railway de 10 GB montado em `/data` no serviço backend — declarado em [`railway.json`](../railway.json) (`deploy.volumes`) e criado manualmente no dashboard antes do primeiro `railway up` (vide `docs/runbooks/deploy-railway.md §6`).
+3. Worker local baixa propostas via signed URL HTTPS pela rota `/files/signed/...` do backend (HMAC + expiração, já existente em [`jump_storage/local.py`](../jump_storage/jump_storage/local.py)), sem precisar de acesso direto ao volume.
+4. `docs/lgpd.md` e `docs/rat.md` reassinados como **v1.0.1** com Cloudflare R2 fora do inventário de operadores. Adendo no §11 de `lgpd.md`; novo §6.8 sobre janela Resend dry-run.
+5. R2Storage permanece como código vivo em `jump_storage/r2.py` e nas variáveis vazias `R2_*` em `.env.production.example` — reativação futura (F6 ou quando escalar para múltiplas instâncias backend) custa só uma troca de variáveis, sem PR de código.
+
+**Consequência:**
+- Zero refactor de código de produto. Toda a mudança é configuração + documentação.
+- `docs/lgpd.md` v1.0.1 lista 4 operadores em vez de 5; Cloudflare R2 só reaparece se reativada (e exigirá reassinatura nova).
+- Custo de egress do Railway (~$0.10/GB acima do plano) é aceitável no volume de piloto (<5 GB de propostas + alguns ZIPs/mês).
+- Volume Railway é region-locked. Backup é responsabilidade do operador Jump.
+
+**Riscos / débitos novos:**
+- **F5.9.Y (NOVO, v1.1)** — Automação do backup do volume. Em piloto operamos com snapshot manual mensal documentado em `docs/runbooks/deploy-railway.md §6.3`. Antes de v1.1 deve haver rotina externa (snapshot, rsync para storage frio ou similar) idempotente e auditável.
+- Volume único é restritivo se o backend escalar horizontalmente (réplicas múltiplas) — propostas escritas por uma instância não aparecem em outra. Aceitável no piloto (1 instância). Reativar R2 ao escalar.
+
+## 2026-05-15 — F5.9 / Resend em dry-run durante piloto inicial
+
+**Contexto:** Verificação DNS de `jumplabel.com.br` (SPF, DKIM, DMARC) exige coordenação com a TI da Jump Label e janela de propagação (15min–48h por DNS record + 24h adicionais para validação Resend). Em 2026-05-15, o checklist pré-deploy listava "Resend: domínio verificado, API key gerada" como item bloqueante. Para não atrasar o deploy do piloto, Christopher Tominaga decidiu subir o sistema com Resend em modo dry-run (sem `RESEND_API_KEY` provisionada em produção).
+
+O serviço [`backend/app/services/notifications.py:_send_email`](../backend/app/services/notifications.py) já trata o caso: se `RESEND_API_KEY` está ausente ou `RESEND_DRY_RUN=true`, ele loga `email.dry_run` (structlog) e retorna sem importar o SDK. Não há erro 5xx; o fluxo do endpoint chamador continua normalmente.
+
+**Decisão:**
+1. Em produção do piloto, `RESEND_API_KEY` fica vazio. `RESEND_FROM_EMAIL=notificacoes@jumplabel.com.br` é mantido como placeholder.
+2. Notificações operacionais (submissão de report, decisão de aprovação, mudança de escopo aprovada/rejeitada) chegam aos destinatários **apenas via in-app** (`InAppNotification` + SSE `notification`). Cliente Bradesco e GPs Jump precisam abrir o portal para ver eventos — não recebem alerta por email.
+3. **Recibo automático LGPD ao titular** (após `POST /me/data-deletion-request` ou após criação manual no painel admin) **NÃO sai por email enquanto o débito F5.9.Resend permanecer aberto.** Comunicação ao titular ocorre por canal alternativo definido pelo DPO (e-mail manual a partir da caixa do DPO ou canal contratual com o cliente), com o meio escolhido registrado em `DataProcessingRecord.notes`.
+4. `docs/lgpd.md` ganha §6.8 explicitando essa janela operacional e a data esperada de fechamento.
+5. Encerramento do débito **F5.9.Resend** (verificação DNS validada + provisão de `RESEND_API_KEY`) reativa o recibo automático sem qualquer mudança de código — só ajuste de variável em produção.
+
+**Consequência:**
+- Deploy do piloto não fica bloqueado por dependência externa de TI/DNS.
+- Bradesco precisa monitorar o portal proativamente nos primeiros dias até DNS subir. Comunicação prévia ao cliente é responsabilidade do Christopher.
+- Gap explícito documentado entre §6.4 do `lgpd.md` (que prevê recibo automático) e o comportamento de v1.0.1 — coberto pelo novo §6.8 e por nota em `DataProcessingRecord.notes` para cada pedido na janela.
+- Atendimento técnico do pedido LGPD permanece dentro do SLA art. 19 LGPD (15 dias úteis). DPO continua responsável pela resposta dentro do prazo, com ou sem recibo automatizado.
+
+**Riscos:** se titular exercer direito LGPD sem comunicação por email, percepção de não-atendimento. Mitigação: Christopher monitora `/admin/data-requests` no portal e responde fora do sistema dentro do SLA. ADR fecha quando F5.9.Resend fechar — propagação DNS estimada em 2–4 semanas pós go-live (TI Jump no caminho crítico).
+
+**Débito novo:** **F5.9.Resend (v1.1)** — ativar Resend após verificação DNS de `jumplabel.com.br`. Inclui: configurar SPF/DKIM/DMARC, criar API key no console Resend com role apropriado, setar `RESEND_API_KEY` no Railway, smoke do envio real (1 pedido LGPD ou submissão de report deve gerar email recebido pelo destinatário), atualizar `docs/lgpd.md` removendo §6.8 (ou marcando o débito como fechado no §11).

@@ -1,7 +1,7 @@
 # Registro de Atividades de Tratamento (RAT)
 
-**Versão:** v1.0 piloto Bradesco — revisão jurídica externa pendente para v1.1
-**Data:** 2026-05-14
+**Versão:** v1.0.1 piloto Bradesco — operador de storage atualizado para Railway volume; revisão jurídica externa pendente para v1.1
+**Data:** 2026-05-15
 **Encarregado (DPO) responsável:** Christopher Tominaga — `christopher.tominaga@jumplabel.com.br`
 **Canal LGPD para titulares externos:** `christopher.tominaga@jumplabel.com.br`
 
@@ -52,8 +52,8 @@ Controlador: Jump Label, CNPJ 09.032.085/0001-64, endereço Alameda Rio Negro, 5
 | Titulares | GP da Jump Label (uploader); pessoas eventualmente nomeadas na proposta (terceiros) |
 | Base legal | Execução de contrato (art. 7º V) para o GP; legítimo interesse com base na finalidade contratada pelo cliente (art. 7º IX) para terceiros nomeados |
 | Retenção | 5 anos após o encerramento do projeto. Workspace temporário do worker: 7 dias |
-| Operadores envolvidos | Cloudflare R2 (PDF original e artefatos), Railway (texto extraído e metadados), Anthropic (execução do agente leitor), OpenAI (fallback do agente, atualmente em pausa operacional) |
-| Compartilhamentos internacionais | União Europeia / Estados Unidos (Cloudflare R2), Estados Unidos (Railway, Anthropic, OpenAI) |
+| Operadores envolvidos | Railway (PDF original e artefatos persistentes em volume montado no backend; texto extraído e metadados em PostgreSQL), Anthropic (execução do agente leitor), OpenAI (fallback do agente, atualmente em pausa operacional). Cloudflare R2 sai do inventário em v1.0.1 (vide `docs/lgpd.md` §11) |
+| Compartilhamentos internacionais | Estados Unidos (Railway, Anthropic, OpenAI) |
 | Localização técnica | Entidades [`Proposal`](../backend/app/models/domain.py), [`Baseline`](../backend/app/models/domain.py), [`Deliverable`](../backend/app/models/domain.py) |
 
 ---
@@ -112,8 +112,8 @@ Controlador: Jump Label, CNPJ 09.032.085/0001-64, endereço Alameda Rio Negro, 5
 | Titulares | Usuários internos da Jump Label, representantes do cliente, titulares que comunicam pedido LGPD |
 | Base legal | Execução de contrato — LGPD art. 7º V (notificações operacionais inerentes ao Sistema) |
 | Retenção | Conforme política do operador Resend (a confirmar contratualmente — débito de §8 do `lgpd.md` quando da renovação contratual) |
-| Operadores envolvidos | Resend |
-| Compartilhamentos internacionais | Estados Unidos (Resend) |
+| Operadores envolvidos | Resend. **Em piloto inicial v1.0.1 o operador opera em modo dry-run** (chave de API não provisionada enquanto F5.9.Resend não fecha); nenhum dado é remetido a Resend nesse período. O serviço [`notifications.py:_send_email`](../backend/app/services/notifications.py) cai no caminho "email.dry_run" sem importar o SDK |
+| Compartilhamentos internacionais | Estados Unidos (Resend), a partir do go-live de F5.9.Resend |
 | Localização técnica | Serviço [`backend/app/services/notifications.py`](../backend/app/services/notifications.py) |
 
 ---
@@ -127,8 +127,8 @@ Controlador: Jump Label, CNPJ 09.032.085/0001-64, endereço Alameda Rio Negro, 5
 | Titulares | Qualquer titular cujos dados pessoais sejam tratados pelo Sistema |
 | Base legal | Cumprimento de obrigação legal — LGPD art. 7º II combinado com arts. 18 e 19 |
 | Retenção | 5 anos após o atendimento. Necessário para prestação de contas ao controlador e à ANPD (art. 6º X) |
-| Operadores envolvidos | Railway (registro), Resend (notificação ao DPO e recibo ao titular) |
-| Compartilhamentos internacionais | Estados Unidos (Railway, Resend) |
+| Operadores envolvidos | Railway (registro). Resend para notificação ao DPO e recibo ao titular **a partir do go-live de F5.9.Resend** — em v1.0.1 o recibo automático ao titular não é remetido (vide `docs/lgpd.md` §6.8) |
+| Compartilhamentos internacionais | Estados Unidos (Railway). Estados Unidos (Resend) a partir do go-live de F5.9.Resend |
 | Localização técnica | Entidade [`DataProcessingRecord`](../backend/app/models/domain.py) |
 
 ---
@@ -148,3 +148,4 @@ Controlador: Jump Label, CNPJ 09.032.085/0001-64, endereço Alameda Rio Negro, 5
 | Versão | Data | Mudanças |
 |---|---|---|
 | v1.0 piloto Bradesco | 2026-05-14 | Versão inicial. 8 atividades catalogadas. Assinada pelo DPO Christopher Tominaga. Revisão jurídica externa pendente para v1.1. |
+| v1.0.1 piloto Bradesco | 2026-05-15 | A3 (Upload e leitura) atualizada — Cloudflare R2 sai do inventário de operadores; armazenamento de PDFs e artefatos passa a operar no volume Railway montado no serviço backend (decisão F5.9.bonus). A7 e A8 marcam Resend em modo dry-run no piloto inicial (débito F5.9.Resend). Assinatura mantida pelo DPO Christopher Tominaga. |
