@@ -1,8 +1,8 @@
 # Fase 5 — Progresso
 
-**Status atual:** F5.1, F5.2, F5.3 e F5.4 fechadas. F5.5 a F5.9 pendentes. Pronto para retomada.
+**Status atual:** F5.1 a F5.4 e F5.6 (a+b) fechadas. **F5.7 em andamento** (Commit 1 docs aguardando checkpoint humano #2). F5.5, F5.8 e F5.9 pendentes.
 
-**Última atualização:** 2026-05-13
+**Última atualização:** 2026-05-14
 
 ---
 
@@ -370,35 +370,59 @@ Com F5.6 (a+b) fechada, o caminho crítico para o **lançamento do piloto Brades
 
 ---
 
-## F5.5, F5.7, F5.8, F5.9 — Pendentes
+## F5.7 — LGPD EM ANDAMENTO
 
-Conforme plano em `docs/fase-5-plano.md`. F5.6 (a+b) fechada. Ordem recomendada
-(conservadora: schemas estáveis antes de LGPD/deploy):
+Abertura formal em `docs/decisoes.md` ADR `2026-05-14 — F5.7 / Abertura`. Sub-fase iniciada após F5.6 (a+b) fechada; pré-requisito de F5.9 (deploy Railway com piloto Bradesco).
+
+**Decisão de modo:** híbrido. Agente produz `docs/lgpd.md` e `docs/rat.md`; DPO Christopher Tominaga revisa e assina como v1.0 piloto. Revisão jurídica externa fica como débito v1.1.
+
+**Plano de commits (5 sequenciais):**
+
+| # | Tipo | Estado |
+|---|---|---|
+| 1 | docs | `docs/lgpd.md` v1.0 + `docs/rat.md` v1.0 + ADR abertura + apêndice nesta página — **aguardando checkpoint humano #2 (DPO lê o texto inteiro antes do commit)** |
+| 2 | feat(backend) | Migration `users.anonymized_at` + `services/data_export_service.py` + `GET /me/data-export` + testes pytest |
+| 3 | feat(backend) | `POST /me/data-deletion-request` + `POST /admin/data-requests` + `GET /admin/data-requests` + `POST /admin/data-requests/{id}/fulfill` + login guard em `auth.py` + notificação DPO + recibo neutro ao titular |
+| 4 | feat(frontend) | Página `/admin/data-requests` + vitest |
+| 5 | test+docs | E2E pytest + correção de `conformidade-v3.1.md:60` + ADR fechamento + apêndice nesta página. Checkpoint humano #3 opcional |
+
+**Débitos abertos pela sub-fase (todos para v1.1):**
+
+- **F5.7.X** — Anonimização de texto livre em descrições de `Risk`/`PendingItem`/`ActionPlan` e seções narrativas de `Report`. v1.0 anonimiza apenas metadados estruturados de `User` e justifica retenção do texto livre via LGPD art. 16 II.
+- **F5.7.Y** — Formulário web público para titular externo abrir pedido. v1.0 opera com canal `lgpd@jumplabel.com.br` + transcrição manual do DPO no painel admin.
+- **F5.7.Z** — Migração do canal externo para alias dedicado (somente se `lgpd@jumplabel.com.br` não puder ser criado no Workspace em 2026-05-14).
+
+**Pontos críticos do inventário inicial que diferenciaram esta sub-fase:** (a) `DataProcessingRecord` em `domain.py:973-996` é mais enxuto do que a spec §9.5 presume — `processing_purpose`/`legal_basis`/`retention_period` não existem no modelo, e a auditoria em `conformidade-v3.1.md:60` os marcava como "presumidos" sem checagem. (b) Cascata de FKs do `User` (NOT NULL em `Project.gp_user_id`, `Proposal.uploaded_by_id`, `Report.created_by_id`, `ReportApproval.approver_id`) impede hard-delete e força anonimização. (c) [`notifications.py:70-89`](../backend/app/services/notifications.py) já oferece integração Resend reutilizável (sem novo serviço de e-mail). Esses três pontos saíram da intersecção de duas instâncias Claude consultadas em paralelo na abertura (padrão second-opinion).
+
+---
+
+## F5.5, F5.8, F5.9 — Pendentes
+
+Conforme plano em `docs/fase-5-plano.md`. F5.6 (a+b) e F5.7 (em andamento) destravam o caminho crítico:
 
 | # | Sub-fase | Estimativa | Bloqueia / é bloqueada por |
 |---|---|---|---|
 | F5.5 | Agente de Inteligência Cruzada (heurística inicial + flag) | ~30k | depende de F5.3 (✅); worker real (F5.6a ✅) já suficiente |
-| F5.7 | LGPD: `lgpd.md` + `/me/data-export` + `/me/data-deletion-request` | ~45k | depende de F5.1 estabilizado (✅) + F5.3 (✅); Christopher é DPO |
 | F5.8 | Exportação PDF/PPTX | ~50k (teto) | livre |
 | F5.9 | Deploy Railway + v3.2 consolidada | ~40k | depende de F5.6b (✅) + F5.7 (LGPD assinado) |
 
 ---
 
-## Decisões respondidas (3 de 8 do plano F5)
+## Decisões respondidas (4 de 8 do plano F5)
 
 | # | Pergunta | Resposta |
 |---|---|---|
 | **#1** | F5.5 antes ou depois do piloto rodar? | **Construir infra agora, ativar UI quando 5+ projetos encerrados.** Implementação: flag `portfolio_intelligence_enabled` em `PortfolioConfig` (default false). Backend produz insights independente da flag (alimenta histórico). UI mostra card aguardando volume mínimo + contagem; quando flag=true, exibe insights reais. Gatilho via `PATCH /portfolio/config`. |
 | **#2** | F5.6 WSL setup — Christopher instala ou runbook? | **Runbook.** Quando F5.6 chegar, eu produzo `docs/runbooks/setup-worker-wsl.md` detalhado (pré-requisitos máquina, WSL2 Ubuntu, instalação `claude`/`codex` no Linux puro, login interativo passo a passo, tmux com persistência, smoke test após cada passo). Christopher executa manualmente. |
+| **#3** | F5.7 LGPD — texto jurídico revisado por advogado externo? | **(a) v1.0 piloto Bradesco com DPO Christopher Tominaga como signatário; revisão jurídica externa fica como pré-requisito formal de v1.1.** Cabeçalho da v1.0 explicita o status. Razão: piloto Bradesco já tem contrato comercial assinado; LGPD do produto é polimento sobre operação contratada, não criação. Atrasar por advogado externo adiaria F5.9 sem ganho proporcional. Detalhamento no ADR `2026-05-14 — F5.7 / Abertura`. |
 | **#7** | F5.1 — F.Risk: drop+recreate ou backfill heurístico? | **Drop+recreate.** Investigação confirmou COUNT(*) FROM risks = 0 (mesma máquina, mesmo banco in-memory, ambiente pré-piloto). Estratégia replicada para Deliverable enums (D1+D2) também sem cerimônia. |
 
 ---
 
-## Decisões pendentes (5 de 8) — pedir antes de cada sub-fase relacionada
+## Decisões pendentes (4 de 8) — pedir antes de cada sub-fase relacionada
 
 | # | Pergunta | Quando vou perguntar |
 |---|---|---|
-| **#3** | F5.7 LGPD — texto jurídico revisado por advogado externo? Christopher é DPO designado; posso produzir documento técnico (RAT, RPS, retenção), mas linguagem contratual pode exigir revisão. | Antes de iniciar F5.7 |
 | **#4** | F5.8 — PDF e PPTX ambos, ou só PDF inicialmente? PPTX exige mais código (`python-pptx` mais arestas que `reportlab`). PDF cobre 80% dos casos. | Antes de iniciar F5.8 |
 | **#5** | F5.9 — deploy beta no Railway com dados seed ou esperar piloto real autorizar? Bradesco tem requisitos próprios (LGPD assinado, contratos de tratamento). | Antes de iniciar F5.9 |
 | **#6** | F5.X (P3 hardening) — dentro de F5 ou postergar para F6? A spec v3.1 §10 (Plano em fases) coloca esses itens em F6. | Quando decidir entre fechar F5 ou ampliar |

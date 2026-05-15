@@ -322,3 +322,64 @@ claude -p 'responda apenas: ok' --output-format json
 
 **Riscos arquiteturais decididos (não residuais):**
 - **CodexProvider permanece como fallback configurado mas sem login efetivo** — URL do installer oficial retornou não-200 em 2026-05-14 (F5.6a.X pegou cedo). Plano B3 do runbook em vigor: rodar só com Claude. `AgentRunner` configurado a cair para Codex se Claude falhar, mas Codex reportará `BROKER_UNAVAILABLE` cedo. Operacionalmente aceitável.
+
+## 2026-05-14 — F5.7 / Abertura: piloto LGPD com `docs/lgpd.md` v1.0 e `docs/rat.md` v1.0 assinados pelo DPO
+
+**Contexto:** F5.6 (a+b) fechada com o débito K zerado. F5.7 é pré-requisito formal do F5.9 (deploy Railway com dados reais do piloto Bradesco) e da operação contratual com o cliente. Modo definido: híbrido — agente produz o texto técnico de `docs/lgpd.md`, DPO Christopher Tominaga revisa e assina como piloto, revisão jurídica externa fica para v1.1.
+
+Inventário ativo do início da sub-fase, antes de qualquer linha de código:
+
+1. [`DataProcessingRecord`](../backend/app/models/domain.py) existe em `domain.py:973-996` com `subject_user_id`, `subject_external_email`, `request_type`, `status`, `requested_at`, `fulfilled_at`, `handled_by_id`, `notes`. Os enums `DPRequestType` (EXPORT/DELETION/ACCESS/RECTIFICATION) e `DPRequestStatus` (PENDING/APPROVED/FULFILLED/REJECTED) também já estão modelados.
+2. A spec consolidada v3.1 §9.5 lista `processing_purpose`, `legal_basis` e `retention_period` como atributos do `DataProcessingRecord`. Esses campos **não existem** no modelo. [`conformidade-v3.1.md:60`](conformidade-v3.1.md) marca a linha como "✅ presumido; não auditei" — afirmação que não se sustenta na leitura do código.
+3. Não existem endpoints `GET /me/data-export` nem `POST /me/data-deletion-request`. O único endpoint `/me/*` em produção é `GET /auth/me` (perfil básico) em [`auth.py:61`](../backend/app/api/v1/auth.py).
+4. `docs/lgpd.md` e `docs/rat.md` não existiam; havia apenas o briefing-fonte em [`docs/briefings/f57-lgpd.md`](briefings/f57-lgpd.md) e a spec §12 (linhas 740-786).
+5. O frontend não tem tela `/admin/data-requests`. As telas PMO existentes (`pmo/portfolio`, `pmo/scope-changes`, `pmo/reports/[rid]/review`) servem de molde.
+6. [`backend/app/services/notifications.py:70-89`](../backend/app/services/notifications.py) já oferece `_send_email` integrado com Resend (dry-run quando `RESEND_API_KEY` ausente). Reutilizável diretamente para notificação ao DPO e recibo ao titular, sem novo serviço.
+7. Cascata de FKs do `User` impede hard-delete trivial: `Project.gp_user_id`, `Proposal.uploaded_by_id`, `Report.created_by_id`, `ReportApproval.approver_id` são NOT NULL. Hard-delete de um GP com histórico em projeto vivo orfanaria relatórios já entregues ao cliente.
+
+Duas instâncias Claude foram consultadas em paralelo na abertura desta sub-fase (padrão second-opinion). A combinação das duas propostas, mais o raciocínio jurídico do DPO, produziu as decisões a seguir — em particular, Q4 (RAT separado), login guard pós-anonimização e fluxo titular externo manual foram pontos que dependeram de cruzar código real, spec e LGPD, e que apareceram apenas na intersecção das instâncias.
+
+**Decisão:**
+
+1. **(#3 — versão e assinatura).** v1.0 é piloto Bradesco. DPO Christopher Tominaga assina. Cabeçalho fixo: "v1.0 piloto Bradesco — revisão jurídica externa pendente para v1.1". Justificativa: o piloto tem contrato comercial assinado; a LGPD do produto interno é polimento sobre uma operação já contratada, não criação de nova relação. Esperar revisor externo adiaria F5.9 sem benefício proporcional ao risco. O risco residual de linguagem jurídica imprecisa é controlado pela explicitação da versão e do débito.
+
+2. **(Q1 — modelo de eliminação).** Eliminação é por **anonimização irreversível** do registro de `User`, não por hard-delete. v1.0 anonimiza apenas metadados estruturados: `users.name` recebe marcador genérico, `users.email` é reescrito para `anonymized_<uuid>@removed.local`, `users.password_hash` é zerado e `users.anonymized_at` recebe carimbo de tempo. Integridade referencial de projetos vivos é preservada com base no art. 16 II LGPD (exercício regular de direitos em processo judicial). Texto livre em descrições de [`Risk`](../backend/app/models/domain.py), [`PendingItem`](../backend/app/models/domain.py), [`ActionPlan`](../backend/app/models/domain.py) e seções narrativas do [`Report`](../backend/app/models/domain.py) (`highlights`, `next_steps`, `notes`, justificativas de RAG) **não** é anonimizado em v1.0 — fica retido como histórico do projeto entregue ao cliente, sob a mesma base do art. 16 II, com justificativa explícita em [`docs/lgpd.md`](lgpd.md) §6.4 e §10. Varredura programática de texto livre é débito formal **F5.7.X** para v1.1.
+
+3. **(Q2 — escopo do export para CLIENT).** Quando o titular autenticado é representante do cliente, o `GET /me/data-export` inclui dados de projetos em que ele atua como CLIENT, filtrados cirurgicamente: apenas seus próprios dados cadastrais, Projects vinculados, Reports em status `CLIENT_RELEASED` ou `ARCHIVED` (nunca `DRAFT` ou `SUBMITTED`), e Approvals em que ele foi o aprovador. Não inclui Approvals de terceiros, `AgentRunLog`, dados de outros CLIENTs. Texto livre dos relatórios pode mencionar terceiros — mesmo débito **F5.7.X** se estende ao export.
+
+4. **(Q3 — notificação ao abrir pedido).** Sempre dois envios via Resend: (a) DPO em `christopher.tominaga@jumplabel.com.br` com detalhes do pedido; (b) recibo ao titular com fraseado neutro "Pedido recebido, retornaremos em até 15 dias úteis" — sem prometer outcome (atender, recusar, anonimizar). Recibo é boa prática alinhada ao art. 18 §6 LGPD.
+
+5. **(Q4 — modelagem do `DataProcessingRecord`).** O modelo **não é tocado**. A spec v3.1 §9.5 mistura dois conceitos distintos: `processing_purpose`, `legal_basis` e `retention_period` descrevem **atividades de tratamento** da Jump Label, não **pedidos individuais de titular**. Atividades vão para [`docs/rat.md`](rat.md) (Registro de Atividades de Tratamento), criado nesta sub-fase. Pedidos continuam logados na entidade existente, com os campos atuais já suficientes para auditoria (quem pediu, o que pediu, quando, quem atendeu, quando atendeu, notas). Correção da spec é débito **L** herdado, a ser consolidado em v3.2.
+
+6. **(Q5 — inventário de operadores).** Lista confirmada inalterada em 2026-05-14: Anthropic (agente leitor), OpenAI (fallback em pausa operacional), Cloudflare R2 (storage), Railway (host), Resend (e-mail). Detalhamento por operador em [`docs/lgpd.md`](lgpd.md) §2 e [`docs/rat.md`](rat.md).
+
+7. **(Q6 — consentimento como base legal).** Não utilizado como base primária em v1.0. O Sistema não tem feature opcional de comunicação de marketing nem outra hipótese que dependa de consentimento. Se entrar feature desse tipo, a seção §4 de `docs/lgpd.md` será revisada (v1.1 ou superior).
+
+8. **(Q7 — canal LGPD para titulares externos).** Resolvido em 2026-05-15 com o e-mail corporativo `anderson.argentoni@jumplabel.com.br`. Anderson Argentoni atua como receptor operacional do canal LGPD, sob coordenação do DPO designado (Christopher Tominaga, que mantém `christopher.tominaga@jumplabel.com.br` como e-mail funcional do encarregado). O alias dedicado `lgpd@jumplabel.com.br` não foi provisionado a tempo da v1.0; seu provisionamento e a substituição subsequente do canal documentado abrem o débito formal **F5.7.Z** para v1.1. Os documentos da v1.0 foram redigidos com placeholder `{{DPO_EMAIL}}` durante o checkpoint humano #2, com substituição por `sed` imediatamente antes do Commit 1.
+
+9. **(Adicionais identificados no inventário, não previstos no briefing original).**
+   - **Login pós-anonimização.** [`auth.py`](../backend/app/api/v1/auth.py) `/auth/login` passa a rejeitar com `401 "credenciais inválidas"` (texto idêntico ao caso de senha errada, sem vazar informação de anonimização) quando `users.anonymized_at IS NOT NULL`. Tratado no Commit 3, junto com a anonimização que produz esse estado.
+   - **Titular externo sem conta em v1.0.** Não há formulário web público; o DPO transcreve manualmente pedidos recebidos por e-mail no canal `{{DPO_EMAIL}}` para a entidade `DataProcessingRecord` via novo endpoint `POST /admin/data-requests` (role PMO/DPO). Formulário web público é débito **F5.7.Y** para v1.1.
+   - **Correção da auditoria em `conformidade-v3.1.md:60`.** A linha que afirma campos "presumidos" será reescrita no Commit 5 com auditoria efetiva, refletindo a decisão Q4 (campos não estão na entidade; estão em `docs/rat.md`).
+
+**Consequência:** F5.7 estruturada em 5 commits sequenciais:
+
+| # | Tipo | Conteúdo |
+|---|---|---|
+| 1 | docs | `docs/lgpd.md` v1.0 + `docs/rat.md` v1.0 + este ADR + apêndice em `fase-5-progresso.md` marcando F5.7 EM ANDAMENTO. **Checkpoint humano #2 antes deste commit.** |
+| 2 | feat(backend) | Migration `users.anonymized_at` + `services/data_export_service.py` + endpoint `GET /me/data-export` + testes pytest (smoke, cobertura, RBAC, filtro CLIENT) |
+| 3 | feat(backend) | `POST /me/data-deletion-request` + `POST /admin/data-requests` (criação manual pelo DPO) + `GET /admin/data-requests` (listagem PMO) + `POST /admin/data-requests/{id}/fulfill` (anonimiza) + login guard em `auth.py` + notificação DPO via Resend + recibo neutro ao titular + testes pytest |
+| 4 | feat(frontend) | Página `src/app/admin/data-requests/page.tsx` (listagem + filtros + form de criação manual + confirm modal de fulfill) + vitest |
+| 5 | test+docs | E2E pytest (titular → pedido → DPO → fulfill → login negado) + correção de `conformidade-v3.1.md:60` + ADR de fechamento + apêndice em `fase-5-progresso.md`. **Checkpoint humano #3 opcional antes deste commit.** |
+
+Débitos formalmente abertos nesta sub-fase, a fechar em v1.1:
+
+- **F5.7.X** — Anonimização de texto livre em descrições de `Risk`/`PendingItem`/`ActionPlan` e seções narrativas de `Report`.
+- **F5.7.Y** — Formulário web público para abertura de pedido por titular externo.
+- **F5.7.Z** — Migração do canal externo para alias dedicado (somente se `lgpd@jumplabel.com.br` não tiver sido criado a tempo da v1.0).
+
+Débito herdado, a tratar fora desta sub-fase:
+
+- **L (v3.2)** — Correção do modelo do `DataProcessingRecord` na spec consolidada, removendo `processing_purpose`/`legal_basis`/`retention_period` (que pertencem ao RAT) da descrição da entidade.
+
+Checkpoints humanos formais: **#1** já concluído (inventário + plano aprovados em 2026-05-14 antes deste ADR); **#2** antes do Commit 1 (DPO lê inteiros `docs/lgpd.md` e `docs/rat.md`); **#3** opcional antes do Commit 5 (rodar `GET /me/data-export` em ambiente local e revisar o ZIP gerado).
