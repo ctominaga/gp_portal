@@ -38,7 +38,7 @@ DECISÕES JÁ TOMADAS (não precisa pedir):
 
 DECISÃO PENDENTE #3 do plano F5 (responda antes de começar):
 
-   [RESPONDA AQUI]
+   [revisão jurídica externa]
    Opções:
    (a) Texto técnico produzido por você vale como versão piloto.
        Eu assino como DPO. Cabeçalho do lgpd.md diz "v1.0 piloto
