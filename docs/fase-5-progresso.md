@@ -1,6 +1,6 @@
 # Fase 5 — Progresso
 
-**Status atual:** F5.1 a F5.4 e F5.6 (a+b) fechadas. **F5.7 em andamento** (Commit 1 docs aguardando checkpoint humano #2). F5.5, F5.8 e F5.9 pendentes.
+**Status atual:** F5.1 a F5.4, F5.6 (a+b) e F5.7 fechadas. F5.5, F5.8 e F5.9 pendentes.
 
 **Última atualização:** 2026-05-14
 
@@ -370,29 +370,58 @@ Com F5.6 (a+b) fechada, o caminho crítico para o **lançamento do piloto Brades
 
 ---
 
-## F5.7 — LGPD EM ANDAMENTO
+## F5.7 — LGPD ✅ FECHADA
 
-Abertura formal em `docs/decisoes.md` ADR `2026-05-14 — F5.7 / Abertura`. Sub-fase iniciada após F5.6 (a+b) fechada; pré-requisito de F5.9 (deploy Railway com piloto Bradesco).
+Aberta em `docs/decisoes.md` ADR `2026-05-14 — F5.7 / Abertura` e fechada em `2026-05-15 — F5.7 / Fechada`. Pré-requisito formal de F5.9 (deploy Railway com piloto Bradesco) atendido.
 
-**Decisão de modo:** híbrido. Agente produz `docs/lgpd.md` e `docs/rat.md`; DPO Christopher Tominaga revisa e assina como v1.0 piloto. Revisão jurídica externa fica como débito v1.1.
+**Modo confirmado pós-execução:** híbrido. Agente produziu `docs/lgpd.md` v1.0 e `docs/rat.md` v1.0; DPO Christopher Tominaga revisou e assinou como signatário designado. Anderson Argentoni atua como receptor operacional do canal externo (`anderson.argentoni@jumplabel.com.br`) — alias `lgpd@jumplabel.com.br` é débito F5.7.Z. Revisão jurídica externa permanece como débito v1.1.
 
-**Plano de commits (5 sequenciais):**
+**5 commits sequenciais aprovados commit-a-commit pelo humano:**
 
-| # | Tipo | Estado |
+| # | SHA | Tipo | Resumo |
+|---|---|---|---|
+| 1 | `640bd28` | docs | `docs/lgpd.md` v1.0 + `docs/rat.md` v1.0 + ADR abertura + apêndice nesta página (status EM ANDAMENTO). 4 arquivos, +451/-9. |
+| 2 | `b5f1fd0` | feat(backend) | Migration `0018_users_anonymized_at` (`TIMESTAMPTZ NULL` + índice parcial) + `services/data_export_service.py` (ZIP em memória com 5 arquivos) + schemas `data_export.py` + `GET /me/data-export` + 5 pytests (smoke, cobertura, RBAC sem token, RBAC cross-user, filtro CLIENT). 7 arquivos, +1390. |
+| 3 | `1e47cbc` | feat(backend) | `POST /me/data-deletion-request` (notifica DPO + recibo neutro ao titular via Resend dry-run) + `admin_data_requests.py` (POST manual / GET paginado / POST fulfill com anonimização idempotente, role PMO) + schemas `data_request.py` + login guard 401 idêntico ao de senha errada em `auth.py` + 7 pytests. 6 arquivos, +658/-7. |
+| 4 | `f54c020` | feat(frontend) | Página `src/app/admin/data-requests/page.tsx` (App Router, segue padrão de `pmo/scope-changes`) + `apiAdminDataRequests.{list,createManual,fulfill}` em `lib/api.ts` + tipos LGPD em `lib/types.ts` + link "LGPD" no `AppShell` (somente PMO; OPERATOR cai no 403 do backend) + polyfill `scrollIntoView/hasPointerCapture` em `tests/setup.ts` (libera testes de Radix Select) + 4 vitests. 6 arquivos, +721/-1. |
+| 5 | `(este)` | test+docs | `test_lgpd_e2e.py` (titular → pedido → DPO recebe e-mail dry-run → PMO fulfill → titular tenta login → 401 idêntico ao de senha errada) + correção de `conformidade-v3.1.md:60` (linha "presumido" reescrita auditando os 9 campos reais do `DataProcessingRecord` + remissão para `docs/rat.md` como local dos campos `processing_purpose`/`legal_basis`/`retention_period`) + ADR de fechamento em `decisoes.md` + apêndice nesta página. |
+
+**Métricas:**
+
+| Métrica | Início F5.7 | **Final F5.7** |
 |---|---|---|
-| 1 | docs | `docs/lgpd.md` v1.0 + `docs/rat.md` v1.0 + ADR abertura + apêndice nesta página — **aguardando checkpoint humano #2 (DPO lê o texto inteiro antes do commit)** |
-| 2 | feat(backend) | Migration `users.anonymized_at` + `services/data_export_service.py` + `GET /me/data-export` + testes pytest |
-| 3 | feat(backend) | `POST /me/data-deletion-request` + `POST /admin/data-requests` + `GET /admin/data-requests` + `POST /admin/data-requests/{id}/fulfill` + login guard em `auth.py` + notificação DPO + recibo neutro ao titular |
-| 4 | feat(frontend) | Página `/admin/data-requests` + vitest |
-| 5 | test+docs | E2E pytest + correção de `conformidade-v3.1.md:60` + ADR fechamento + apêndice nesta página. Checkpoint humano #3 opcional |
+| pytest backend | 195 | **208** (+5 export + 6 deletion + 1 sanity-check module + 1 E2E = +13; 1 skipped pré-existente) |
+| vitest frontend | 104 | **108** (+4 admin/data-requests) |
+| Linhas de código (delta cru) | — | +3220 / -17 (4 commits de feat/test + 1 commit de docs) |
+| Endpoints novos no backend | 0 | **5** (`GET /me/data-export`, `POST /me/data-deletion-request`, `POST /admin/data-requests`, `GET /admin/data-requests`, `POST /admin/data-requests/{id}/fulfill`) |
+| Migrations novas | — | **1** (`0018_users_anonymized_at`) |
+| Rotas novas no frontend | — | **1** (`/admin/data-requests`) |
+| Cobertura backend (pytest) | sem regressão | sem regressão; `data_export_service` e `admin_data_requests` exercitados pelos 13 testes LGPD |
+| tsc + lint frontend | — | tsc sem erros; lint só com warnings pré-existentes em arquivos fora de F5.7 |
 
-**Débitos abertos pela sub-fase (todos para v1.1):**
+**Decisões resolvidas no fechamento (não eram do ADR de abertura):**
 
-- **F5.7.X** — Anonimização de texto livre em descrições de `Risk`/`PendingItem`/`ActionPlan` e seções narrativas de `Report`. v1.0 anonimiza apenas metadados estruturados de `User` e justifica retenção do texto livre via LGPD art. 16 II.
-- **F5.7.Y** — Formulário web público para titular externo abrir pedido. v1.0 opera com canal `lgpd@jumplabel.com.br` + transcrição manual do DPO no painel admin.
-- **F5.7.Z** — Migração do canal externo para alias dedicado (somente se `lgpd@jumplabel.com.br` não puder ser criado no Workspace em 2026-05-14).
+| Decisão | Resolução |
+|---|---|
+| Ordem de gravação do log de auditoria no `GET /me/data-export` | Build do ZIP **antes** de gravar `DataProcessingRecord(EXPORT, FULFILLED)`. Snapshot reflete estado pré-requisição; log do ato aparece em exports subsequentes. Alternativa rejeitada (log primeiro) deixaria FULFILLED órfão em falha de build. |
+| Onde registrar o `me_router`/`admin_data_requests_router` | Em `app/main.py` via `app.include_router(...)`, seguindo a convenção real do repo. Briefing inicial sugeria `__init__.py`, que está vazio na prática. |
+| Aria do filtro Select no vitest | jsdom não implementa `Element.scrollIntoView`/`hasPointerCapture` — polyfill no-op em `tests/setup.ts` libera Radix Select sem afetar produção. |
 
-**Pontos críticos do inventário inicial que diferenciaram esta sub-fase:** (a) `DataProcessingRecord` em `domain.py:973-996` é mais enxuto do que a spec §9.5 presume — `processing_purpose`/`legal_basis`/`retention_period` não existem no modelo, e a auditoria em `conformidade-v3.1.md:60` os marcava como "presumidos" sem checagem. (b) Cascata de FKs do `User` (NOT NULL em `Project.gp_user_id`, `Proposal.uploaded_by_id`, `Report.created_by_id`, `ReportApproval.approver_id`) impede hard-delete e força anonimização. (c) [`notifications.py:70-89`](../backend/app/services/notifications.py) já oferece integração Resend reutilizável (sem novo serviço de e-mail). Esses três pontos saíram da intersecção de duas instâncias Claude consultadas em paralelo na abertura (padrão second-opinion).
+**Débitos finais (carregados do ADR de abertura, sem mudança):**
+
+- **F5.7.X (v1.1)** — Anonimização de texto livre em descrições de `Risk`/`PendingItem`/`ActionPlan` e seções narrativas de `Report`. v1.0 retém com justificativa em [`docs/lgpd.md`](lgpd.md) §6.4/§10 (LGPD art. 16 II).
+- **F5.7.Y (v1.1)** — Formulário web público para abertura de pedido por titular externo. v1.0 cobre via `POST /admin/data-requests` (DPO transcreve manualmente).
+- **F5.7.Z (v1.1)** — Provisionamento do alias `lgpd@jumplabel.com.br` e migração do canal documentado em `docs/lgpd.md` e `docs/rat.md`. v1.0 opera com `anderson.argentoni@jumplabel.com.br`.
+- **L (v3.2 da spec)** — Spec consolidada lista `processing_purpose`/`legal_basis`/`retention_period` no `DataProcessingRecord`. Esses campos vivem por atividade em `docs/rat.md`, não no modelo SQL. `conformidade-v3.1.md:60` já reflete; ajuste na spec entra no próximo ciclo.
+
+**Checkpoints humanos:** #1 (inventário + plano) concluído em 2026-05-14. #2 (DPO lê `docs/lgpd.md` e `docs/rat.md` inteiros) concluído em 2026-05-15. #3 (rodar `GET /me/data-export` local antes do Commit 5) **não exercido** — aprovação direta para sequenciamento dos commits restantes após Commit 3.
+
+**Lições operacionais:**
+
+- **Pré-existência do `DataProcessingRecord` no domínio salvou complexidade**: modelo já estava em `domain.py:973-996` desde F2 (entrou na primeira modelagem completa do schema), com `DPRequestType`/`DPRequestStatus`. F5.7 só consumiu essas entidades — não houve migration de modelagem, só `users.anonymized_at`.
+- **Cascata de FKs do `User` força anonimização (não hard-delete)**: `Project.gp_user_id`, `Proposal.uploaded_by_id`, `Report.created_by_id`, `ReportApproval.approver_id` são NOT NULL. Q1 do ADR de abertura ratificou anonimização; isso preserva integridade referencial sem violar art. 16 II (exercício regular de direitos).
+- **Resend dry-run é o caminho operacional do piloto**: `_send_email` em [`notifications.py`](../backend/app/services/notifications.py) já detecta `RESEND_API_KEY` ausente e cai em modo log — F5.7 reaproveitou sem nenhum acoplamento novo. Quando o domínio `jump.tec.br` for verificado (débito F0), notificações reais saem automaticamente sem mudança de código.
+- **Frontend só precisou de 1 polyfill jsdom**: pre-existência de Radix Select + Dialog + Input + Textarea no design system removeu necessidade de componentes novos. A maior decisão de UX foi o modal de confirmação com alerta de irreversibilidade — espelha o pattern do encerramento de projeto (F5.3).
 
 ---
 
@@ -404,7 +433,7 @@ Conforme plano em `docs/fase-5-plano.md`. F5.6 (a+b) e F5.7 (em andamento) destr
 |---|---|---|---|
 | F5.5 | Agente de Inteligência Cruzada (heurística inicial + flag) | ~30k | depende de F5.3 (✅); worker real (F5.6a ✅) já suficiente |
 | F5.8 | Exportação PDF/PPTX | ~50k (teto) | livre |
-| F5.9 | Deploy Railway + v3.2 consolidada | ~40k | depende de F5.6b (✅) + F5.7 (LGPD assinado) |
+| F5.9 | Deploy Railway + v3.2 consolidada | ~40k | depende de F5.6b (✅) + F5.7 (✅ LGPD piloto v1.0 fechado) |
 
 ---
 

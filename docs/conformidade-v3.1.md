@@ -57,7 +57,7 @@ Cada linha marca conformidade da implementação contra a v3.1. Símbolos:
 | `PortfolioConfig` | singleton com `health_score_weights` JSONB para **5 pesos** | 4 colunas (`weight_progress/risks/pendings/schedule`); modela 4 dimensões | ⚠️⚠️ |
 | `AgentRunLog` | run_id PK, task_type, engine_used, route_used, attempts JSONB, duration, worker_id, artifact_path, failover_occurred | igual | ✅ |
 | `WorkerHeartbeat` | worker_id PK, last_seen_at, status, sessions_status JSONB, contadores | igual | ✅ |
-| `DataProcessingRecord` | id, subject_*, processing_purpose, legal_basis, retention_period | existe (`domain.py:600`); não auditei campos | ✅ presumido |
+| `DataProcessingRecord` | id, subject_*, processing_purpose, legal_basis, retention_period | `domain.py` define id, subject_user_id, subject_external_email, request_type, status, requested_at, fulfilled_at, handled_by_id, notes. `processing_purpose` / `legal_basis` / `retention_period` **não estão no modelo SQL** — vivem por atividade em [`docs/rat.md`](rat.md) (Registro de Atividades de Tratamento). Endpoints F5.7 cobrem §12 inteira (GET /me/data-export, POST /me/data-deletion-request, POST /admin/data-requests, fulfill). Texto da spec v3.1 §9.5 (modelo SQL com `legal_basis` por linha) é considerado divergência consciente — vide débito **L** em docs/decisoes.md. | ✅ |
 
 ## Seção 10 — Melhorias do Processo Incorporadas
 

@@ -383,3 +383,40 @@ Débito herdado, a tratar fora desta sub-fase:
 - **L (v3.2)** — Correção do modelo do `DataProcessingRecord` na spec consolidada, removendo `processing_purpose`/`legal_basis`/`retention_period` (que pertencem ao RAT) da descrição da entidade.
 
 Checkpoints humanos formais: **#1** já concluído (inventário + plano aprovados em 2026-05-14 antes deste ADR); **#2** antes do Commit 1 (DPO lê inteiros `docs/lgpd.md` e `docs/rat.md`); **#3** opcional antes do Commit 5 (rodar `GET /me/data-export` em ambiente local e revisar o ZIP gerado).
+
+## 2026-05-15 — F5.7 / Fechada: piloto LGPD v1.0 entrega export, deletion, admin e login guard
+
+**Contexto:** F5.7 era a sub-fase formal de conformidade LGPD para destravar F5.9 (deploy Railway com dados reais Bradesco). O ADR de abertura (2026-05-14 acima) deixou 7 decisões resolvidas, 3 adicionais identificadas no inventário (login guard, criação manual no admin, correção de `conformidade-v3.1.md:60`) e os 3 débitos formais para v1.1. Esta entrada consolida o estado pós-execução dos 5 commits.
+
+**Decisão:** entregar a sub-fase no perímetro definido pelo plano, com 2 ajustes técnicos descobertos durante a execução:
+
+1. **Snapshot do export precede o log de auditoria.** O `GET /me/data-export` constrói o ZIP **antes** de criar o `DataProcessingRecord(EXPORT, FULFILLED)`. O log é gravado depois — apareceria no próximo export, não neste. Alternativa rejeitada: criar o log primeiro deixaria status=FULFILLED órfão se o build falhasse. A semântica adotada é "o export é um snapshot do estado anterior à requisição; o log do ato é evidência separada e aparece em exports subsequentes (auditoria recursiva)". Documentada em [`me.py`](../backend/app/api/v1/me.py) e validada em [`test_lgpd_export.py`](../backend/tests/test_lgpd_export.py).
+
+2. **Router registrado em `main.py`, não em `__init__.py`.** O briefing inicial sugeria registrar `me_router`/`admin_data_requests_router` em `backend/app/api/v1/__init__.py`. A convenção real do repo coloca todos os routers em `app/main.py` via `app.include_router(...)`. Seguido o padrão estabelecido; `__init__.py` permanece vazio como nos outros recursos.
+
+**Commits da sub-fase (sequência aprovada commit-a-commit pelo humano):**
+
+| # | SHA | Tipo | Conteúdo |
+|---|---|---|---|
+| 1 | `640bd28` | docs | `docs/lgpd.md` v1.0 + `docs/rat.md` v1.0 + ADR de abertura + apêndice em `fase-5-progresso.md` (F5.7 EM ANDAMENTO). 4 arquivos, +451/-9. |
+| 2 | `b5f1fd0` | feat(backend) | Migration `0018_users_anonymized_at` + `data_export_service.py` + schemas `data_export.py` + `GET /me/data-export` + 5 testes pytest (smoke, cobertura, RBAC sem token, RBAC cross-user, filtro CLIENT). 7 arquivos, +1390. |
+| 3 | `1e47cbc` | feat(backend) | `POST /me/data-deletion-request` + `admin_data_requests.py` (POST/GET/fulfill) + schemas `data_request.py` + login guard em `auth.py` + 7 testes pytest. 6 arquivos, +658/-7. |
+| 4 | `f54c020` | feat(frontend) | Página `src/app/admin/data-requests/page.tsx` + `apiAdminDataRequests` em `lib/api.ts` + tipos LGPD em `lib/types.ts` + link "LGPD" no `AppShell` (só PMO) + polyfill `scrollIntoView` em `tests/setup.ts` + 4 testes vitest. 6 arquivos, +721/-1. |
+| 5 | `(este)` | test+docs | `test_lgpd_e2e.py` (titular → pedido → DPO → fulfill → login negado) + correção de `conformidade-v3.1.md:60` (linha "presumido" reescrita com auditoria efetiva dos 9 campos do modelo + remissão para `docs/rat.md` como local correto de `processing_purpose`/`legal_basis`/`retention_period`) + ADR de fechamento + apêndice em `fase-5-progresso.md`. |
+
+**Métricas finais:**
+- **Pytest backend:** 195 → **208** (+13 testes LGPD: 5 export + 6 deletion + 1 sanity-check do módulo admin + 1 E2E). 1 skipped pré-existente. Suite cheia em ~3min30s.
+- **Vitest frontend:** 104 → **108** (+4 admin/data-requests). Sem regressão; tsc clean.
+- **Cobertura backend** (não rodada em CI desta sub-fase, mas amostragem): exporta o user com 0 projetos retorna ZIP de ~880 bytes; com 1 projeto + árvore mínima sobe pra ~3.4 KB. Filtro CLIENT exclui Reports DRAFT/SUBMITTED, AgentRunLog inteiro, Approvals alheias.
+- **Resend dry-run:** todas as notificações disparadas neste ciclo saíram em modo log (sem `RESEND_API_KEY` no ambiente de testes). Frontend nunca expõe o e-mail do canal externo no DOM ao usuário comum.
+
+**Débitos finais (consolidados do ADR de abertura, sem alteração):**
+
+- **F5.7.X (v1.1)** — Anonimização de texto livre em descrições de `Risk`/`PendingItem`/`ActionPlan` e seções narrativas de `Report` (`highlights`, `next_steps`, `notes`, justificativas de RAG). v1.0 retém com justificativa em [`docs/lgpd.md`](lgpd.md) §6.4 e §10 (art. 16 II LGPD).
+- **F5.7.Y (v1.1)** — Formulário web público para abertura de pedido por titular externo. v1.0 cobre via `POST /admin/data-requests` (DPO transcreve manualmente).
+- **F5.7.Z (v1.1)** — Provisionamento do alias `lgpd@jumplabel.com.br` e migração do canal documentado em [`docs/lgpd.md`](lgpd.md) e [`docs/rat.md`](rat.md). v1.0 opera com `anderson.argentoni@jumplabel.com.br` (receptor operacional sob coordenação do DPO designado Christopher Tominaga).
+- **L (v3.2 da spec)** — Correção do modelo do `DataProcessingRecord` na spec consolidada, removendo `processing_purpose`/`legal_basis`/`retention_period` (que pertencem ao RAT). `conformidade-v3.1.md:60` já reflete esta decisão; ajuste correspondente na spec entra no próximo ciclo de spec.
+
+**Consequência:** F5.7 fechada. Pré-requisito formal de F5.9 (deploy Railway com dados reais do piloto Bradesco) e da operação contratual atendido. DPO designado tem agora (1) política assinada `docs/lgpd.md` v1.0, (2) RAT correspondente em `docs/rat.md`, (3) endpoints LGPD operacionais (`/me/data-export`, `/me/data-deletion-request`, `/admin/data-requests` com fulfill), (4) tela admin para operar pedidos manuais e atender pedidos internos, (5) auditoria sólida (DataProcessingRecord persistido em todas as operações). Login guard fecha o vetor de vazamento "esta conta foi anonimizada".
+
+Próximas sub-fases possíveis: **F5.5** (inteligência cruzada — débito independente, paralelizável), **F5.8** (export de relatórios para PDF/DOCX — independente), **F5.9** (deploy + v3.2 da spec, agora destravado). Caminho crítico para piloto Bradesco mantém a tríade F5.5/F5.8/F5.9 com prioridade definida pelo Christopher.
