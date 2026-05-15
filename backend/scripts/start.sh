@@ -23,6 +23,13 @@ fi
 echo "[start.sh] alembic upgrade head"
 alembic upgrade head
 
+# Seed condicional: só em ambientes de smoke (dev/beta/staging), nunca em prod.
+# Falha não bloqueia a subida do backend — log informativo + continue.
+if [[ "${ENVIRONMENT:-dev}" =~ ^(dev|beta|staging)$ ]] && [[ "${SEED_ON_STARTUP:-false}" == "true" ]]; then
+  echo "[start.sh] seed_pilot.py (ENVIRONMENT=${ENVIRONMENT})"
+  python scripts/seed_pilot.py || echo "[start.sh] seed falhou (continuando)"
+fi
+
 echo "[start.sh] starting uvicorn on port ${PORT:-8000}"
 exec uvicorn app.main:app \
   --host 0.0.0.0 \
