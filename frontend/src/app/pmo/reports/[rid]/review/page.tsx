@@ -177,7 +177,7 @@ export default function ReviewReportPage() {
                   <span className="text-sm font-medium capitalize">{dim}</span>
                   {v ? <Badge variant={ragColor(v)}>{ragLabel(v)}</Badge> : <span className="text-xs">—</span>}
                 </div>
-                {just && <p className="text-xs italic text-muted-foreground">"{just}"</p>}
+                {just && <p className="text-xs italic text-muted-foreground">&ldquo;{just}&rdquo;</p>}
               </div>
             );
           })}

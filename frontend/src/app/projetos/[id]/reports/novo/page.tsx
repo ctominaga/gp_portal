@@ -150,7 +150,7 @@ export default function NewReportPage() {
                   <p className="text-xs text-muted-foreground">
                     Herda riscos abertos, pendências em aberto e cria
                     placeholders para entregas com prazo no período. Cada
-                    item recebe um marcador "do anterior" que some quando
+                    item recebe um marcador &ldquo;do anterior&rdquo; que some quando
                     você edita.
                   </p>
                   {hasPreviousReport === false && (

@@ -314,7 +314,7 @@ export default function ProjectClosePage() {
             <CardDescription>
               Marque os riscos que viraram problema durante o projeto. Riscos com
               status <strong>materializado</strong> já vêm pré-marcados (você pode
-              adicionar ou remover livremente). Comentário "como foi tratado" é
+              adicionar ou remover livremente). Comentário &ldquo;como foi tratado&rdquo; é
               opcional por item.
             </CardDescription>
           </CardHeader>
