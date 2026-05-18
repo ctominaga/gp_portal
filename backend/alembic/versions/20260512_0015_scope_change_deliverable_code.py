@@ -15,6 +15,10 @@ de F4.3:
 
 Mesma estratégia da 0014: idempotente, reusável em pytest via importlib.
 
+Backfill é feito em **Python** (não SQL) para portabilidade entre dialetos:
+SQLite usa `INSTR/SUBSTR` mas Postgres não tem `INSTR` e a sintaxe de
+`SUBSTR` difere. Parse Python contorna o problema e é trivialmente legível.
+
 Revision ID: 0015_scope_change_deliverable_code
 Revises: 0014_scope_change_refactor
 Create Date: 2026-05-12
@@ -30,62 +34,65 @@ branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
-# Captura o `code` que vem após "Adicionado: " ou "Removido: ", até o
-# separador " · " (formato cunhado pelo `diff_baselines` em F4.3). SQL puro
-# funciona em PG e SQLite. Em PG usa `substring(... from ... for ...)`,
-# em SQLite usa `substr(... , ..., length)`. Para compatibilidade vou usar
-# um approach mais simples: aproveitar o operador LIKE para filtrar e
-# expressões padrão de string.
+# Prefixos cunhados pelo `diff_baselines` em F4.3. O par (prefix, status_key)
+# alimenta o backfill genérico em `run_backfill`.
+_BACKFILL_PREFIXES = (
+    ("Adicionado: ", "deliverable_code_added"),
+    ("Removido: ", "deliverable_code_removed"),
+)
 
-_BACKFILL_DELIVERABLE_CODE_ADDED = r"""
-UPDATE scope_changes
-   SET deliverable_code = TRIM(
-       SUBSTR(
-           description,
-           LENGTH('Adicionado: ') + 1,
-           CASE
-               WHEN INSTR(SUBSTR(description, LENGTH('Adicionado: ') + 1), ' · ') > 0
-                   THEN INSTR(SUBSTR(description, LENGTH('Adicionado: ') + 1), ' · ') - 1
-               ELSE LENGTH(description)
-           END
-       )
-   )
- WHERE deliverable_code IS NULL
-   AND description LIKE 'Adicionado:%'
-"""
+_SEPARATOR = " · "
 
-_BACKFILL_DELIVERABLE_CODE_REMOVED = r"""
-UPDATE scope_changes
-   SET deliverable_code = TRIM(
-       SUBSTR(
-           description,
-           LENGTH('Removido: ') + 1,
-           CASE
-               WHEN INSTR(SUBSTR(description, LENGTH('Removido: ') + 1), ' · ') > 0
-                   THEN INSTR(SUBSTR(description, LENGTH('Removido: ') + 1), ' · ') - 1
-               ELSE LENGTH(description)
-           END
-       )
-   )
- WHERE deliverable_code IS NULL
-   AND description LIKE 'Removido:%'
-"""
+
+def _extract_code(description: str, prefix: str) -> str | None:
+    """Extrai o `code` de uma description no formato `{prefix}{code} · {title}`.
+
+    Retorna None se o prefix não bate, ou string vazia depois do TRIM.
+    """
+    if not description.startswith(prefix):
+        return None
+    tail = description[len(prefix):]
+    sep_pos = tail.find(_SEPARATOR)
+    code = tail[:sep_pos] if sep_pos > 0 else tail
+    code = code.strip()
+    return code or None
 
 
 def run_backfill(conn) -> dict[str, int]:
-    """Executa o backfill por parse. Retorna rows afetadas em cada etapa.
+    """Executa o backfill por parse Python. Retorna rows afetadas por prefixo.
 
     Idempotente: re-execução não modifica linhas com `deliverable_code` já
     preenchido. Descrições freeform (sem prefixo conhecido) permanecem NULL.
+    Portável entre Postgres e SQLite (parse em Python evita funções
+    string específicas de dialeto).
     """
-    return {
-        "deliverable_code_added": conn.execute(
-            sa.text(_BACKFILL_DELIVERABLE_CODE_ADDED)
-        ).rowcount,
-        "deliverable_code_removed": conn.execute(
-            sa.text(_BACKFILL_DELIVERABLE_CODE_REMOVED)
-        ).rowcount,
-    }
+    counts: dict[str, int] = {key: 0 for _, key in _BACKFILL_PREFIXES}
+
+    for prefix, status_key in _BACKFILL_PREFIXES:
+        rows = conn.execute(
+            sa.text(
+                "SELECT id, description FROM scope_changes "
+                "WHERE deliverable_code IS NULL "
+                "AND description LIKE :pattern"
+            ),
+            {"pattern": f"{prefix}%"},
+        ).fetchall()
+
+        for row in rows:
+            code = _extract_code(row.description, prefix)
+            if code is None:
+                continue
+            conn.execute(
+                sa.text(
+                    "UPDATE scope_changes "
+                    "SET deliverable_code = :code "
+                    "WHERE id = :id"
+                ),
+                {"code": code, "id": row.id},
+            )
+            counts[status_key] += 1
+
+    return counts
 
 
 def upgrade() -> None:
