@@ -25,9 +25,13 @@ alembic upgrade head
 
 # Seed condicional: só em ambientes de smoke (dev/beta/staging), nunca em prod.
 # Falha não bloqueia a subida do backend — log informativo + continue.
+# PYTHONPATH=/app é necessário porque o pacote `app` está em /app/app (copiado
+# direto, não instalado em site-packages). Python ao executar `python script.py`
+# coloca apenas o DIR DO SCRIPT no sys.path, não o CWD — sem PYTHONPATH explícito,
+# `from app.core.security import hash_password` falha com ModuleNotFoundError.
 if [[ "${ENVIRONMENT:-dev}" =~ ^(dev|beta|staging)$ ]] && [[ "${SEED_ON_STARTUP:-false}" == "true" ]]; then
   echo "[start.sh] seed_pilot.py (ENVIRONMENT=${ENVIRONMENT})"
-  python scripts/seed_pilot.py || echo "[start.sh] seed falhou (continuando)"
+  PYTHONPATH=/app python scripts/seed_pilot.py || echo "[start.sh] seed falhou (continuando)"
 fi
 
 echo "[start.sh] starting uvicorn on port ${PORT:-8000}"
