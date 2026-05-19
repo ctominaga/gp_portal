@@ -61,11 +61,15 @@ async def test_seed_eh_idempotente_segundo_run_nao_duplica(
         assert r["action"] == "created"
     await db_session.commit()
 
-    # Segunda execução: 3 skipped, total no banco continua 3.
+    # Segunda execução: 3 rehashed (env vars setadas), total no banco
+    # continua 3. Idempotente em termos de quantidade de usuários — a
+    # ação "rehashed" atualiza o password_hash mas não duplica o registro.
+    # Se as env vars estivessem vazias, retornaria "skipped" sem tocar
+    # no hash (path coberto em test_seed_skipa_quando_user_existe_sem_env).
     for spec in _SEED_USERS:
         r = await _seed_one(db_session, spec)
-        assert r["action"] == "skipped"
-        assert r["reason"] == "already exists"
+        assert r["action"] == "rehashed"
+        assert "password updated" in r["reason"]
     await db_session.commit()
 
     rows = list(

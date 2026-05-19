@@ -82,11 +82,34 @@ async def _seed_one(db: AsyncSession, spec: SeedSpec) -> dict:
     existing = (
         await db.execute(select(User).where(User.email == spec.email.lower()))
     ).scalar_one_or_none()
+
+    # Recovery path: se o usuário já existe E a env var de senha está setada
+    # (não-vazia), re-hash do password. Isso destrava o caso em que o seed
+    # rodou numa execução anterior com env var vazia (senha random ecoada e
+    # perdida), e operador depois cadastrou a env var no Railway/painel. Sem
+    # esse re-hash, o usuário ficaria preso com a senha random esquecida.
+    # Continua idempotente: rodar 2x não muda nada além do hash (que é
+    # determinístico para a mesma senha+algoritmo, mas bcrypt gera salt
+    # novo a cada chamada — então o hash literal muda, mas a senha verificada
+    # é a mesma).
+    env_password = os.environ.get(spec.password_env, "").strip()
+
     if existing is not None:
+        if env_password:
+            existing.password_hash = hash_password(env_password)
+            await db.flush()
+            return {
+                "email": spec.email,
+                "action": "rehashed",
+                "reason": (
+                    f"user already existed; {spec.password_env} env var "
+                    "set, password updated"
+                ),
+            }
         return {
             "email": spec.email,
             "action": "skipped",
-            "reason": "already exists",
+            "reason": "already exists (no env password set, keeping current hash)",
         }
 
     password, generated = _resolve_password(spec.password_env)
