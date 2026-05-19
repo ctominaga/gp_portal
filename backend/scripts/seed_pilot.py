@@ -153,9 +153,15 @@ async def run_seed() -> list[dict]:
 def main() -> int:
     results = asyncio.run(run_seed())
     for r in results:
-        if r["action"] == "skipped":
+        action = r["action"]
+        if action == "skipped":
             print(f"[seed_pilot] {r['email']}: já existe — no-op")
-        else:
+        elif action == "rehashed":
+            print(
+                f"[seed_pilot] {r['email']}: já existe — password re-hash "
+                f"a partir de env var"
+            )
+        elif action == "created":
             print(
                 f"[seed_pilot] {r['email']} criado (role={r['role']})"
             )
@@ -164,6 +170,8 @@ def main() -> int:
                     f"[seed_pilot] ⚠ senha gerada (anote): "
                     f"{r['password_to_record']}"
                 )
+        else:
+            print(f"[seed_pilot] {r['email']}: action desconhecida {action!r}")
     return 0
 
 
