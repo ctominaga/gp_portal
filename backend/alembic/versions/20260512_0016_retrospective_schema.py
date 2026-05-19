@@ -34,7 +34,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "0016_retrospective_schema"
-down_revision: Union[str, None] = "0015_scope_change_deliverable_code"
+down_revision: Union[str, None] = "0015_sc_delcode"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
