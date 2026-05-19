@@ -27,8 +27,15 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 USER nextjs
+# Next.js standalone (server.js) lê PORT do environment a cada start.
+# - Em Railway: PORT é dinamicamente injetada (ex.: 8080) e o roteamento
+#   HTTPS aponta pra ela. Sem `ENV PORT=...` no Dockerfile, Next.js usa
+#   o valor injetado em runtime.
+# - Em dev local (docker-compose), sem PORT setado, Next.js usa default
+#   3000, que docker-compose mapeia para `${FRONTEND_HOST_PORT:-13000}:3000`.
+# EXPOSE 3000 é apenas documentação — Railway descobre a porta real
+# via PORT env, não via EXPOSE.
 EXPOSE 3000
-ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
 CMD ["node", "server.js"]
